@@ -1,0 +1,2628 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><style id="host-reset">body{margin:0;padding:0}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Bad Behavior Log</title>
+<style>
+/* The stylesheet goes BEFORE the font links on purpose. The Google Fonts
+   <link> is render-blocking, and it used to sit ahead of this block — so on
+   bad signal a dark-mode viewer stared at the host's cream #faf9f5 default
+   until the font request resolved or timed out. At night, mid-tantrum. Tokens
+   and body background now apply on the first paint; the webfont is already
+   display=swap and arrives later over a correctly coloured page. */
+:root{
+  color-scheme:light dark;
+
+  --paper:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF1F4; --sunk:#E4EAEF;
+  --ink:#151A21; --ink-2:#3C4753; --muted:#5D6874; --faint:#636F7D;
+  --line:#DCE3E9; --line-strong:#6F879D;
+  --accent:#2C6E75; --accent-ink:#FFFFFF; --accent-soft:#DCEAEB;
+  --sev1:#EFC9AE; --sev2:#E0A377; --sev3:#CE7A4B; --sev4:#B0512C; --sev5:#8A2F1C;
+  --sev1-edge:#BF7A46; --sev2-edge:#B9703F; --sev3-edge:#A0552C; --sev4-edge:#8A3C1E; --sev5-edge:#6B2214;
+  /* ink for the NUMBER printed on each severity badge, solved per rung so the
+     digit clears 4.5:1 on its own fill — the badge is now the primary severity
+     cue, so the number on it has to stay readable at every rung */
+  --sev1-ink:#1A0C04; --sev2-ink:#1A0C04; --sev3-ink:#1A0C04; --sev4-ink:#FFFFFF; --sev5-ink:#FFFFFF;
+  --good:#2F6F4F; --warn:#886918; --danger:#9B3025;
+  --dad:#3A5FA8; --mom:#7A4090;
+  --scrim:rgba(10,14,18,.5);
+  --r:14px; --shadow:0 1px 2px rgba(21,26,33,.06), 0 4px 14px rgba(21,26,33,.05);
+
+  /* ---------- MOTION SCALE — the only place a duration or curve is written ----------
+     Two classes of change, deliberately different lengths:
+       CAUSED  — the finger did this. Must read as done before the finger lifts.
+       AMBIENT — nothing is waiting on it. May take its time.
+     --t-sel is the number the brief is about. 260ms sounds slow for a tap, but
+     the CURVE does the work: ease-settle is 50% complete at 30ms and 95% at
+     131ms, so the chip is unmistakably on while the finger is still down and
+     the last sliver of wash lands after it has gone. Visible slowness, zero
+     perceived lag. ~300ms is the ceiling for anything the finger caused: past
+     that a fast second tap arrives while the first is still moving and two
+     overlapping washes read as lag. To make selection feel SLOWER, raise
+     --t-amb (the release) instead — nobody is waiting on the chip they just
+     stopped choosing, and fast-in/slow-out is the whole trick. */
+  --t-tap:120ms;    /* pressed feedback */
+  --t-sel:260ms;    /* the selection settles */
+  --t-amb:420ms;    /* the state being left behind */
+  --t-view:320ms;   /* a whole surface arriving */
+  --t-exit:180ms;   /* anything leaving — always brisker than it arrived */
+  --t-grow:520ms;   /* data bars filling */
+  --t-pulse:1600ms; /* the live heartbeat */
+  --ease-settle:cubic-bezier(.16,.84,.24,1);
+  --ease-out:cubic-bezier(.22,.61,.36,1);
+  --ease-soft:cubic-bezier(.4,0,.2,1);
+  --ease-loop:cubic-bezier(.45,0,.55,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#101419; --surface:#171D24; --surface-2:#1E252D; --sunk:#0C1014;
+    --ink:#EAEFF4; --ink-2:#C3CDD6; --muted:#93A0AD; --faint:#808C9A;
+    --line:#28313A; --line-strong:#65788B;
+    --accent:#63B3B8; --accent-ink:#0C1014; --accent-soft:#1B3033;
+    --sev1:#57392C; --sev2:#7C4F38; --sev3:#B65A4E; --sev4:#D08355; --sev5:#F5A078;
+    --sev1-edge:#8D6555; --sev2-edge:#A8755A; --sev3-edge:#CE7A6E; --sev4-edge:#E09668; --sev5-edge:#F9B393;
+    --sev1-ink:#FFFFFF; --sev2-ink:#FFFFFF; --sev3-ink:#FFFFFF; --sev4-ink:#1A0C04; --sev5-ink:#1A0C04;
+    --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
+    --dad:#7FA3E8; --mom:#C08BDA;
+    --scrim:rgba(0,0,0,.72);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#101419; --surface:#171D24; --surface-2:#1E252D; --sunk:#0C1014;
+  --ink:#EAEFF4; --ink-2:#C3CDD6; --muted:#93A0AD; --faint:#808C9A;
+  --line:#28313A; --line-strong:#65788B;
+  --accent:#63B3B8; --accent-ink:#0C1014; --accent-soft:#1B3033;
+  --sev1:#57392C; --sev2:#7C4F38; --sev3:#B65A4E; --sev4:#D08355; --sev5:#F5A078;
+  --sev1-edge:#8D6555; --sev2-edge:#A8755A; --sev3-edge:#CE7A6E; --sev4-edge:#E09668; --sev5-edge:#F9B393;
+  --sev1-ink:#FFFFFF; --sev2-ink:#FFFFFF; --sev3-ink:#FFFFFF; --sev4-ink:#1A0C04; --sev5-ink:#1A0C04;
+  --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
+  --dad:#7FA3E8; --mom:#C08BDA;
+  --scrim:rgba(0,0,0,.72);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  /* the platform's own text face: SF on Apple, Segoe on Windows, Roboto on
+     Android. Nothing to download, so no render-blocking request and no flash
+     of the wrong theme while a font resolves. */
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,Roboto,sans-serif;
+  font-size:17px; line-height:1.45; letter-spacing:-.01em;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+.mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums;letter-spacing:0}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+::placeholder{color:var(--muted);opacity:1}   /* Firefox applies its own opacity */
+html{scroll-padding-top:76px;scroll-padding-bottom:64px}
+
+.app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--paper)}
+/* iOS grouped-inset conventions: a quiet uppercase caption above each group,
+   one rounded surface holding the rows, hairlines only BETWEEN rows. */
+.grouphd{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:-.01em;
+         padding:0 4px 7px;display:flex;justify-content:space-between;align-items:baseline}
+
+/* ---------- header ---------- */
+.hdr{padding:12px 18px 10px;border-bottom:.5px solid var(--line);
+     background:color-mix(in srgb, var(--surface) 82%, transparent);
+     -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+     position:sticky;top:0;z-index:20}
+.hdr-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.brand{font-size:20px;font-weight:700;letter-spacing:-.024em;margin:0}
+.whoami{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.dot.dad{background:var(--dad)} .dot.mom{background:var(--mom)}
+.syncline{margin-top:6px;font-size:11.5px;color:var(--faint);display:flex;align-items:center;gap:6px}
+.syncdot{width:6px;height:6px;border-radius:50%;background:var(--faint);flex:none}
+.syncdot.ok{background:var(--good)} .syncdot.local{background:var(--warn)}
+
+/* ---------- tabs ---------- */
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:.5px solid var(--line);
+      background:color-mix(in srgb, var(--surface) 82%, transparent);
+      -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+      position:sticky;bottom:0;z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+.tab{padding:8px 2px 9px;font-size:10.5px;font-weight:500;color:var(--muted);letter-spacing:-.005em;
+     display:flex;flex-direction:column;align-items:center;gap:3px;
+     transition:color var(--t-amb) var(--ease-soft)}
+.tab svg{width:26px;height:26px;display:block}
+.tab[aria-selected="true"]{color:var(--accent);
+     transition-duration:var(--t-sel);transition-timing-function:var(--ease-settle)}
+.tab .cnt{font-size:10.5px;font-weight:500;color:inherit;opacity:.75;
+     transition:color var(--t-amb) var(--ease-soft)}
+
+main{flex:1;padding:16px 16px 26px;display:flex;flex-direction:column;gap:22px}
+.view[hidden]{display:none}
+.view{display:flex;flex-direction:column;gap:16px}
+/* opacity only, no translate: opacity does not affect hit-testing, so a tap
+   40ms into the fade lands on the real control. The Log tab's first child is
+   the Start button and nothing may move it. */
+@keyframes viewIn{from{opacity:0}}
+.view.entering{animation:viewIn var(--t-view) var(--ease-out)}
+
+/* ---------- generic blocks ----------
+   Borders removed wherever a tone change or plain spacing already separates
+   the thing. The old sheet gave almost every container BOTH a --surface fill
+   and a --line outline, which is what made the page feel boxed-in. */
+.panel{background:var(--surface);border-radius:14px;padding:16px 15px;box-shadow:var(--shadow)}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin:0 0 8px}
+h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text-wrap:balance}
+.sub{font-size:14px;color:var(--muted);margin:0;line-height:1.45}
+
+/* ---------- daily card ---------- */
+/* The completion cue is a GLYPH, not a fill. --accent-soft and --surface-2 sit at
+   1.12:1 in dark and 1.09:1 in light, so the old background swap was not a weak
+   signal — it was no signal. Text and a tick carry contrast that survives both
+   themes; the fill change stays only as a secondary hint. */
+.daily{background:var(--accent-soft);border-radius:var(--r);padding:13px 14px;
+       border-left:3px solid var(--accent);
+       transition:background-color var(--t-amb) var(--ease-soft),
+                  border-left-color var(--t-amb) var(--ease-soft)}
+.daily.done{background:var(--surface-2);border-left-color:var(--good)}
+.daily h3{margin:0 0 3px;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+.daily .q{margin-top:11px}
+.daily .qlab{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.02em;
+             display:flex;align-items:center;gap:6px}
+/* one tick style for every "this one is answered" mark in the app */
+.tick{color:var(--good);font-weight:700;flex:none;
+      transition:opacity var(--t-sel) var(--ease-settle)}
+.tick[hidden]{display:none !important}
+.daily h3 .tick{font-size:15px}
+.daily .qlab .tick{font-size:12px}
+
+/* ---------- chips: the headline motion case ----------
+   CSS reads transition timing from the AFTER-change style, so the base rule
+   governs select and the [aria-pressed="false"] rule governs de-select. That
+   is the fast-in / slow-out asymmetry, for free, with no JS.
+   font-weight is uniform 500: a 400->600 flip on press changes the chip's
+   WIDTH inside a flex-wrap row, so a slow fade would be accompanied by other
+   chips jumping between lines. The selected chip is already a solid accent
+   fill, the highest-contrast state on screen; bold was redundant. */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:12px 14px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);
+      font-size:13px;font-weight:500;color:var(--ink-2);line-height:1.25;
+      transition:background-color var(--t-sel) var(--ease-settle),
+                 border-color     var(--t-sel) var(--ease-settle),
+                 color            var(--t-sel) var(--ease-settle)}
+.chip[aria-pressed="false"]{transition-duration:var(--t-amb);transition-timing-function:var(--ease-soft)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip.sm{padding:10px 12px;font-size:12.5px}
+/* "Other" — deliberately the largest chip in the row and dashed, so it reads as
+   "add one" rather than as another thing to pick. Same 46px height as its
+   siblings so the row does not step. */
+.chip.add{border-style:dashed;border-color:var(--accent);color:var(--accent);
+          font-weight:600;padding:12px 16px;display:inline-flex;align-items:center;gap:7px}
+.chip.add .plus{font-size:20px;line-height:1;font-weight:400;margin-top:-2px}
+.chip.add[aria-expanded="true"]{background:var(--accent-soft);border-style:solid}
+.adder{display:flex;gap:8px;margin-top:10px}
+.adder input{flex:1;min-width:0;padding:12px 12px;border:1px solid var(--line-strong);
+             border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
+.addgo{padding:12px 18px;border-radius:10px;background:var(--accent);color:var(--accent-ink);
+       font-weight:700;font-size:14px;flex:none;
+       transition:filter var(--t-tap) var(--ease-out)}
+.addgo:active{filter:brightness(.95)}
+.adderr{margin-top:8px;font-size:12px;color:var(--danger);font-weight:600}
+/* Acknowledge the TOUCH, not just the result. Every other button in the app had
+   an :active state; the chips — the controls actually being tapped — had none, so
+   the only feedback was a colour easing in afterwards. Background + border only:
+   never a transform, which would move the target under the finger. */
+.chip:active{background:var(--accent-soft);border-color:var(--accent);transition-duration:0s}
+.chip[aria-pressed="true"]:active{filter:brightness(1.12)}
+@media (hover:hover) and (pointer:fine){ .chip:hover{border-color:var(--accent)} }
+
+/* ---------- big start ---------- */
+.start{width:100%;padding:24px 18px;border-radius:14px;background:var(--accent);color:var(--accent-ink);
+       font-size:21px;font-weight:700;letter-spacing:-.01em;box-shadow:var(--shadow);
+       display:flex;flex-direction:column;align-items:center;gap:4px;
+       transition:filter var(--t-tap) var(--ease-out), box-shadow var(--t-amb) var(--ease-soft)}
+.start:active{filter:brightness(.97)}
+.linkbtn{background:none;color:var(--accent);font-size:13px;font-weight:600;text-decoration:underline;
+         text-underline-offset:3px;padding:13px 8px;align-self:center;
+         transition:color var(--t-tap) var(--ease-out)}
+/* the destructive link used to begin at the exact pixel the Save button ended,
+   so a thumb overshooting Save discarded a just-logged entry */
+.linkbtn.danger-link{color:var(--danger);margin-top:10px}
+@media (hover:hover) and (pointer:fine){
+  .start:hover{filter:brightness(1.06)}
+  .bigbtn:hover{filter:brightness(1.08)}
+  .pick button:hover{border-color:var(--accent)}
+  .entry.mine:hover{background:var(--surface-2)}
+}
+
+/* ---------- running ---------- */
+.timerwrap{text-align:center;padding:4px 0 10px}
+.timer{font-size:46px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.timer.stopped{color:var(--muted)}
+.livedot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--danger);
+         margin-right:8px;vertical-align:middle;animation:pulse var(--t-pulse) var(--ease-loop) infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.timerlab{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-top:6px}
+/* the retro form asks WHEN as well as how long */
+.retro{display:flex;flex-direction:column;gap:9px;margin-top:11px;align-items:center}
+.retro-row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2)}
+.retro-lab{min-width:92px;text-align:right;color:var(--muted);font-size:12.5px}
+.retro-unit{color:var(--muted);font-size:12.5px}
+.whennote{margin-top:9px;font-size:11.5px;color:var(--muted);line-height:1.45}
+
+/* ---------- severity ----------
+   A 5-step sequential lightness ramp can never give 3:1 between adjacent
+   rungs: that needs 3^4 = 81:1 of total range and sRGB offers at most 21:1.
+   So the ramp is NOT the encoding — the number and the anchor word are, and
+   both stay visible. The stripe width ramp below adds a second non-colour
+   channel that also survives greyscale and a printer. */
+.sevgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.sev{padding:10px 4px 9px;border-radius:9px;border:1.5px solid var(--line-strong);background:var(--surface);
+     display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;
+     transition:background-color var(--t-sel) var(--ease-settle),
+                border-color     var(--t-sel) var(--ease-settle)}
+.sev[aria-pressed="false"]{transition-duration:var(--t-amb);transition-timing-function:var(--ease-soft)}
+.sev .swatch{width:100%;height:18px;border-radius:5px;border:1px solid}
+.sev .n{font-size:16px;font-weight:700;line-height:1}
+/* was 9.5px with a 23px cap, which wrapped the anchor to three clipped lines.
+   The anchors ARE the rating instrument: without them two parents drift and
+   every severity figure is quietly corrupted, so they must be legible at the
+   moment of choosing. */
+.sev .anchor{font-size:10.5px;line-height:1.2;color:var(--muted);min-height:38px;
+             display:flex;align-items:center;transition:color var(--t-sel) var(--ease-settle)}
+/* selection changes border WEIGHT as well as colour, so it survives greyscale,
+   low vision, and a photograph of the screen */
+.sev[aria-pressed="true"]{border-color:var(--ink);border-width:2.5px;padding:9px 3.5px 8px;background:var(--surface-2)}
+.sev[aria-pressed="true"] .anchor{color:var(--ink-2)}
+/* The picker escalates in WEIGHT ONLY, never size: these are five equal-width
+   grid columns at phone width, and a size ramp would make the tiles step and
+   the anchors re-wrap. Weight is free of geometry, so the ramp is visible at
+   the moment of CHOOSING as well as in the record. */
+.s1 .anchor{font-weight:400}
+.s2 .anchor{font-weight:500}
+.s3 .anchor{font-weight:600}
+.s4 .anchor{font-weight:700}
+.s5 .anchor{font-weight:800}
+.s1 .swatch{background:var(--sev1);border-color:var(--sev1-edge)}
+.s2 .swatch{background:var(--sev2);border-color:var(--sev2-edge)}
+.s3 .swatch{background:var(--sev3);border-color:var(--sev3-edge)}
+.s4 .swatch{background:var(--sev4);border-color:var(--sev4-edge)}
+.s5 .swatch{background:var(--sev5);border-color:var(--sev5-edge)}
+.sev:active{background:var(--surface-2);border-color:var(--accent);transition-duration:0s}
+@media (hover:hover) and (pointer:fine){ .sev:hover{border-color:var(--accent)} }
+
+.field{margin-top:16px}
+.field > .qlab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+               color:var(--muted);margin-bottom:8px;display:flex;gap:7px;align-items:baseline}
+.req{color:var(--danger);font-weight:700;font-size:10px;letter-spacing:.04em}
+/* REQUIRED turning into a green ANSWERED is the clearest confirmation available,
+   because it sits exactly where the eye already is when choosing */
+.req.ok{color:var(--good)}
+.field.missing > .qlab{color:var(--danger)}
+.field.missing .chips .chip{border-color:var(--danger)}
+
+.bigbtn{width:100%;padding:16px;border-radius:12px;font-size:17px;font-weight:700;
+        background:var(--ink);color:var(--paper);margin-top:18px;
+        transition:filter var(--t-tap) var(--ease-out), border-color var(--t-amb) var(--ease-soft)}
+.bigbtn.ghost{background:var(--surface);color:var(--ink);border:1.5px solid var(--line-strong);font-size:15px;padding:14px}
+.bigbtn:active{filter:brightness(.96)}
+.err{margin-top:12px;font-size:12.5px;color:var(--danger);font-weight:600}
+/* Saving used to be silent: the form simply vanished. This is a real confirmation
+   of a real write — it names what was stored, never a generic "done!". */
+.flash{display:flex;align-items:center;gap:9px;padding:13px 14px;border-radius:var(--r);
+       background:var(--accent-soft);border-left:3px solid var(--good);
+       font-size:13px;color:var(--ink-2);font-weight:600}
+.flash .tick{font-size:16px}
+@keyframes flashIn{from{opacity:0}}
+.flash{animation:flashIn var(--t-view) var(--ease-out)}
+
+textarea{width:100%;padding:11px;border:1px solid var(--line-strong);border-radius:8px;
+         background:var(--surface);color:var(--ink);font:inherit;font-size:14px;resize:vertical;min-height:62px}
+input[type="number"],input[type="time"]{padding:11px 12px;border:1px solid var(--line-strong);border-radius:10px;
+         background:var(--surface);color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:17px}
+input[type="number"]{width:78px}
+
+/* ---------- history: a list, not a stack of cards ----------
+   Every row used to be its own bordered, filled card. Fifty of those is a wall
+   of boxes. One surface, hairline separators, and the severity stripe doing
+   the glance work. */
+.daygroup{margin-top:2px}
+.dayhdr{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 4px 7px}
+.dayhdr .d{font-size:15px;font-weight:600;letter-spacing:-.015em}
+.dayhdr .m{font-size:13px;color:var(--muted)}
+.daylist{background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.entry{display:flex;gap:13px;padding:13px 14px;align-items:center;width:100%;text-align:left;
+       background:none;transition:background-color var(--t-amb) var(--ease-soft)}
+/* hairline starts after the badge, as a grouped iOS list does */
+.entry + .entry{border-top:.5px solid var(--line);background-clip:padding-box}
+.entry.mine{cursor:pointer}
+.entry.mine:active{background:var(--surface-2)}
+.entry.voided .etitle{text-decoration:line-through}
+.entry.voided .ebody{opacity:.85}
+/* The severity was a 3-11px hairline. It is the most important thing in the row
+   and it now reads as one: a filled, numbered badge. The NUMBER is printed on
+   the fill (never colour alone), the ink for each rung is solved for 4.5:1, and
+   because the digit is real text it survives a greyscale print where the fill
+   does not. The size ramp is kept as a second, non-colour channel. */
+.stripe{flex:none;display:flex;align-items:center;justify-content:center;
+        border-radius:10px;border:1px solid;font-weight:700;
+        font-variant-numeric:tabular-nums;line-height:1}
+.b1{width:32px;height:32px;font-size:15px;background:var(--sev1);border-color:var(--sev1-edge);color:var(--sev1-ink)}
+.b2{width:34px;height:34px;font-size:16px;background:var(--sev2);border-color:var(--sev2-edge);color:var(--sev2-ink)}
+.b3{width:36px;height:36px;font-size:17px;background:var(--sev3);border-color:var(--sev3-edge);color:var(--sev3-ink)}
+.b4{width:38px;height:38px;font-size:19px;background:var(--sev4);border-color:var(--sev4-edge);color:var(--sev4-ink)}
+.b5{width:40px;height:40px;font-size:21px;background:var(--sev5);border-color:var(--sev5-edge);color:var(--sev5-ink)}
+.ebody{flex:1;min-width:0}
+.etop{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.etime{font-size:13px;font-weight:600;color:var(--muted)}
+.edur{font-size:13px;color:var(--muted)}
+.edur .est{color:var(--warn);font-weight:600}
+/* ---------- THE SEVERITY HEADLINE ----------
+   The row already carried the behavioural anchor ("screaming, won't respond"),
+   but as 13px grey metadata beside the timestamp, while the 16px headline was
+   the TRIGGER. That is backwards. A digit in a coloured square is an INDEX, not
+   a magnitude: at a glance five rungs read as five similar squares, and the
+   number tells you the rank without ever telling you how bad. The anchor is the
+   only thing in the row that says how bad, so it is the headline now, and it
+   escalates in type size and weight by rung.
+   TYPE is the right channel because it is the only one that survives all four
+   readings at once: greyscale, a black-and-white print, either theme, and a
+   screen reader — which then announces an OBSERVED BEHAVIOUR rather than an
+   interpretation of the child's feelings. Colour cannot do this and never
+   could: 3:1 between adjacent rungs over five steps needs 3^4 = 81:1 of range
+   and sRGB offers 21:1. The ramp is a secondary hint; this is the encoding.
+   14 -> 19px is a real 1.36x, and 400 -> 800 is four visible weight steps. */
+.etitle{margin-top:1px;color:var(--ink);letter-spacing:-.015em;line-height:1.25}
+.a1{font-size:14px;font-weight:400;color:var(--ink-2)}
+.a2{font-size:15px;font-weight:500;color:var(--ink-2)}
+.a3{font-size:16.5px;font-weight:600}
+.a4{font-size:17.5px;font-weight:700;letter-spacing:-.02em}
+.a5{font-size:19px;font-weight:800;letter-spacing:-.025em}
+/* the trigger, demoted from headline to the meta line. It is what the logger
+   BELIEVED set it off — the Triggers card already says so in as many words —
+   and a reading should not outrank the thing that was actually observed. */
+.etrig{color:var(--ink-2);font-weight:600}
+.emeta{font-size:13px;color:var(--muted);margin-top:3px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.enote{font-size:12.5px;color:var(--ink-2);margin-top:6px;padding-left:9px;border-left:2px solid var(--line-strong)}
+.badge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;
+       border-radius:4px;background:var(--surface-2);color:var(--muted)}
+.badge.dad{color:var(--dad)} .badge.mom{color:var(--mom)}
+.badge.edited{color:var(--warn)}
+.lock{font-size:11px;color:var(--faint);flex:none;align-self:center}
+
+/* ---------- withdrawn entries: folded, never removed ---------- */
+.voidtog{width:100%;display:flex;align-items:center;gap:8px;padding:11px 14px;margin-top:8px;
+         border-radius:12px;background:var(--surface-2);color:var(--muted);
+         font-size:12.5px;font-weight:600;text-align:left;
+         transition:background-color var(--t-tap) var(--ease-out)}
+.voidtog:active{background:var(--sunk)}
+.vt-caret{font-size:11px;flex:none}
+.voidlist{margin-top:6px}
+/* a withdrawn row is quieter than a live one, but never faint enough to be
+   unreadable — it is still part of the record */
+.voidlist .entry{opacity:.72}
+.nolive{font-size:13px;color:var(--muted);margin:0;padding:12px 14px;
+        background:var(--surface);border-radius:12px;box-shadow:var(--shadow)}
+
+/* ---------- empty ---------- */
+.empty{text-align:center;padding:28px 16px;border-radius:var(--r);background:var(--surface);box-shadow:var(--shadow)}
+.empty p{margin:0 0 5px;font-size:13.5px;color:var(--ink-2);font-weight:600}
+.empty small{font-size:12px;color:var(--muted);display:block;max-width:30ch;margin:0 auto;line-height:1.5}
+
+/* ---------- patterns ---------- */
+.pcard{background:var(--surface);border-radius:var(--r);padding:15px 14px;box-shadow:var(--shadow)}
+.pchdr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px}
+.pchdr h3{margin:0;font-size:14.5px;font-weight:700;letter-spacing:-.008em}
+.n{font-size:11px;color:var(--muted);font-weight:600;flex:none}
+.pcsub{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+.pcard .pcsub:last-child{margin-bottom:0;margin-top:11px}
+.lockmsg{font-size:12px;color:var(--muted);margin-top:8px;font-weight:600}
+
+/* locked cards collapse. Seven dashed boxes each repeating the same sentence
+   was the bulk of the noise here; a locked card has one fact and gets one line. */
+.lockgroup{background:var(--surface);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
+.lockgroup .eyebrow{margin-bottom:11px}
+.lockrow{padding:9px 0}
+.lockrow + .lockrow{border-top:1px solid var(--line)}
+.lockrow-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.lockrow-t{font-size:13px;font-weight:600;color:var(--ink-2)}
+.lockrow-n{font-size:11px;color:var(--muted);flex:none}
+.lockrow-u{font-size:11px;color:var(--faint);margin-top:4px}
+.lockbar{height:4px;background:var(--sunk);border-radius:2px;overflow:hidden;margin-top:7px}
+.lockbar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:84px 1fr auto;gap:10px;align-items:center;min-height:17px}
+/* labels WRAP instead of truncating. The old fixed 78px track with an ellipsis
+   silently clipped 8 of the chart labels ("Transition / stop playing" rendered
+   as "Transition / s…"), which is a chart quietly withholding what it is
+   about. Wrapping fixes every label at once, including any added later. */
+.bar .lab{font-size:11.5px;color:var(--ink-2);text-align:right;line-height:1.25;
+          overflow-wrap:break-word;hyphens:auto}
+/* the track needs its own edge: --sunk sits at ~1.2:1 against --surface, so
+   without it you could see the bar but not where the scale ended */
+.bar .track{height:17px;background:var(--sunk);border-radius:4px;overflow:hidden;position:relative;
+            border:1px solid var(--line-strong)}
+.bar .fill{height:100%;border-radius:3px;background:var(--accent)}
+.bar .val{font-size:11.5px;color:var(--muted);font-weight:600;min-width:34px;text-align:right}
+
+.hours{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-top:4px}
+.hr{display:flex;flex-direction:column;align-items:center;gap:3px}
+.hr .cell{width:100%;aspect-ratio:1/1.5;border-radius:3px;background:var(--sunk);border:1px solid var(--line-strong)}
+.hr .hl{font-size:10px;color:var(--faint)}
+.hourlegend{display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);margin-top:8px}
+
+/* these take their value from an INLINE STYLE on a newborn node, which no
+   transition can ever see — so they arrive as an animation whose `from` is the
+   only declared stop, letting the inline value stay authoritative. Gated on
+   .entering so they grow when the tab opens, not on every store echo. */
+@keyframes fillGrow{from{width:0}}
+.view.entering .lockbar i,
+.view.entering .bar .fill{animation:fillGrow var(--t-grow) var(--ease-out)}
+
+/* ---------- trends ---------- */
+.tcard{background:var(--surface);border-radius:14px;padding:16px 15px;box-shadow:var(--shadow)}
+.tbig{font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.05}
+.tbig .unit{font-size:15px;font-weight:600;color:var(--muted);letter-spacing:-.01em;margin-left:5px}
+.tdelta{font-size:13px;font-weight:600;margin-top:3px}
+.tdelta.up{color:var(--danger)} .tdelta.down{color:var(--good)} .tdelta.flat{color:var(--muted)}
+.series{display:flex;align-items:flex-end;gap:2px;height:104px;margin-top:14px;
+        padding-bottom:2px;border-bottom:1px solid var(--line-strong)}
+.scol{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
+.scol i{display:block;width:100%;border-radius:3px 3px 0 0;min-height:3px}
+/* a day that was RECORDED with nothing to report is not the same as a day with
+   no record at all, and the chart has to show the difference or the zeros lie */
+.scol.zero i{height:3px;background:var(--line-strong);border-radius:2px}
+.scol.nodata i{height:3px;background:repeating-linear-gradient(90deg,var(--line) 0 2px,transparent 2px 4px)}
+.sx{display:flex;justify-content:space-between;font-size:11.5px;color:var(--faint);margin-top:7px}
+.tlegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:12px;color:var(--muted)}
+.tlegend span{display:inline-flex;align-items:center;gap:5px}
+.tlegend i{width:11px;height:11px;border-radius:3px;border:1px solid;display:inline-block}
+
+.note-strip{font-size:11.5px;color:var(--muted);line-height:1.55;padding:12px 13px;
+            background:var(--surface-2);border-radius:9px}
+.note-strip b{color:var(--ink-2)}
+
+/* ---------- sheet ---------- */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.scrim[hidden]{display:none}
+.sheet{background:var(--surface);width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:16px 16px 24px;
+       max-height:88vh;overflow-y:auto;border-top:1px solid var(--line-strong);
+       box-shadow:0 -8px 28px rgba(0,0,0,.28)}
+@keyframes scrimIn {from{opacity:0}}
+@keyframes scrimOut{to{opacity:0}}
+@keyframes sheetIn {from{opacity:0;transform:translateY(14px)}}
+@keyframes sheetOut{to{opacity:.4;transform:translateY(10px)}}
+.scrim.opening{animation:scrimIn var(--t-view) var(--ease-out)}
+.scrim.opening .sheet{animation:sheetIn var(--t-view) var(--ease-settle)}
+/* pointer-events drops at once so the app is tappable the instant the close
+   starts, not --t-exit later */
+.scrim.closing{animation:scrimOut var(--t-exit) var(--ease-soft) both;pointer-events:none}
+.scrim.closing .sheet{animation:sheetOut var(--t-exit) var(--ease-soft) both}
+.sheet h3{margin:0 0 3px;font-size:16px;font-weight:700}
+.sheethd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.x{font-size:22px;color:var(--muted);line-height:1;padding:11px 14px;margin:-11px -10px 0 0}
+.revlist{margin-top:14px;border-top:1px solid var(--line);padding-top:11px}
+.rev{font-size:11.5px;color:var(--muted);padding:6px 0}
+.rev + .rev{border-top:1px solid var(--line)}
+.rev b{color:var(--ink-2);font-weight:600}
+.danger-btn{width:100%;padding:13px;border-radius:10px;border:1.5px solid var(--danger);color:var(--danger);
+            font-weight:700;font-size:14px;margin-top:12px;background:var(--surface);
+            transition:background-color var(--t-tap) var(--ease-out)}
+/* it had NO press state, so at the moment of contact it gave nothing back —
+   half of why "withdraw doesn't work" read as a dead button rather than a
+   blocked one */
+.danger-btn:active{background:var(--accent-soft)}
+/* ---------- the withdraw confirmation, IN THE SHEET ----------
+   This used to be window.confirm(). An artifact runs inside a SANDBOXED iframe,
+   and without allow-modals the browser silently ignores confirm() and hands back
+   false — so the handler took its `if(!confirm(...)) return` branch and the
+   button did nothing at all, with no error anywhere. A destructive step still
+   needs a deliberate second tap, so the confirmation is built from the page's
+   own elements, which no sandbox can refuse. */
+.confirmbox{margin-top:12px;padding:12px 13px;border-radius:10px;
+            border:1.5px solid var(--danger);background:var(--surface)}
+.confirmbox p{margin:0 0 11px;font-size:12.5px;color:var(--ink-2);line-height:1.5}
+.confirmact{display:flex;gap:8px}
+.confirmact button{flex:1;padding:12px 10px;border-radius:9px;font-weight:700;font-size:14px;
+                   transition:filter var(--t-tap) var(--ease-out),
+                              background-color var(--t-tap) var(--ease-out)}
+.cyes{background:var(--danger);color:#FFFFFF}
+.cyes:active{filter:brightness(.92)}
+.cno{background:var(--surface-2);color:var(--ink);border:1px solid var(--line-strong)}
+.cno:active{background:var(--sunk)}
+
+/* ---------- identity gate ---------- */
+.gate{max-width:420px;margin:0 auto;padding:40px 20px;display:flex;flex-direction:column;gap:14px}
+.gate h1{font-size:20px;margin:0;font-weight:700}
+.gate p{font-size:13.5px;color:var(--muted);margin:0;line-height:1.55}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.pick button{padding:22px 10px;border-radius:12px;border:1.5px solid var(--line-strong);background:var(--surface);
+             font-size:16px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:8px;
+             transition:border-color var(--t-sel) var(--ease-settle)}
+.pick .dot{width:13px;height:13px}
+
+/* ---------- print: the RECORD, and nothing else ----------
+   The dark palette used to survive into print because only body{color} was
+   reset, so a dark-mode viewer's "save as PDF" produced --ink #EAEFF4 on white
+   paper at 1.16:1 — a near-blank page, for the one artifact a mediator reads.
+   Re-declaring the light values here is not a theme-only definition: every
+   token's primary value still lives in the bare :root above. */
+@media print{
+  :root{
+    --paper:#fff; --surface:#fff; --surface-2:#fff; --sunk:#fff;
+    --ink:#151A21; --ink-2:#3C4753; --muted:#5D6874; --faint:#636F7D;
+    --line:#B0B0B0; --line-strong:#767676;
+    --accent:#1F4F54; --warn:#886918; --danger:#9B3025;
+    --dad:#2C4880; --mom:#653576;
+    --sev1:#EFC9AE; --sev2:#E0A377; --sev3:#CE7A4B; --sev4:#B0512C; --sev5:#8A2F1C;
+    --sev1-edge:#BF7A46; --sev2-edge:#B9703F; --sev3-edge:#A0552C; --sev4-edge:#8A3C1E; --sev5-edge:#6B2214;
+    --sev1-ink:#1A0C04; --sev2-ink:#1A0C04; --sev3-ink:#1A0C04; --sev4-ink:#FFFFFF; --sev5-ink:#FFFFFF;
+    --shadow:none;
+  }
+  .tabs,.start,.linkbtn,.bigbtn,.scrim,.no-print,.whoami,.syncline{display:none !important}
+  body{background:#fff;font-size:11pt}
+  .app{max-width:none}
+  /* the header carries the only title on the page — it was hidden, so the
+     printed exhibit had no heading at all */
+  .hdr{position:static;border-bottom:1px solid var(--line-strong)}
+  .entry{break-inside:avoid}
+  /* the fold is a screen convenience. On paper the record is complete: every
+     withdrawn entry prints, struck through, and the toggle itself does not. */
+  .voidlist[hidden]{display:block !important}
+  .voidlist .entry{opacity:1}
+  .voidtog{display:none !important}
+  .daylist{box-shadow:none;border:1px solid var(--line)}
+  .stripe{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  /* only the record prints. The draft form and the pattern charts are working
+     surfaces, not the record, and a chart built on a thin sample is the last
+     thing that should travel as an exhibit. */
+  #v-history[hidden]{display:flex !important}
+  #v-log,#v-patterns,#v-trends{display:none !important}
+}
+
+/* ---------- reduced motion ----------
+   MUST BE THE LAST RULE IN THIS SHEET: it re-enables one animation by coming
+   later, not by !important. Tokens are redefined rather than durations
+   blanket-killed, so the JS that reads --t-exit collapses together with the
+   CSS instead of holding an invisible scrim over the app. 1ms not 0ms so any
+   transitionend/animationend listener still fires. */
+@media (prefers-reduced-motion:reduce){
+  :root{--t-tap:1ms;--t-sel:1ms;--t-amb:1ms;--t-view:1ms;--t-exit:1ms;--t-grow:1ms}
+  /* travel and arrival removed outright, not merely shortened */
+  .view.entering,
+  .scrim.opening,.scrim.opening .sheet,
+  .scrim.closing,.scrim.closing .sheet,
+  .view.entering .lockbar i,.view.entering .bar .fill,.flash{animation:none !important}
+  /* ...but NOT the live dot. It is the only thing on screen that says a
+     tantrum is being TIMED, it is an opacity crossfade with zero travel, and
+     so it sits outside the vestibular class this query exists to protect.
+     Softened and slowed, not deleted. */
+  @keyframes pulse-soft{0%,100%{opacity:1}50%{opacity:.55}}
+  .livedot{animation:pulse-soft 2400ms var(--ease-loop) infinite}
+}
+</style>
+
+<div class="app" id="app" hidden>
+  <header class="hdr">
+    <div class="hdr-row">
+      <h1 class="brand">Bad Behavior Log</h1>
+      <div class="whoami"><span class="dot" id="meDot"></span><span id="meName"></span></div>
+    </div>
+    <div class="syncline"><span class="syncdot" id="syncDot"></span><span id="syncMsg">Connecting…</span></div>
+  </header>
+
+  <main>
+    <!-- ============ LOG ============ -->
+    <section class="view" id="v-log" role="tabpanel" aria-labelledby="t-log" tabindex="0">
+      <!-- logSlot first: the Start button is the mid-tantrum path and must not
+           sit below a three-question survey. Both still land above the fold. -->
+      <div id="logSlot"></div>
+      <div id="dailySlot"></div>
+    </section>
+
+    <!-- ============ HISTORY ============ -->
+    <section class="view" id="v-history" role="tabpanel" aria-labelledby="t-history" tabindex="0" hidden>
+      <div>
+        <h2 class="sec">The record</h2>
+        <p class="sub">Nothing is deleted or overwritten: an edit is kept as a revision, and a withdrawn entry
+           stays visible, struck through. Each entry carries the name chosen on the device that wrote it —
+           the app cannot verify who typed it.</p>
+      </div>
+      <div id="histSlot"></div>
+      <button class="bigbtn ghost no-print" id="printBtn">Print or save as PDF</button>
+    </section>
+
+    <!-- ============ TRENDS ============ -->
+    <section class="view" id="v-trends" role="tabpanel" aria-labelledby="t-trends" tabindex="0" hidden>
+      <div>
+        <h2 class="sec">Trends</h2>
+        <p class="sub">How much is being recorded, day by day. This is the only view that can tell a
+           repeating pattern apart from one difficult stretch.</p>
+      </div>
+      <div id="trendSlot"></div>
+    </section>
+
+    <!-- ============ PATTERNS ============ -->
+    <section class="view" id="v-patterns" role="tabpanel" aria-labelledby="t-patterns" tabindex="0" hidden>
+      <div>
+        <h2 class="sec">Patterns</h2>
+        <p class="sub">Each card stays locked until a count here would mean more than chance.</p>
+      </div>
+      <div class="note-strip">
+        <b>This log does not rank the two homes.</b> The two parents log different amounts, and that gap
+        looks identical to a gap in behavior. No chart here compares one parent against the other. Each
+        entry in the record does show which name logged it, so nothing below should be read as being
+        about one home.
+      </div>
+      <div id="patSlot"></div>
+    </section>
+  </main>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" id="t-log" aria-controls="v-log" aria-selected="true" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Log</span><span class="cnt" id="cnt-log">—</span></button>
+    <button class="tab" role="tab" id="t-history" aria-controls="v-history" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg><span>Record</span><span class="cnt" id="cnt-history">—</span></button>
+    <button class="tab" role="tab" id="t-trends" aria-controls="v-trends" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l5-5 3.5 3.5L20 8"/><path d="M20 13V8h-5"/></svg><span>Trends</span><span class="cnt" id="cnt-trends">—</span></button>
+    <button class="tab" role="tab" id="t-patterns" aria-controls="v-patterns" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>Patterns</span><span class="cnt" id="cnt-patterns">—</span></button>
+  </nav>
+</div>
+
+<div class="gate" id="gate" hidden>
+  <h1>Who is logging?</h1>
+  <p>Pick the name your entries are stamped with. This is a label, not a sign-in — the app cannot tell who
+     is holding the phone. Saved on this device; each parent has their own link, so it is asked once.</p>
+  <div class="pick">
+    <button id="pickDad"><span class="dot dad"></span>Dad</button>
+    <button id="pickMom"><span class="dot mom"></span>Mom</button>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"
+     aria-labelledby="sheetTitle" tabindex="-1"></div></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   Bad Behavior Log
+   Single child by design.
+   ponytail: one child only. Upgrade path = add a `kid` field to every
+   entry + day record and a selector in the header; the month-document
+   keys become `<YYYY-MM>__<who>__<kid>`. Nothing else changes.
+   ============================================================ */
+
+/* Anchors are deliberately OBSERVABLE EVENTS, not tones or conclusions.
+   Two parents in two houses must be able to rate the same episode the same
+   way, or every severity figure in this app is quietly corrupted. Anything
+   that grades the adult's attempt ("can't redirect", "inconsolable") was
+   removed for that reason: it scores the parent, not the episode. */
+const SEV = [
+  {n:1, anchor:"complaining, asking again"},
+  {n:2, anchor:"crying, won't move"},
+  {n:3, anchor:"screaming, won't respond"},
+  {n:4, anchor:"hitting, throwing, kicking"},
+  {n:5, anchor:"20m+ or risk of injury"}
+];
+/* The anchor is stored lowercase because inside a picker tile it reads as a
+   continuation ("Severity 3 of 5: screaming, won't respond"). As the row's
+   headline it is a sentence and starts like one. ONE resolver, so the two
+   places can never drift apart. */
+function anchorOf(n){
+  const a = (SEV.find(s=>s.n===n)||{}).anchor;
+  return a ? a.charAt(0).toUpperCase() + a.slice(1) : "";
+}
+const TRIGGERS = [
+  ["no","Told no"],["transition","Stop playing"],["screen","Screen taken"],
+  ["hungry","Hungry"],["tired","Tired"],["dressing","Dressing"],
+  ["kid","Another kid"],["task","Couldn't do it"],["unknown","No trigger seen"]
+];
+const PLACES = [
+  ["home","Home"],["daycare","Daycare"],["public","Out in public"],
+  ["car","Car"],["other-home","Another house"],["elsewhere","Elsewhere"]
+];
+const RESPONSES = [
+  ["rode","Waited it out"],["held","Held them"],["choice","Gave a choice"],
+  ["quiet","Quiet space"],["distract","Distraction"],["gavein","Gave what was asked"],
+  ["asleep","Fell asleep"]
+];
+const SLEEP = [["rough","Woke a lot"],["ok","Some waking"],["good","Slept through"]];
+
+const LABEL = {};
+TRIGGERS.concat(PLACES, RESPONSES, SLEEP).forEach(([k,v])=>LABEL[k]=v);
+
+/* The fields a parent may add their own options to. Severity is deliberately
+   NOT one of them: it is a 1-5 instrument with fixed behavioural anchors, and
+   a sixth rung would make every severity figure incomparable. */
+const CUSTOM_FIELDS = {trig:TRIGGERS, place:PLACES, resp:RESPONSES};
+const CUSTOM_MAX = 24;      /* per field, per parent */
+const CUSTOM_LEN = 40;
+
+/* Normalising is what keeps a custom option from fragmenting the charts:
+   "Bath time", "bath  time" and "BATH TIME" must all be ONE category, or the
+   Triggers card turns into a list of near-duplicates with n=1 each. */
+function customKey(text){
+  const norm = String(text||"").trim().toLowerCase().replace(/\s+/g," ");
+  return norm ? "c:" + norm : null;
+}
+/* If what they typed is just a built-in under another capitalisation, reuse the
+   BUILT-IN key rather than minting a parallel category beside it. */
+function matchBuiltin(field, text){
+  const norm = String(text||"").trim().toLowerCase().replace(/\s+/g," ");
+  const hit = (CUSTOM_FIELDS[field]||[]).find(([k,v])=>v.toLowerCase() === norm);
+  return hit ? hit[0] : null;
+}
+/* The ONE place a stored key becomes text on screen. Built-ins first, then any
+   option either parent added, then the raw key so an unknown never renders blank. */
+function labelOf(key){
+  if(key == null) return "";
+  if(LABEL[key]) return LABEL[key];
+  const c = Store.optionLabel(key);
+  if(c) return c;
+  return String(key).indexOf("c:") === 0 ? String(key).slice(2) : String(key);
+}
+/* built-ins plus every custom option, from BOTH parents — so one parent adding
+   "Bath time" stops the other from inventing "bathtime" next to it */
+function optionsFor(field){
+  return (CUSTOM_FIELDS[field]||[]).concat(Store.customOptions(field));
+}
+
+const WHO_NAME = {dad:"Dad", mom:"Mom"};
+
+/* ---------- motion helpers ----------
+   A CSS transition needs a BEFORE-change style. A node that was not in the
+   document at the previous style resolution has none, so its first computed
+   style is also its final one and NO TRANSITION IS GENERATED. Every renderer
+   here rebuilds its subtree with innerHTML="", which means a `transition:`
+   on .chip could never once have run: the chip was born already-selected.
+   press() flips aria-pressed on the existing nodes instead, which is the
+   only way the slow fade is reachable at all. */
+function press(group, hit){
+  group.querySelectorAll("[aria-pressed]").forEach(b=>{
+    b.setAttribute("aria-pressed", String(b === hit));
+  });
+}
+/* One source of truth for timing: JS reads the CSS token, so a hide-after-fade
+   delay can never drift from the animation it is waiting on, and the
+   reduced-motion block collapses both at once. */
+function ms(name){
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  if(v.endsWith("ms")) return parseFloat(v) || 0;
+  if(v.endsWith("s"))  return (parseFloat(v) || 0) * 1000;
+  return 0;
+}
+
+/* ---------- small helpers ---------- */
+const $ = id => document.getElementById(id);
+const el = (tag, cls, txt) => { const n=document.createElement(tag); if(cls)n.className=cls; if(txt!=null)n.textContent=txt; return n; };
+const pad = n => String(n).padStart(2,"0");
+const ymOf = ms => { const d=new Date(ms); return d.getFullYear()+"-"+pad(d.getMonth()+1); };
+const dayOf = ms => { const d=new Date(ms); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); };
+const clockOf = ms => { const d=new Date(ms); let h=d.getHours(); const ap=h<12?"am":"pm"; h=h%12||12; return h+":"+pad(d.getMinutes())+ap; };
+
+function durText(sec){
+  if(sec==null) return "—";
+  if(sec < 60) return sec+"s";
+  const m = Math.floor(sec/60), s = sec%60;
+  if(m < 60) return s ? m+"m "+s+"s" : m+"m";
+  return Math.floor(m/60)+"h "+pad(m%60)+"m";
+}
+function stopwatch(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  if(m < 60) return pad(m)+":"+pad(s);
+  return Math.floor(m/60)+":"+pad(m%60)+":"+pad(s);
+}
+function median(arr){
+  if(!arr.length) return null;
+  const a = arr.slice().sort((x,y)=>x-y), i = Math.floor(a.length/2);
+  return a.length%2 ? a[i] : Math.round((a[i-1]+a[i])/2);
+}
+function friendlyDay(dstr){
+  const today = dayOf(Date.now());
+  const yd = dayOf(Date.now()-864e5);
+  if(dstr===today) return "Today";
+  if(dstr===yd) return "Yesterday";
+  const [y,m,d] = dstr.split("-").map(Number);
+  return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"long", month:"short", day:"numeric"});
+}
+
+/* ============================================================
+   STORE — the one place that knows where data lives.
+   Swapping the artifact db for Supabase replaces this object only:
+   the app below never touches claude.* directly.
+   ============================================================ */
+const Store = {
+  db:null, mode:"connecting",
+  entries:{},   // docId -> {who, month, items:{id:entry}}
+  days:{},      // docId -> {who, month, items:{date:card}}
+  options:{},   // docId -> {who, items:{key:{field,label,at}}}   one doc per PARENT
+  listeners:[],
+  chain:{},     // docPath -> promise, so writes to one document never overlap
+
+
+  onChange(fn){ this.listeners.push(fn); },
+  emit(){ this.listeners.forEach(f=>f()); },
+
+  /* A snapshot used to REPLACE the local document, which threw away anything
+     written on this device that the server had not acknowledged yet — the other
+     failure behind "I logged more and they didn't populate".
+     Union is the correct merge here precisely because this record is append-only:
+     nothing is ever deleted, so an item missing from one side is always an item
+     the other side has not seen, never a deletion to honour. Where both sides
+     hold the same item, MORE REVISIONS means newer. */
+  mergeDoc(bag, id, incoming){
+    const local = bag[id];
+    if(!local || !local.items){ bag[id] = incoming; return; }
+    const items = Object.assign({}, incoming.items || {});
+    Object.keys(local.items).forEach(k=>{
+      const mine = local.items[k], theirs = items[k];
+      if(!theirs) items[k] = mine;
+      else if((mine.revs||[]).length > (theirs.revs||[]).length) items[k] = mine;
+    });
+    bag[id] = Object.assign({}, incoming, {items:items});
+  },
+
+  entryDoc(who, ym){ return ym + "__" + who; },
+
+  async init(){
+    /* No artifact runtime at all (the standalone GitHub Pages copy): there is no
+       server to send to, now or later, so nothing is queued and the header must
+       not promise a sync that can never happen.
+       ponytail: device-only trial. Ceiling = one phone, no sharing between the
+       two parents. Upgrade path = the Supabase swap described above. */
+    if(!window.claude){ this.mode = "device"; this.loadLocal(); this.emit(); return; }
+    let db = null;
+    try { db = await window.claude?.use?.("db"); } catch(e){ db = null; }
+    this.db = db;
+    if(!db){ this.mode = "local"; this.loadLocal(); this.emit(); return; }
+    this.mode = "sync";
+    try {
+      db.collection("entries").onSnapshot(
+        snap => { snap.docs.forEach(d=>{ this.mergeDoc(this.entries, d.id, d.data()||{}); });
+                  this.saveLocal(); this.emit(); },
+        err  => { this.mode = "local"; this.loadLocal(); this.emit(); }
+      );
+      db.collection("options").onSnapshot(
+        snap => { snap.docs.forEach(d=>{ this.mergeDoc(this.options, d.id, d.data()||{}); });
+                  this.saveLocal(); this.emit(); },
+        err  => {}
+      );
+      db.collection("days").onSnapshot(
+        snap => { snap.docs.forEach(d=>{ this.mergeDoc(this.days, d.id, d.data()||{}); });
+                  this.saveLocal(); this.emit(); },
+        err  => { this.mode = "local"; this.emit(); }   /* was swallowed: the daily
+                card could stop syncing with the header still saying "Shared" */
+      );
+    } catch(e){ this.mode="local"; this.loadLocal(); }
+    this.emit();
+    this.flushOutbox();
+  },
+
+  /* ---- local mirror + outbox: a tantrum in a dead-signal car park still logs ---- */
+  loadLocal(){
+    try {
+      const raw = localStorage.getItem("bbl.mirror");
+      if(raw){ const m = JSON.parse(raw); this.entries = m.entries||{}; this.days = m.days||{}; this.options = m.options||{}; }
+    } catch(e){}
+  },
+  saveLocal(){
+    try { localStorage.setItem("bbl.mirror", JSON.stringify({entries:this.entries, days:this.days, options:this.options})); } catch(e){}
+  },
+  queue(kind, docId){
+    try {
+      const q = JSON.parse(localStorage.getItem("bbl.outbox")||"[]");
+      if(!q.some(x=>x.kind===kind && x.docId===docId)) q.push({kind, docId});
+      localStorage.setItem("bbl.outbox", JSON.stringify(q));
+    } catch(e){}
+  },
+  async flushOutbox(){
+    if(!this.db) return;
+    let q = [];
+    try { q = JSON.parse(localStorage.getItem("bbl.outbox")||"[]"); } catch(e){ return; }
+    if(!q.length) return;
+    /* clear first, then re-push through the chain: a failure re-queues itself */
+    try { localStorage.setItem("bbl.outbox", "[]"); } catch(e){}
+    for(const job of q){ if(this[job.kind] && this[job.kind][job.docId]) this.push(job.kind, job.docId); }
+  },
+
+  /* ---- writes. Each parent only ever writes their OWN month document,
+          so two parents logging at the same moment can never clobber
+          one another under last-writer-wins. ---- */
+  /* Every write here replaces the WHOLE month document. Two saves a few seconds
+     apart therefore raced: both read the doc, both sent their own copy, and
+     whichever landed last won — so logging several entries quickly could leave
+     only one of them on the server, and the next snapshot echoed that loss back
+     over the screen. Writes to one document are now chained, and the body is
+     read at SEND time rather than captured at call time, so a queued write
+     always carries every entry accumulated so far. */
+  push(kind, docId){
+    const path = kind + "/" + docId;
+    if(!this.db){ if(this.mode !== "device") this.queue(kind, docId); return Promise.resolve(); }
+    const prev = this.chain[path] || Promise.resolve();
+    const next = prev.then(()=>{
+      const body = this[kind][docId];
+      if(!body) return;
+      return this.db.doc(path).set(body);
+    }).catch(()=>{ this.queue(kind, docId); });
+    this.chain[path] = next;
+    return next;
+  },
+
+  putEntry(who, entry){
+    const docId = this.entryDoc(who, ymOf(entry.start));
+    const doc = this.entries[docId] || {who, month: ymOf(entry.start), items:{}};
+    doc.items = Object.assign({}, doc.items);
+    doc.items[entry.id] = entry;
+    this.entries[docId] = doc;
+    this.saveLocal(); this.emit();
+    return this.push("entries", docId);
+  },
+
+  /* Append-only, same guarantee as entries: a corrected sleep rating keeps the
+     previous one as a revision rather than overwriting it. The History tab
+     promises nothing is ever overwritten, and day cards are part of the record
+     a third party reads — so the promise has to hold for them too. */
+  putDay(who, dstr, card){
+    const ym = dstr.slice(0,7);
+    const docId = this.entryDoc(who, ym);
+    const doc = this.days[docId] || {who, month:ym, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    const prev = doc.items[dstr];
+    if(prev){
+      const was = {}; let changed = false;
+      ["sleep","nap","flag"].forEach(k=>{
+        if(prev[k] !== card[k]){ was[k] = prev[k] == null ? null : prev[k]; changed = true; }
+      });
+      if(changed) card = Object.assign({}, card,
+        {revs:(prev.revs||[]).concat([{at:Date.now(), was:was}])});
+      else card = Object.assign({}, card, {revs:prev.revs||[]});
+    }
+    doc.items[dstr] = card;
+    this.days[docId] = doc;
+    this.saveLocal(); this.emit();
+    return this.push("days", docId);
+  },
+
+  /* Custom options live in ONE DOCUMENT PER PARENT, keyed by `who` alone — the
+     same write-isolation rule as entries and day cards, so two parents adding an
+     option at the same moment still cannot clobber each other. They are READ as
+     a union of both, which is the point: it stops the two homes inventing
+     separate spellings of the same trigger. */
+  addOption(who, field, label){
+    const key = customKey(label);
+    if(!key) return null;
+    const doc = this.options[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    if(!doc.items[key]){
+      const mine = Object.values(doc.items).filter(o=>o.field===field).length;
+      if(mine >= CUSTOM_MAX) return null;
+      doc.items[key] = {field:field, label:String(label).trim().slice(0,CUSTOM_LEN), at:Date.now()};
+    }
+    this.options[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("options", who);
+    return key;
+  },
+  customOptions(field){
+    const seen = {}, out = [];
+    Object.values(this.options).forEach(doc=>{
+      Object.entries(doc.items||{}).forEach(([k,o])=>{
+        if(o && o.field === field && !seen[k]){ seen[k] = 1; out.push([k, o.label]); }
+      });
+    });
+    return out.sort((a,b)=>a[1].localeCompare(b[1]));
+  },
+  optionLabel(key){
+    let hit = null;
+    Object.values(this.options).forEach(doc=>{
+      const o = (doc.items||{})[key];
+      if(o && !hit) hit = o.label;
+    });
+    return hit;
+  },
+
+  /* ---- reads ---- */
+  allEntries(){
+    const out = [];
+    Object.values(this.entries).forEach(doc=>{
+      Object.values(doc.items||{}).forEach(e=>out.push(resolve(e)));
+    });
+    return out.sort((a,b)=>b.start-a.start);
+  },
+  dayCard(who, dstr){
+    const doc = this.days[this.entryDoc(who, dstr.slice(0,7))];
+    return doc && doc.items ? doc.items[dstr] : null;
+  },
+  allDayCards(){
+    const out = [];
+    Object.values(this.days).forEach(doc=>{
+      Object.entries(doc.items||{}).forEach(([d,c])=>out.push(Object.assign({date:d, who:doc.who}, c)));
+    });
+    return out;
+  }
+};
+
+/* Append-only resolution: the stored record keeps its original fields
+   forever; every edit is a revision layered on top at read time. */
+function resolve(raw){
+  const e = Object.assign({}, raw);
+  const revs = raw.revs || [];
+  e.voided = false;
+  revs.forEach(r=>{
+    if(r.void) e.voided = true;
+    if(r.patch) Object.assign(e, r.patch);
+  });
+  e.revs = revs;
+  /* A withdrawal is not an edit. Counting every revision meant a withdrawn entry
+     that had never been changed still read "EDITED 1 TIME" beside "WITHDRAWN",
+     which in a record a third party reads implies a correction that never
+     happened. Only a revision carrying a PATCH changed what the entry says. */
+  e.editCount = revs.filter(r=>r.patch).length;
+  e.edited = e.editCount > 0;
+  e.orig = raw;
+  return e;
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const State = {
+  me:null,
+  tab:"log",
+  draft:null,      // {start, end, sev, trig, place, resp, note, measured}
+  flash:null,      // transient "what was just saved" confirmation
+  tick:null,
+  editing:null,
+  showVoided:{}    /* day -> is its withdrawn group open. Outside the DOM, because
+                      renderHistory rebuilds its whole subtree on every echo. */
+};
+
+/* ============================================================
+   IDENTITY — personal links (#dad / #mom), remembered per device
+   ============================================================ */
+function bootIdentity(){
+  const h = (location.hash||"").replace("#","").toLowerCase().trim();
+  if(h==="dad"||h==="mom"){
+    State.me = h;
+    try{ localStorage.setItem("bbl.me", h); }catch(e){}
+  } else {
+    try{ const s = localStorage.getItem("bbl.me"); if(s==="dad"||s==="mom") State.me = s; }catch(e){}
+  }
+  if(State.me){ showApp(); } else { $("gate").hidden = false; }
+}
+function chooseMe(who){
+  State.me = who;
+  try{ localStorage.setItem("bbl.me", who); }catch(e){}
+  $("gate").hidden = true;
+  showApp();
+}
+function showApp(){
+  $("gate").hidden = true;
+  $("app").hidden = false;
+  $("meName").textContent = WHO_NAME[State.me];
+  $("meDot").className = "dot " + State.me;
+  renderAll();
+}
+
+/* ============================================================
+   RENDER — sync status
+   ============================================================ */
+function renderSync(){
+  const d = $("syncDot"), m = $("syncMsg");
+  /* An unsent entry outranks the connection state. mode flips to "sync" the
+     moment a db handle exists — before any document has been read and
+     regardless of whether a write later failed into the outbox — so without
+     this check the header can claim the other parent sees an entry that never
+     left the phone. The page cannot observe the other device at all, so it
+     now claims reach ("can open this"), never delivery or readership. */
+  let pending = 0;
+  try { pending = JSON.parse(localStorage.getItem("bbl.outbox")||"[]").length; } catch(e){}
+  if(pending){
+    d.className = "syncdot local";
+    m.textContent = pending + (pending===1 ? " entry" : " entries") + " not sent yet — on this device only";
+    return;
+  }
+  if(Store.mode === "device"){
+    d.className = "syncdot local";
+    m.textContent = "Trial copy — saved on this device only, not shared";
+  } else if(Store.mode === "sync"){
+    d.className = "syncdot ok";
+    m.textContent = "Shared log — both parents can open this";
+  } else if(Store.mode === "local"){
+    d.className = "syncdot local";
+    m.textContent = "Not syncing — saved on this device only";
+  } else {
+    d.className = "syncdot";
+    m.textContent = "Connecting…";
+  }
+}
+
+/* ============================================================
+   RENDER — daily card
+   ============================================================ */
+function renderDaily(){
+  const slot = $("dailySlot");
+  const today = dayOf(Date.now());
+  const card = Store.dayCard(State.me, today) || {};
+  const complete = card.sleep && card.nap != null;
+  const head = complete ? "Today's start is logged" : "How did today start?";
+  const subt = complete ? "Tap to change." : "Logs the quiet days too.";
+
+  /* Patch, never rebuild, while today's card is already on screen. save() ->
+     putDay() -> emit() -> renderAll() lands here SYNCHRONOUSLY, so a rebuild
+     would swap the tapped chip for a born-selected clone and the fade would be
+     over before it began. Patching also lets .daily.done cross over slowly. */
+  const live = slot.firstElementChild;
+  if(live && live.getAttribute("data-day") === today){
+    live.classList.toggle("done", !!complete);
+    live.querySelector(".htxt").textContent = head;
+    live.querySelector(".dtick").hidden = !complete;
+    live.querySelector("p.sub").textContent = subt;
+    live.querySelectorAll("[data-tick]").forEach(t=>{
+      t.hidden = card[t.getAttribute("data-tick")] == null;
+    });
+    live.querySelectorAll(".chips[data-k]").forEach(g=>{
+      const want = String(card[g.getAttribute("data-k")]);
+      g.querySelectorAll("button[data-v]").forEach(b=>{
+        b.setAttribute("aria-pressed", String(b.getAttribute("data-v") === want));
+      });
+    });
+    return;
+  }
+
+  slot.innerHTML = "";
+  const box = el("div", "daily" + (complete ? " done" : ""));
+  box.setAttribute("data-day", today);
+  const h = el("h3");
+  const dt = el("span","tick dtick","✓"); dt.hidden = !complete; dt.setAttribute("aria-hidden","true");
+  h.appendChild(dt);
+  h.appendChild(el("span","htxt", head));
+  box.appendChild(h);
+  box.appendChild(el("p", "sub", subt));
+
+  const mk = (label, key, opts, cur, onPick) => {
+    const q = el("div","q");
+    const lab = el("div","qlab");
+    lab.id = "dl-" + key;
+    lab.appendChild(el("span",null,label));
+    const tk = el("span","tick","✓");
+    tk.setAttribute("data-tick", key);
+    tk.setAttribute("aria-hidden","true");
+    tk.hidden = cur == null;
+    lab.appendChild(tk);
+    q.appendChild(lab);
+    const c = el("div","chips");
+    c.setAttribute("data-k", key);
+    c.setAttribute("role","radiogroup");
+    c.setAttribute("aria-labelledby", lab.id);
+    opts.forEach(([k,v])=>{
+      const b = el("button","chip sm",v);
+      b.setAttribute("data-v", k);
+      b.setAttribute("aria-pressed", String(cur===k));
+      b.onclick = ()=>{ press(c, b); tk.hidden = false; onPick(k); };   /* flip first, then write */
+      c.appendChild(b);
+    });
+    q.appendChild(c);
+    return q;
+  };
+  const save = patch => {
+    const next = Object.assign({}, Store.dayCard(State.me, today)||{}, patch, {at:Date.now()});
+    Store.putDay(State.me, today, next);
+  };
+  box.appendChild(mk("Sleep last night", "sleep", SLEEP, card.sleep, v=>save({sleep:v})));
+  box.appendChild(mk("Napped today", "nap", [["yes","Yes"],["no","No"]], card.nap, v=>save({nap:v})));
+  box.appendChild(mk("Anything unusual", "flag", [["sick","Sick"],["offroutine","Out of routine"],["none","Normal day"]], card.flag, v=>save({flag:v})));
+  slot.appendChild(box);
+}
+
+/* ============================================================
+   RENDER — the log tab
+   ============================================================ */
+let flashT = null;
+function renderLog(){
+  const slot = $("logSlot");
+  slot.innerHTML = "";
+
+  if(State.flash){
+    const fl = el("div","flash");
+    fl.setAttribute("role","status");
+    const t = el("span","tick","✓"); t.setAttribute("aria-hidden","true");
+    fl.appendChild(t);
+    fl.appendChild(el("span",null,State.flash));
+    slot.appendChild(fl);
+  }
+
+  if(!State.draft){
+    const start = el("button","start");
+    start.innerHTML = "";
+    start.appendChild(el("span",null,"Start timing"));
+    start.onclick = beginLive;
+    slot.appendChild(start);
+
+    const alt = el("button","linkbtn","Log one that already ended");
+    alt.onclick = beginRetro;
+    slot.appendChild(alt);
+
+    slot.appendChild(todayStrip());
+    return;
+  }
+  slot.appendChild(draftForm());
+}
+
+function todayStrip(){
+  const today = dayOf(Date.now());
+  const mine = Store.allEntries().filter(e=>dayOf(e.start)===today && !e.voided);
+  const box = el("div","panel");
+  box.appendChild(el("p","eyebrow","Today"));
+  if(!mine.length){
+    box.appendChild(el("p","sub","Nothing logged today, by either parent."));
+    return box;
+  }
+  const row = el("div","chips");
+  mine.slice().reverse().forEach(e=>{
+    const c = el("span","chip sm");
+    c.style.borderColor = "var(--sev"+e.sev+"-edge)";
+    c.textContent = clockOf(e.start)+" · "+e.sev+" · "+durText(e.dur);
+    row.appendChild(c);
+  });
+  box.appendChild(row);
+  const worst = Math.max.apply(null, mine.map(e=>e.sev));
+  const tot = mine.reduce((a,e)=>a+(e.dur||0),0);
+  box.appendChild(el("p","sub", mine.length+" logged · worst was "+worst+"/5, "+
+    anchorOf(worst).toLowerCase()+" · "+durText(tot)+" total"));
+  return box;
+}
+
+function beginLive(){
+  State.draft = {start:Date.now(), end:null, measured:true, sev:null, trig:null, place:null, resp:null, note:""};
+  State.tick = setInterval(()=>{
+    /* tick the digits, NOT their parent: setting textContent on #liveTimer is
+       specified as "remove all children", which deleted the .livedot span one
+       second after it appeared — the pulse that says a tantrum is being timed
+       lived for exactly one tick. */
+    const t = $("liveClock");
+    if(t && State.draft && !State.draft.end) t.textContent = stopwatch(Math.floor((Date.now()-State.draft.start)/1000));
+  }, 1000);
+  renderLog();
+}
+function beginRetro(){
+  const n = new Date();
+  State.draft = {start:Date.now(), end:Date.now(), measured:false, estMin:5,
+    /* WHEN it happened, asked rather than assumed. Without this the entry was
+       stamped `Date.now() - duration`, so a 4:30pm episode logged at 8:45pm
+       once the child was asleep was recorded as an 8:40pm episode — and the
+       Time of day card, the whole point of this log, read that fabricated
+       hour. The late-afternoon window is exactly the window a parent cannot
+       stop to run a live timer in, so the displacement hit the finding
+       hardest. Defaults to now, which is correct for "it just ended". */
+    whenT: pad(n.getHours()) + ":" + pad(n.getMinutes()),
+    sev:null, trig:null, place:null, resp:null, note:""};
+  renderLog();
+}
+/* Resolve a wall-clock "HH:MM" against the nearest past occurrence. A time
+   later than now can only mean yesterday — logging after midnight is normal. */
+function resolveWhen(hhmm){
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm||"").trim());
+  if(!m) return null;
+  const h = +m[1], mi = +m[2];
+  if(h > 23 || mi > 59) return null;
+  const d = new Date(); d.setHours(h, mi, 0, 0);
+  let t = d.getTime();
+  if(t > Date.now()) t -= 864e5;
+  return t;
+}
+/* Says out loud which day the entered time resolved to, so a post-midnight
+   entry cannot silently land on the wrong date. */
+function whenNote(hhmm){
+  const t = resolveWhen(hhmm);
+  if(t == null) return "Enter a time to place this entry.";
+  const d = dayOf(t);
+  const when = d === dayOf(Date.now()) ? "today" : (d === dayOf(Date.now()-864e5) ? "yesterday" : friendlyDay(d));
+  return "Recorded as " + when + " at " + clockOf(t) + " · length is an estimate";
+}
+
+function endDraft(){
+  if(!State.draft) return;
+  State.draft.end = Date.now();
+  if(State.tick){ clearInterval(State.tick); State.tick = null; }
+  renderLog();
+}
+function cancelDraft(){
+  if(State.tick){ clearInterval(State.tick); State.tick = null; }
+  State.draft = null;
+  renderLog();
+}
+
+let chipRowSeq = 0;
+function chipRow(labelText, required, opts, cur, onPick, missing, toggle, addField, onAdded){
+  const f = el("div","field" + (missing ? " missing" : ""));
+  const lab = el("div","qlab");
+  lab.id = "cr" + (++chipRowSeq);
+  lab.appendChild(el("span",null,labelText));
+  /* the missing state changes the WORD, not only the colour — otherwise the
+     only signal that a required answer is outstanding is a red hue */
+  const answered = cur != null;
+  let reqTag = null;
+  if(required){
+    reqTag = el("span","req" + (answered ? " ok" : ""),
+                answered ? "✓ ANSWERED" : (missing ? "STILL NEEDED" : "REQUIRED"));
+    lab.appendChild(reqTag);
+  }
+  f.appendChild(lab);
+  const c = el("div","chips");
+  c.setAttribute("role", toggle ? "group" : "radiogroup");
+  c.setAttribute("aria-labelledby", lab.id);
+  if(missing) c.setAttribute("aria-invalid","true");
+  opts.forEach(([k,v])=>{
+    const b = el("button","chip",v);
+    b.setAttribute("aria-pressed", String(cur===k));
+    b.onclick = ()=>{
+      /* read the LIVE attribute: after an in-place flip with no re-render the
+         captured `cur` is stale by design */
+      const off = toggle && b.getAttribute("aria-pressed") === "true";
+      press(c, off ? null : b);
+      /* updated in place, because a selection-only tap deliberately does not
+         re-render — without this the confirmation would never appear */
+      if(reqTag){
+        reqTag.className = "req" + (off ? "" : " ok");
+        reqTag.textContent = off ? "REQUIRED" : "✓ ANSWERED";
+      }
+      onPick(off ? null : k);
+    };
+    c.appendChild(b);
+  });
+
+  /* "+" — a parent can name what actually happened instead of being forced into
+     the nearest wrong option. Adding one RE-RENDERS the row (the option list
+     changed), which is why it cannot use the in-place flip the other chips do. */
+  if(addField){
+    const add = el("button","chip add");
+    add.setAttribute("aria-label","Add a different " + labelText.toLowerCase());
+    add.setAttribute("aria-expanded","false");
+    add.appendChild(el("span","plus","+"));
+    add.appendChild(el("span","addtxt","Other"));
+    c.appendChild(add);
+    f.appendChild(c);
+
+    const box = el("div","adder"); box.hidden = true;
+    const inp = document.createElement("input");
+    inp.type = "text"; inp.maxLength = CUSTOM_LEN;
+    inp.placeholder = "Name it in a word or two";
+    inp.setAttribute("aria-label", "New " + labelText.toLowerCase());
+    const go = el("button","addgo","Add");
+    const err = el("div","adderr"); err.hidden = true; err.setAttribute("role","alert");
+
+    const commit = ()=>{
+      const txt = inp.value.trim().replace(/\s+/g," ");
+      if(!txt){ inp.focus(); return; }
+      /* typing an existing option under another capitalisation reuses the
+         EXISTING key rather than minting a near-duplicate beside it */
+      const builtin = matchBuiltin(addField, txt);
+      let key = builtin;
+      if(!key){
+        const existing = Store.customOptions(addField).find(([k,v])=>k === customKey(txt));
+        key = existing ? existing[0] : Store.addOption(State.me, addField, txt);
+      }
+      if(!key){
+        err.textContent = "That is as many as this field holds (" + CUSTOM_MAX + ").";
+        err.hidden = false;
+        return;
+      }
+      onPick(key);
+      if(onAdded) onAdded();
+    };
+    go.onclick = commit;
+    inp.onkeydown = ev=>{ if(ev.key === "Enter"){ ev.preventDefault(); commit(); } };
+    add.onclick = ()=>{
+      const open = box.hidden;
+      box.hidden = !open;
+      add.setAttribute("aria-expanded", String(open));
+      if(open) inp.focus();
+    };
+    box.appendChild(inp); box.appendChild(go);
+    f.appendChild(box);
+    f.appendChild(err);
+    return f;
+  }
+
+  f.appendChild(c);
+  return f;
+}
+
+function draftForm(){
+  const d = State.draft;
+  const running = d.measured && !d.end;
+  const wrap = el("div","panel");
+
+  /* timer */
+  const tw = el("div","timerwrap");
+  if(d.measured){
+    const t = el("div","timer" + (d.end ? " stopped" : "") + " mono");
+    t.id = "liveTimer";
+    const secs = Math.floor(((d.end||Date.now()) - d.start)/1000);
+    if(!d.end){
+      t.setAttribute("role","timer");      /* a live region that defaults to aria-live:off —
+                                              identified as a timer, silent while reading */
+      t.appendChild(el("span","livedot"));
+      const c = el("span","clock mono"); c.id = "liveClock"; c.textContent = stopwatch(secs);
+      t.appendChild(c);
+    }
+    else t.textContent = stopwatch(secs);
+    tw.appendChild(t);
+    tw.appendChild(el("div","timerlab", d.end ? "timed — "+durText(secs) : "running since "+clockOf(d.start)));
+  } else {
+    tw.appendChild(el("div","timerlab","Already ended"));
+
+    const wl = el("div","retro");
+    const w1 = el("label","retro-row");
+    w1.appendChild(el("span","retro-lab","Started at"));
+    const tin = document.createElement("input");
+    tin.type = "time"; tin.id = "whenT"; tin.value = d.whenT;
+    tin.setAttribute("aria-label","Time it started");
+    tin.oninput = ()=>{ d.whenT = tin.value; const n=$("whenNote"); if(n) n.textContent = whenNote(d.whenT); };
+    w1.appendChild(tin);
+    wl.appendChild(w1);
+
+    const w2 = el("label","retro-row");
+    w2.appendChild(el("span","retro-lab","Lasted about"));
+    const inp = document.createElement("input");
+    inp.type = "number"; inp.min = "1"; inp.id = "estMin"; inp.value = d.estMin;
+    inp.setAttribute("aria-label","Estimated length in minutes");
+    inp.oninput = ()=>{ d.estMin = Math.max(1, parseInt(inp.value||"1",10)); };
+    w2.appendChild(inp);
+    w2.appendChild(el("span","retro-unit","min"));
+    wl.appendChild(w2);
+    tw.appendChild(wl);
+    const note = el("div","whennote"); note.id = "whenNote"; note.textContent = whenNote(d.whenT);
+    tw.appendChild(note);
+  }
+  wrap.appendChild(tw);
+
+  /* severity */
+  const miss = d.missing && !d.sev;
+  const sf = el("div","field" + (miss ? " missing" : ""));
+  const sl = el("div","qlab"); sl.id = "sevlab";
+  sl.appendChild(el("span",null,"Severity"));
+  const sevTag = el("span","req" + (d.sev ? " ok" : ""),
+    d.sev ? "✓ ANSWERED" : (miss ? "STILL NEEDED" : "REQUIRED"));
+  sl.appendChild(sevTag);
+  sf.appendChild(sl);
+  const grid = el("div","sevgrid");
+  grid.setAttribute("role","radiogroup");
+  grid.setAttribute("aria-labelledby","sevlab");
+  SEV.forEach(s=>{
+    const b = el("button","sev s"+s.n);
+    b.setAttribute("aria-pressed", String(d.sev===s.n));
+    b.setAttribute("aria-label","Severity "+s.n+" of 5: "+s.anchor);
+    b.appendChild(el("span","swatch"));
+    b.appendChild(el("span","n mono",String(s.n)));
+    b.appendChild(el("span","anchor",s.anchor));
+    b.onclick = ()=>{
+      press(grid, b); d.sev = s.n;
+      sevTag.className = "req ok"; sevTag.textContent = "✓ ANSWERED";
+      if(d.missing) renderLog();
+    };
+    grid.appendChild(b);
+  });
+  sf.appendChild(grid);
+  wrap.appendChild(sf);
+
+  /* ponytail: after a failed save the form still re-renders on the first pick,
+     so THAT tap does not fade. Deliberate — an error state must correct itself
+     instantly, not over 260ms. Ceiling = the .missing classes and the "Still
+     needed" line are rebuilt rather than patched. Upgrade path = patch those
+     three nodes in place the way renderDaily does, then drop `if(d.missing)`. */
+  wrap.appendChild(chipRow("Trigger", true, optionsFor("trig"), d.trig,
+    v=>{ d.trig=v;  if(d.missing) renderLog(); }, d.missing && !d.trig, false, "trig", renderLog));
+  wrap.appendChild(chipRow("Where", true, optionsFor("place"), d.place,
+    v=>{ d.place=v; if(d.missing) renderLog(); }, d.missing && !d.place, false, "place", renderLog));
+
+  if(!running){
+    wrap.appendChild(chipRow("What ended it", false, optionsFor("resp"), d.resp,
+      v=>{ d.resp = v; }, false, true, "resp", renderLog));
+    const nf = el("div","field");
+    const nl = el("div","qlab","Note"); nl.id = "notelab";
+    nf.appendChild(nl);
+    const ta = document.createElement("textarea");
+    ta.id = "noteBox"; ta.value = d.note; ta.placeholder = "Both parents can read this.";
+    ta.setAttribute("aria-labelledby","notelab");
+    ta.oninput = ()=>{ d.note = ta.value; };
+    nf.appendChild(ta);
+    wrap.appendChild(nf);
+  }
+
+  /* the error goes BEFORE the button: it was appended after it, so the text
+     explaining the blocked save sat below the control being tapped */
+  if(d.missing){
+    const still = [];
+    if(!d.sev) still.push("severity");
+    if(!d.trig) still.push("trigger");
+    if(!d.place) still.push("where");
+    if(still.length){
+      const e = el("div","err","Still needed: " + still.join(", ") + ".");
+      e.setAttribute("role","alert");
+      wrap.appendChild(e);
+    }
+  }
+  if(running){
+    const b = el("button","bigbtn","Ended");
+    b.setAttribute("aria-label","Ended — stop the timer at " + durText(Math.floor((Date.now()-d.start)/1000)));
+    b.onclick = endDraft;
+    wrap.appendChild(b);
+  } else {
+    const b = el("button","bigbtn","Save");
+    b.onclick = saveDraft;
+    wrap.appendChild(b);
+  }
+
+  const c = el("button","linkbtn danger-link","Discard");
+  c.onclick = cancelDraft;
+  wrap.appendChild(c);
+  return wrap;
+}
+
+function saveDraft(){
+  const d = State.draft;
+  const missing = [];
+  if(!d.sev) missing.push("how bad");
+  if(!d.trig) missing.push("what set it off");
+  if(!d.place) missing.push("where");
+  if(missing.length){ d.missing = missing; renderLog(); return; }
+  d.missing = null;
+
+  const dur = d.measured
+    ? Math.max(1, Math.round((d.end - d.start)/1000))
+    : Math.max(60, (d.estMin||1) * 60);
+  /* `measured` has always meant "the DURATION was timed". The timestamp needs
+     its own provenance: a retro entry's hour is now the one the parent typed,
+     not the hour they happened to open the app. */
+  const entered = d.measured ? null : resolveWhen(d.whenT);
+  const start = d.measured ? d.start : (entered == null ? Date.now() - dur*1000 : entered);
+
+  const entry = {
+    id: "e" + start.toString(36) + Math.random().toString(36).slice(2,7),
+    who: State.me,
+    start: start,
+    end: start + dur*1000,
+    dur: dur,
+    measured: !!d.measured,
+    timeSource: d.measured ? "timed" : (entered == null ? "assumed" : "entered"),
+    sev: d.sev, trig: d.trig, place: d.place,
+    resp: d.resp || null,
+    note: (d.note||"").trim(),
+    created: Date.now(),
+    revs: []
+  };
+  Store.putEntry(State.me, entry);
+  if(State.tick){ clearInterval(State.tick); State.tick = null; }
+  State.draft = null;
+  /* Saving was silent — the form just vanished. Name what was actually written,
+     never a generic "done": this is a record, and the confirmation should be
+     checkable against the row it created. */
+  State.flash = "Saved · " + clockOf(start) + " · severity " + entry.sev + " · " + durText(dur);
+  clearTimeout(flashT);
+  flashT = setTimeout(()=>{ State.flash = null; if(!State.draft) renderLog(); }, 6000);
+  renderAll();
+}
+
+/* ============================================================
+   RENDER — history
+   ============================================================ */
+function renderHistory(){
+  const slot = $("histSlot");
+  slot.innerHTML = "";
+  const all = Store.allEntries();
+  if(!all.length){
+    slot.appendChild(emptyBox("Nothing logged yet","The first entry you save will appear here, stamped with the time and who logged it."));
+    return;
+  }
+  const groups = {};
+  all.forEach(e=>{ const d = dayOf(e.start); (groups[d] = groups[d]||[]).push(e); });
+
+  Object.keys(groups).sort().reverse().forEach(dstr=>{
+    const g = el("div","daygroup");
+    const hd = el("div","dayhdr");
+    hd.appendChild(el("span","d",friendlyDay(dstr)));
+    const live  = groups[dstr].filter(e=>!e.voided);
+    const gone  = groups[dstr].filter(e=>e.voided);
+    hd.appendChild(el("span","m", live.length + (live.length===1?" entry":" entries") +
+      (gone.length ? " · " + gone.length + " withdrawn" : "")));
+    g.appendChild(hd);
+
+    if(live.length){
+      const list = el("div","daylist");
+      live.forEach(e=>list.appendChild(entryRow(e)));
+      g.appendChild(list);
+    } else {
+      g.appendChild(el("p","nolive","Every entry logged on this day was withdrawn."));
+    }
+
+    /* Withdrawn entries FOLD, they are never removed. Nothing here is deleted —
+       that append-only guarantee is the whole reason this record would stand up
+       to a third-party read — but three struck-through rows around one live one
+       buries the day. They collapse behind a count, print expanded, and the day
+       header always states how many there are, so a folded entry is never a
+       hidden one. State lives outside the DOM because this list is rebuilt from
+       scratch on every store echo. */
+    if(gone.length){
+      const open = !!State.showVoided[dstr];
+      const tog = el("button","voidtog");
+      tog.setAttribute("aria-expanded", String(open));
+      tog.appendChild(el("span","vt-caret", open ? "▾" : "▸"));
+      tog.appendChild(el("span",null, gone.length + (gone.length===1 ? " withdrawn entry" : " withdrawn entries") +
+        " — kept in the record"));
+      const box = el("div","daylist voidlist");
+      box.hidden = !open;
+      gone.forEach(e=>box.appendChild(entryRow(e)));
+      tog.onclick = ()=>{
+        const now = !State.showVoided[dstr];
+        State.showVoided[dstr] = now;
+        /* flipped in place: a rebuild here would scroll the day out from under
+           the finger that just tapped it */
+        box.hidden = !now;
+        tog.setAttribute("aria-expanded", String(now));
+        tog.querySelector(".vt-caret").textContent = now ? "▾" : "▸";
+      };
+      g.appendChild(tog);
+      g.appendChild(box);
+    }
+    slot.appendChild(g);
+  });
+}
+
+function entryRow(e){
+  const mine = e.who === State.me;
+  const row = el(mine ? "button" : "div", "entry" + (mine ? " mine" : "") + (e.voided ? " voided" : ""));
+  const stripe = el("span","stripe b"+e.sev, String(e.sev));
+  stripe.setAttribute("aria-hidden","true");   /* the row's own label names the severity */
+  row.appendChild(stripe);
+
+  const b = el("div","ebody");
+  const top = el("div","etop");
+  top.appendChild(el("span","etime",clockOf(e.start)));
+  const dur = el("span","edur mono");
+  dur.textContent = durText(e.dur);
+  if(!e.measured){ const s=el("span","est"," est"); dur.appendChild(s); }
+  top.appendChild(dur);
+  b.appendChild(top);
+
+  /* The HEADLINE is the observed behaviour, carrying its rung class so the type
+     escalates. It used to be the trigger, with this line sitting in the grey
+     meta row as 13px throwaway metadata — so the row named what a parent
+     guessed caused it louder than what the child actually did. */
+  const anchor = anchorOf(e.sev);
+  b.appendChild(el("div","etitle a"+e.sev, anchor || ("Severity " + e.sev)));
+
+  const meta = el("div","emeta");
+  meta.appendChild(el("span","etrig", labelOf(e.trig)));
+  meta.appendChild(el("span",null,"·"));
+  meta.appendChild(el("span",null, labelOf(e.place)));
+  if(e.resp){ meta.appendChild(el("span",null,"·")); meta.appendChild(el("span",null,"ended: "+labelOf(e.resp))); }
+  meta.appendChild(el("span","badge "+e.who, WHO_NAME[e.who]));
+  if(e.edited) meta.appendChild(el("span","badge edited","edited " + e.editCount + (e.editCount===1?" time":" times")));
+  if(e.voided) meta.appendChild(el("span","badge","withdrawn"));
+  b.appendChild(meta);
+
+  if(e.note) b.appendChild(el("div","enote",e.note));
+  row.appendChild(b);
+
+  if(mine){
+    row.onclick = ()=>openEdit(e);
+    row.setAttribute("aria-label", "Your entry, " + friendlyDay(dayOf(e.start)) + " " + clockOf(e.start) +
+      ", severity " + e.sev + " of 5, " + anchor + ", after " + labelOf(e.trig) + ". Tap to revise.");
+  } else {
+    /* the glyph stays as the visual cue but is hidden from AT, which otherwise
+       announced a bare "locked" with no subject; the meaning goes on the row */
+    const lk = el("span","lock","🔒");
+    lk.setAttribute("aria-hidden","true");
+    row.appendChild(lk);
+    row.setAttribute("aria-label", WHO_NAME[e.who] + " logged this entry. Severity " + e.sev +
+      " of 5, " + anchor + ", after " + labelOf(e.trig) + ". Only " +
+      WHO_NAME[e.who] + "'s link can revise it.");
+  }
+  return row;
+}
+
+function emptyBox(title, msg){
+  const d = el("div","empty");
+  d.appendChild(el("p",null,title));
+  d.appendChild(el("small",null,msg));
+  return d;
+}
+
+/* ============================================================
+   EDIT SHEET — append-only. Nothing is overwritten.
+   ============================================================ */
+let sheetT = null;
+function openEdit(e){
+  State.editing = {id:e.id, sev:e.sev, trig:e.trig, place:e.place, resp:e.resp, note:e.note||""};
+  State.returnTo = document.activeElement;
+  drawSheet(e);
+  const sc = $("scrim");
+  clearTimeout(sheetT);
+  sc.classList.remove("closing");
+  sc.hidden = false;
+  void sc.offsetWidth;                 /* restart the enter animation deterministically */
+  sc.classList.add("opening");
+  $("app").setAttribute("inert","");   /* one attribute instead of a hand-rolled focus trap */
+  $("sheet").focus();
+}
+function closeSheet(){
+  const sc = $("scrim");
+  /* idempotent: the x, a scrim tap, Escape and commitRevision all land here,
+     and Escape's guard is still true while the exit is playing */
+  if(sc.hidden || sc.classList.contains("closing")) return;
+  sc.classList.remove("opening");
+  sc.classList.add("closing");         /* CSS drops pointer-events at once */
+  State.editing = null;
+  $("app").removeAttribute("inert");
+  if(State.returnTo && State.returnTo.focus) State.returnTo.focus();
+  State.returnTo = null;
+  clearTimeout(sheetT);
+  /* hidden is driven by a timer, not animationend: a missed event would leave a
+     full-screen scrim over a crisis app, the worst failure available here.
+     The delay reads the same token the animation uses, so they cannot drift. */
+  sheetT = setTimeout(()=>{ sc.hidden = true; sc.classList.remove("closing"); }, ms("--t-exit"));
+}
+
+function drawSheet(e){
+  const s = $("sheet");
+  s.innerHTML = "";
+  const d = State.editing;
+
+  const hd = el("div","sheethd");
+  const l = el("div");
+  const ht = el("h3",null,"Your entry — " + friendlyDay(dayOf(e.start)) + ", " + clockOf(e.start));
+  ht.id = "sheetTitle";
+  l.appendChild(ht);
+  l.appendChild(el("p","sub","Changes are saved as a revision. The original stays in the record."));
+  hd.appendChild(l);
+  const x = el("button","x","×"); x.setAttribute("aria-label","Close"); x.onclick = closeSheet;
+  hd.appendChild(x);
+  s.appendChild(hd);
+
+  /* Every control below flips in place and does NOT redraw the sheet. Redrawing
+     wiped the textarea's caret and the iOS keyboard, and reset the sheet's
+     scroll to the top on any tap near the bottom. */
+  const sf = el("div","field");
+  const sl = el("div","qlab","Severity"); sl.id = "sheetSev";
+  sf.appendChild(sl);
+  const grid = el("div","sevgrid");
+  grid.setAttribute("role","radiogroup");
+  grid.setAttribute("aria-labelledby","sheetSev");
+  SEV.forEach(sv=>{
+    const b = el("button","sev s"+sv.n);
+    b.setAttribute("aria-pressed", String(d.sev===sv.n));
+    b.setAttribute("aria-label","Severity "+sv.n+" of 5: "+sv.anchor);
+    b.appendChild(el("span","swatch"));
+    b.appendChild(el("span","n mono",String(sv.n)));
+    b.appendChild(el("span","anchor",sv.anchor));
+    b.onclick = ()=>{ press(grid, b); d.sev = sv.n; };
+    grid.appendChild(b);
+  });
+  sf.appendChild(grid);
+  s.appendChild(sf);
+
+  s.appendChild(chipRow("Trigger", false, optionsFor("trig"), d.trig, v=>{ d.trig=v; }, false, false, "trig", ()=>drawSheet(e)));
+  s.appendChild(chipRow("Where", false, optionsFor("place"), d.place, v=>{ d.place=v; }, false, false, "place", ()=>drawSheet(e)));
+  s.appendChild(chipRow("What ended it", false, optionsFor("resp"), d.resp, v=>{ d.resp=v; }, false, true, "resp", ()=>drawSheet(e)));
+
+  const nf = el("div","field");
+  const nl = el("div","qlab","Note"); nl.id = "sheetNote";
+  nf.appendChild(nl);
+  const ta = document.createElement("textarea");
+  ta.id = "editNote"; ta.value = d.note;
+  ta.setAttribute("aria-labelledby","sheetNote");
+  ta.oninput = ()=>{ d.note = ta.value; };
+  nf.appendChild(ta);
+  s.appendChild(nf);
+
+  const save = el("button","bigbtn","Save revision");
+  save.onclick = ()=>commitRevision(e);
+  s.appendChild(save);
+
+  /* Withdrawing asks twice, but with the page's own elements — never
+     window.confirm(), which a sandboxed artifact iframe ignores outright.
+     Swapped in place rather than by redrawing the sheet, so the note textarea
+     keeps its caret and the sheet keeps its scroll position. */
+  const delWrap = el("div","delwrap");
+  const del = el("button","danger-btn","Withdraw this entry");
+  del.setAttribute("aria-expanded","false");
+  del.onclick = ()=>{
+    delWrap.innerHTML = "";
+    const box = el("div","confirmbox");
+    box.setAttribute("role","group");
+    box.appendChild(el("p",null,"Withdraw this entry? It stays visible in the record, struck through. Nothing is erased, and it can be read back at any time."));
+    const act = el("div","confirmact");
+    const no = el("button","cno","Keep it");
+    no.onclick = ()=>{ delWrap.innerHTML = ""; delWrap.appendChild(del); del.setAttribute("aria-expanded","false"); del.focus(); };
+    const yes = el("button","cyes","Withdraw");
+    yes.onclick = ()=>commitRevision(e, true);
+    act.appendChild(no); act.appendChild(yes);
+    box.appendChild(act);
+    delWrap.appendChild(box);
+    yes.focus();
+  };
+  delWrap.appendChild(del);
+  s.appendChild(delWrap);
+
+  if(e.revs && e.revs.length){
+    const rl = el("div","revlist");
+    rl.appendChild(el("p","eyebrow","Revision history"));
+    e.revs.forEach((r,i)=>{
+      const line = el("div","rev");
+      const when = new Date(r.at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+      const what = r.void ? "withdrew the entry" : "changed " + Object.keys(r.patch||{}).map(k=>({sev:"severity",trig:"trigger",place:"place",resp:"what ended it",note:"note"}[k]||k)).join(", ");
+      line.innerHTML = "";
+      line.appendChild(el("b",null,"#"+(i+1)+" "));
+      line.appendChild(document.createTextNode(when + " — " + what));
+      rl.appendChild(line);
+    });
+    const o = el("div","rev");
+    o.appendChild(el("b",null,"original "));
+    o.appendChild(document.createTextNode(
+      new Date(e.orig.created).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}) +
+      " — severity " + e.orig.sev + ", " + labelOf(e.orig.trig) + ", " + labelOf(e.orig.place)
+    ));
+    rl.appendChild(o);
+    s.appendChild(rl);
+  }
+}
+
+function commitRevision(e, isVoid){
+  const d = State.editing;
+  const patch = {};
+  if(!isVoid){
+    if(d.sev !== e.sev) patch.sev = d.sev;
+    if(d.trig !== e.trig) patch.trig = d.trig;
+    if(d.place !== e.place) patch.place = d.place;
+    if((d.resp||null) !== (e.resp||null)) patch.resp = d.resp||null;
+    if((d.note||"") !== (e.note||"")) patch.note = d.note||"";
+    if(!Object.keys(patch).length){ closeSheet(); return; }
+  }
+  const docId = Store.entryDoc(e.who, ymOf(e.start));
+  const doc = Store.entries[docId];
+  if(!doc || !doc.items || !doc.items[e.id]){ closeSheet(); return; }
+  const raw = doc.items[e.id];
+  const next = Object.assign({}, raw);
+  next.revs = (raw.revs||[]).concat([ isVoid ? {at:Date.now(), by:State.me, void:true} : {at:Date.now(), by:State.me, patch:patch} ]);
+  Store.putEntry(e.who, next);
+  closeSheet();
+  renderAll();
+}
+
+/* ============================================================
+   PATTERNS
+   ============================================================ */
+/* Returns either an open card or a COMPACT LOCKED ROW. Seven full-height
+   dashed boxes each repeating the same sentence was the bulk of the noise on
+   this tab; a locked card has one fact to convey and gets one line for it.
+   `unit` matters because n means a different thing in five of the seven cards —
+   a parent with 12 entries could not tell why a card was still locked. */
+function card(title, sub, n, need, unit, bodyFn){
+  if(need && n < need){
+    const r = el("div","lockrow");
+    const top = el("div","lockrow-top");
+    top.appendChild(el("span","lockrow-t",title));
+    top.appendChild(el("span","lockrow-n mono", n + "/" + need));
+    r.appendChild(top);
+    const bar = el("div","lockbar");
+    const i = el("i"); i.style.width = Math.max(0, Math.min(100, 100*n/need)) + "%";
+    bar.appendChild(i);
+    r.appendChild(bar);
+    r.appendChild(el("div","lockrow-u", "needs " + need + " " + unit));
+    r.setAttribute("aria-label", title + " — locked, " + n + " of " + need + " " + unit);
+    r.setAttribute("data-locked","1");
+    return r;
+  }
+  const c = el("div","pcard");
+  const hd = el("div","pchdr");
+  hd.appendChild(el("h3",null,title));
+  hd.appendChild(el("span","n mono", String(n)));
+  c.appendChild(hd);
+  c.appendChild(el("p","pcsub",sub));
+  bodyFn(c);
+  return c;
+}
+
+function barChart(rows, unit){
+  const max = Math.max.apply(null, rows.map(r=>r.v).concat([1]));
+  const box = el("div","bars");
+  rows.forEach(r=>{
+    const b = el("div","bar");
+    b.appendChild(el("span","lab",r.k));
+    const t = el("div","track");
+    const f = el("div","fill");
+    /* a zero draws NO bar. The old Math.max(2,…) plus min-width:2px painted a
+       visible sliver for v=0, so "no days" and an empty weekday both showed a
+       bar — fabricated liveliness on an honest zero. */
+    f.style.width = (r.v > 0 ? Math.max(1.5, 100*r.v/max) : 0) + "%";
+    if(r.color) f.style.background = r.color;
+    t.appendChild(f);
+    b.appendChild(t);
+    const valTxt = r.label != null ? r.label : (r.v + (unit||""));
+    b.appendChild(el("span","val mono", valTxt));
+    /* the value lives in text, not a title= tooltip: tooltips never open on
+       touch, which is the only input this app has */
+    b.setAttribute("aria-label", r.k + ": " + valTxt);
+    box.appendChild(b);
+  });
+  return box;
+}
+
+function renderPatterns(){
+  const slot = $("patSlot");
+  slot.innerHTML = "";
+  const all = Store.allEntries().filter(e=>!e.voided);
+  const n = all.length;
+
+  const open = [], locked = [];
+  const add = (title, sub, have, need, unit, body) => {
+    const node = card(title, sub, have, need, unit, body);
+    (node.getAttribute("data-locked") ? locked : open).push(node);
+  };
+  const weeks = new Set(all.map(e=>{
+    const d = new Date(e.start); d.setHours(0,0,0,0);
+    d.setDate(d.getDate() - ((d.getDay()+6)%7));      // ISO-ish Monday key
+    return dayOf(d.getTime());
+  })).size;
+
+  /* ---------------- time of day ---------------- */
+  add("Time of day",
+    "The hour of day each entry was recorded. An entry logged after the fact is placed at the time the parent typed, which they may be estimating.",
+    n, 15, "entries",
+    c=>{
+      const buckets = new Array(24).fill(0);
+      all.forEach(e=>buckets[new Date(e.start).getHours()]++);
+      const peakCount = Math.max.apply(null, buckets);
+      const scale = Math.max(1, peakCount);
+      const grid = el("div","hours");
+      const mkRow = (from,to)=>{
+        for(let h=from; h<to; h++){
+          const cell = el("div","hr");
+          const sq = el("div","cell");
+          const v = buckets[h];
+          if(v){
+            sq.style.background = "var(--accent)";
+            /* floor raised from .25 so the low end of the range stays visible
+               against an outlined empty cell */
+            sq.style.opacity = String(0.45 + 0.55*(v/scale));
+          }
+          /* the count was reachable only by a title= tooltip, which never opens
+             on touch — the only input this app has */
+          sq.setAttribute("aria-label",(h%12||12)+(h<12?"am":"pm")+" — "+v+(v===1?" entry":" entries"));
+          cell.appendChild(sq);
+          cell.appendChild(el("span","hl mono", String(h%12||12)));
+          grid.appendChild(cell);
+        }
+      };
+      mkRow(0,12); mkRow(12,24);
+      c.appendChild(grid);
+      const lg = el("div","hourlegend");
+      lg.appendChild(el("span",null,"midnight → noon (top row)"));
+      lg.appendChild(el("span",null,"noon → midnight (bottom row)"));
+      c.appendChild(lg);
+
+      /* A named busiest hour is an argmax over 24 bins, and indexOf() hands
+         every tie to the EARLIEST hour — which at n=15 named a pre-6am hour
+         far more often than chance and actively suppressed the late-afternoon
+         window this card exists to find. Report a pre-registered window share
+         instead, and only once there is enough data to mean anything. */
+      if(n >= 40){
+        let win = 0;
+        for(let h=14; h<19; h++) win += buckets[h];
+        const pct = Math.round(100*win/n), flat = Math.round(100*5/24);
+        c.appendChild(el("p","pcsub","Between 2pm and 7pm: " + win + " of " + n +
+          " entries (" + pct + "%). An even spread across the day would put about " + flat + "% here."));
+      } else {
+        c.appendChild(el("p","pcsub","A figure for the late-afternoon window appears at 40 entries — " +
+          n + " so far. Below that, the tallest bar in 24 is usually chance."));
+      }
+    });
+
+  /* ---------------- day of week ---------------- */
+  add("Day of the week",
+    "Entries counted by the weekday they were recorded on.",
+    n, 60, "entries",
+    c=>{
+      const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      const cnt = new Array(7).fill(0);
+      all.forEach(e=>cnt[new Date(e.start).getDay()]++);
+      c.appendChild(barChart(names.map((k,i)=>({k:k, v:cnt[i]})), ""));
+      c.appendChild(el("p","pcsub", weeks < 8
+        ? "Only " + weeks + (weeks===1?" week":" weeks") + " recorded so far. With fewer than 8, one unusual week can set the tallest bar."
+        : weeks + " weeks recorded, so each weekday has about " + Math.round(n/7) + " entries behind it."));
+    });
+
+  /* ---------------- triggers ---------------- */
+  add("Triggers",
+    "How often each was selected as the trigger when the entry was logged. This is the logger's reading at the time, not an observed cause.",
+    n, 50, "entries",
+    c=>{
+      const cnt = {};
+      all.forEach(e=>cnt[e.trig] = (cnt[e.trig]||0)+1);
+      const rows = Object.entries(cnt).map(([k,v])=>({k:labelOf(k), v:v})).sort((a,b)=>b.v-a.v);
+      c.appendChild(barChart(rows, ""));
+    });
+
+  /* ---------------- length by what ended it ----------------
+     Retitled from "What ends it fastest". That title asked the card to rank
+     effectiveness, which this data cannot do at any sample size: the response
+     is chosen in reaction to how bad the episode already is, and severity
+     drives duration directly. So a response used on the hardest episodes
+     shows the longest median even when it genuinely helps — the ranking can
+     invert the true effect. The card now describes; it does not rank. */
+  const MIN_PER_RESP = 8;
+  const measured = all.filter(e=>e.measured && e.resp && e.resp !== "asleep");
+  add("Length by what ended it",
+    "Median recorded length, grouped by what was selected under “what ended it”. Timed entries only — estimates are excluded. What was tried was chosen in response to how the episode was already going, so a longer median can mean the episode was harder, not that the response was worse.",
+    measured.length, 24, "timed entries with a response",
+    c=>{
+      const by = {};
+      measured.forEach(e=>{ (by[e.resp] = by[e.resp]||[]).push(e.dur); });
+      const rows = Object.entries(by).filter(([k,v])=>v.length >= MIN_PER_RESP)
+        .map(([k,v])=>({k:labelOf(k), v:median(v), label:durText(median(v)) + "  n=" + v.length}))
+        .sort((a,b)=>a.v-b.v);
+      if(!rows.length){
+        c.appendChild(el("p","lockmsg","No response has " + MIN_PER_RESP +
+          " timed entries yet, so nothing here would separate from chance."));
+      } else {
+        c.appendChild(barChart(rows));
+        c.appendChild(el("p","pcsub","This is not a ranking of what works. The responses used on the hardest episodes will show the longest medians."));
+      }
+      const hidden = Object.entries(by).filter(([k,v])=>v.length < MIN_PER_RESP);
+      if(hidden.length) c.appendChild(el("p","pcsub","Not shown (fewer than " + MIN_PER_RESP + " timed): " +
+        hidden.map(([k,v])=>labelOf(k)+" ("+v.length+")").join(", ") + "."));
+      c.appendChild(el("p","pcsub","“Fell asleep” is left out — it is an outcome, not something that was tried."));
+    });
+
+  /* ---------------- giving what was asked ---------------- */
+  const withResp = all.filter(e=>e.resp);
+  add("Giving what was asked",
+    "How often “gave what was asked” was selected, out of entries where a response was recorded. The short-run and long-run effects of giving in can point in opposite directions; this card measures neither.",
+    withResp.length, 20, "entries with a response",
+    c=>{
+      const gaveCount = withResp.filter(e=>e.resp==="gavein").length;
+      const pct = Math.round(100*gaveCount/Math.max(1,withResp.length));
+      c.appendChild(barChart([
+        {k:"Given", v:gaveCount, label:gaveCount + " of " + withResp.length + " (" + pct + "%)"},
+        {k:"Not given", v:withResp.length-gaveCount, label:(withResp.length-gaveCount) + " of " + withResp.length}
+      ]));
+      /* The medians are computed over TIMED entries, a subset the unlock never
+         counted — so this printed an n=1 vs n=1 comparison, with no n shown,
+         directly under a sentence about what is worth watching. Gate them on
+         their own sample and always show both n. */
+      const gaveD  = all.filter(e=>e.measured && e.resp==="gavein").map(e=>e.dur);
+      const otherD = all.filter(e=>e.measured && e.resp && e.resp!=="gavein").map(e=>e.dur);
+      if(gaveD.length >= MIN_PER_RESP && otherD.length >= MIN_PER_RESP){
+        c.appendChild(el("p","pcsub","Median timed length when it was given: " + durText(median(gaveD)) +
+          " (n=" + gaveD.length + "). All other responses: " + durText(median(otherD)) + " (n=" + otherD.length + ")."));
+      } else {
+        c.appendChild(el("p","pcsub","A length comparison needs " + MIN_PER_RESP +
+          " timed entries on each side — " + gaveD.length + " and " + otherD.length + " so far."));
+      }
+      const days = new Set(all.map(e=>dayOf(e.start))).size;
+      c.appendChild(el("p","pcsub", days + " days recorded. This card does not compare one period against another, so it cannot show whether frequency is changing."));
+    });
+
+  /* ---------------- inferred changeovers ----------------
+     THE CHART WAS CUT, 2026-09-11, on the owner's ruling; the count stays.
+     Its two bars ("first 24h" against "later") were built entirely out of WHEN
+     EACH PARENT REACHES FOR THEIR PHONE — precisely the confound the note at
+     the top of this tab exists to prevent. A tall first-24h bar reads as "she
+     arrives and melts down", and that reading is available to anyone glancing
+     at it no matter what the caveat underneath says; caveats under a chart are
+     not read. The COUNT survives because it is stated as what it is: a property
+     of the log, not a claim about the child or either home. */
+  const flips = inferHandoffs(all);
+  add("Changeovers seen in the log (estimated)",
+    "No schedule is entered anywhere in this log. This counts the times logging passed from one parent to the other inside 36 hours — nothing more. An estimate can be off by many hours, and a changeover neither parent logged around is invisible here.",
+    flips.points.length, 20, "estimated changeovers",
+    c=>{
+      const big = el("div","tbig", String(flips.points.length));
+      big.appendChild(el("span","unit", flips.points.length===1 ? "changeover" : "changeovers"));
+      c.appendChild(big);
+      c.appendChild(el("p","pcsub","There is deliberately no chart of behaviour before or after a changeover. Any such chart would be drawn from how promptly each parent happens to log, which looks identical to a difference between the two homes — the one thing this tab does not do."));
+    });
+
+  /* ---------------- sleep ----------------
+     One observation = one PARENT-DAY. Previously the entry counts were pooled
+     across both parents while the sleep ratings were per-parent, so on a day
+     where the two filed different ratings the SAME tantrums were counted at
+     full weight into both the rough and the good group — dragging the groups
+     together and able to invert their order. Now each parent-day is scored
+     against only that parent's own entries for that date. */
+  const dayCards = Store.allDayCards().filter(d=>d.sleep);
+  add("Sleep and naps",
+    "Average number of entries a parent recorded on a day, grouped by the sleep rating that same parent filed for it. The rating and the entries come from one person on one day.",
+    dayCards.length, 20, "days with sleep logged",
+    c=>{
+      const byWhoDay = {};
+      all.forEach(e=>{ const k = e.who + "|" + dayOf(e.start); byWhoDay[k] = (byWhoDay[k]||0)+1; });
+      const groups = {rough:[], ok:[], good:[]};
+      dayCards.forEach(dc=>{
+        if(groups[dc.sleep]) groups[dc.sleep].push(byWhoDay[dc.who + "|" + dc.date] || 0);
+      });
+      const MIN_DAYS = 5;
+      const rows = [["rough","Woke a lot"],["ok","Some waking"],["good","Slept through"]].map(([k,lab])=>{
+        const g = groups[k];
+        if(g.length < MIN_DAYS) return {k:lab, v:0, label:(g.length ? g.length + "d — too few" : "no days")};
+        const avg = g.reduce((a,x)=>a+x,0)/g.length;
+        return {k:lab, v:Number(avg.toFixed(2)), label:avg.toFixed(1)+"/day  n="+g.length+"d"};
+      });
+      c.appendChild(barChart(rows));
+      const thin = rows.filter(r=>/too few|no days/.test(r.label)).length;
+      if(thin) c.appendChild(el("p","pcsub","A group needs " + MIN_DAYS + " days before its average is drawn."));
+      const nap = dayCards.filter(d=>d.nap==="no").length;
+      c.appendChild(el("p","pcsub", nap + " of " + dayCards.length + " days with a sleep rating also recorded no nap."));
+    });
+
+  open.forEach(c=>slot.appendChild(c));
+  if(locked.length){
+    const grp = el("div","lockgroup");
+    grp.appendChild(el("p","eyebrow", locked.length === 1
+      ? "One card still gathering data" : locked.length + " cards still gathering data"));
+    locked.forEach(r=>grp.appendChild(r));
+    slot.appendChild(grp);
+  }
+}
+
+/* Handoffs, inferred purely from who is logging — no schedule, no taps. */
+function inferHandoffs(all){
+  const asc = all.slice().sort((a,b)=>a.start-b.start);
+  const points = [];
+  for(let i=1;i<asc.length;i++){
+    if(asc[i].who !== asc[i-1].who){
+      const gapH = (asc[i].start - asc[i-1].start)/36e5;
+      if(gapH <= 36) points.push(asc[i-1].start + (asc[i].start - asc[i-1].start)/2);
+    }
+  }
+  return {points:points};
+}
+
+/* ============================================================
+   TABS + BOOT
+   ============================================================ */
+const TABS = ["log","history","trends","patterns"];
+let enterT = null;
+function setTab(name, focusTab){
+  State.tab = name;
+  TABS.forEach(t=>{
+    const v = $("v-"+t);
+    v.classList.remove("entering");
+    v.hidden = (t !== name);
+    $("t-"+t).setAttribute("aria-selected", String(t === name));
+    $("t-"+t).setAttribute("tabindex", t === name ? "0" : "-1");
+  });
+  const v = $("v-"+name);
+  /* forced reflow so re-adding the class restarts the animation deterministically
+     instead of relying on display:none having cancelled it */
+  void v.offsetWidth;
+  v.classList.add("entering");
+  clearTimeout(enterT);
+  /* removed on a timer, not animationend: the view's own fade ends at --t-view
+     while the bars inside are still growing at --t-grow, and cancelling the
+     class early would snap them to full width */
+  enterT = setTimeout(()=>v.classList.remove("entering"), ms("--t-view") + ms("--t-grow") + 40);
+  if(focusTab) $("t-"+name).focus();
+  window.scrollTo(0,0);   /* instant by design: a tall view plus a moving thumb */
+}
+function tabKey(ev){
+  const i = TABS.indexOf(State.tab);
+  let j = -1;
+  if(ev.key === "ArrowRight") j = (i+1) % TABS.length;
+  else if(ev.key === "ArrowLeft") j = (i-1+TABS.length) % TABS.length;
+  else if(ev.key === "Home") j = 0;
+  else if(ev.key === "End") j = TABS.length-1;
+  if(j < 0) return;
+  ev.preventDefault();
+  setTab(TABS[j], true);
+}
+
+/* ============================================================
+   TRENDS — entries against calendar time.
+   Every other card on Patterns is a lifetime histogram: it can say WHICH bin
+   holds the most, never whether things are changing. Without a series over
+   time you cannot tell a weekly rhythm from one bad fortnight.
+   ============================================================ */
+function renderTrends(){
+  const slot = $("trendSlot");
+  slot.innerHTML = "";
+  const all = Store.allEntries().filter(e=>!e.voided);
+  const cards = Store.allDayCards();
+
+  /* A day is RECORDED if anything at all was filed for it — an entry, or a daily
+     card saying the night was fine. A recorded day with no entries is a real
+     zero and is drawn as one; a day with no record at all is a gap and is drawn
+     differently. Collapsing those two is how a log flatters itself. */
+  const rec = {}, cnt = {}, worst = {};
+  cards.forEach(c=>{ rec[c.date] = true; });
+  all.forEach(e=>{
+    const d = dayOf(e.start);
+    rec[d] = true;
+    cnt[d] = (cnt[d]||0) + 1;
+    worst[d] = Math.max(worst[d]||0, e.sev);
+  });
+  const days = Object.keys(rec).sort();
+  if(days.length < 14){
+    const c = el("div","tcard");
+    c.appendChild(el("p","eyebrow","Not enough days yet"));
+    c.appendChild(el("p","sub","A day-by-day series needs at least 14 recorded days before a rise or fall "
+      + "means anything — " + days.length + " so far. A recorded day counts even when nothing happened, "
+      + "which is what the daily card is for."));
+    const bar = el("div","lockbar");
+    const i = el("i"); i.style.width = Math.round(100*days.length/14) + "%";
+    bar.appendChild(i); c.appendChild(bar);
+    slot.appendChild(c);
+    return;
+  }
+
+  const first = days[0];
+  const start = new Date(first.slice(0,4), +first.slice(5,7)-1, +first.slice(8,10));
+  const today = new Date(); today.setHours(0,0,0,0);
+  const span = [];
+  for(let t = start.getTime(); t <= today.getTime(); t += 864e5) span.push(dayOf(t));
+  const window = span.slice(-56);              /* eight weeks reads at phone width */
+  const max = Math.max.apply(null, window.map(d=>cnt[d]||0).concat([1]));
+
+  /* --- the series --- */
+  const c1 = el("div","tcard");
+  c1.appendChild(el("p","eyebrow","Entries per day"));
+  const series = el("div","series");
+  window.forEach(d=>{
+    const n = cnt[d]||0;
+    const col = el("div","scol" + (n ? "" : (rec[d] ? " zero" : " nodata")));
+    const bar = el("i");
+    if(n){
+      bar.style.height = Math.max(6, Math.round(100*n/max)) + "%";
+      bar.style.background = "var(--sev" + (worst[d]||1) + ")";
+      bar.style.border = "1px solid var(--sev" + (worst[d]||1) + "-edge)";
+    }
+    col.appendChild(bar);
+    col.setAttribute("aria-label", friendlyDay(d) + ": " +
+      (n ? n + (n===1?" entry":" entries") + ", worst severity " + worst[d]
+         : (rec[d] ? "recorded, none logged" : "no record")));
+    series.appendChild(col);
+  });
+  c1.appendChild(series);
+  const xs = el("div","sx");
+  xs.appendChild(el("span",null, friendlyDay(window[0])));
+  xs.appendChild(el("span",null,"today"));
+  c1.appendChild(xs);
+  const lg = el("div","tlegend");
+  const sw = (bg,edge,txt)=>{ const s=el("span"); const i=el("i");
+    i.style.background=bg; i.style.borderColor=edge; s.appendChild(i);
+    s.appendChild(el("span",null,txt)); return s; };
+  lg.appendChild(sw("var(--sev1)","var(--sev1-edge)","bar height = entries, colour = worst that day"));
+  lg.appendChild(sw("var(--line-strong)","var(--line-strong)","recorded, none logged"));
+  lg.appendChild(sw("transparent","var(--line)","no record that day"));
+  c1.appendChild(lg);
+  slot.appendChild(c1);
+
+  /* --- last 7 days against the 7 before --- */
+  const lastN = (n,off)=> span.slice(span.length-n-off, span.length-off);
+  const sum = ds => ds.reduce((a,d)=>a+(cnt[d]||0),0);
+  const recd = ds => ds.filter(d=>rec[d]).length;
+  const cur = lastN(7,0), prev = lastN(7,7);
+  const c2 = el("div","tcard");
+  c2.appendChild(el("p","eyebrow","Last 7 days"));
+  const big = el("div","tbig", String(sum(cur)));
+  big.appendChild(el("span","unit", sum(cur)===1 ? "entry" : "entries"));
+  c2.appendChild(big);
+  if(prev.length === 7 && recd(prev) >= 4 && recd(cur) >= 4){
+    const d = sum(cur) - sum(prev);
+    const cls = d > 0 ? "up" : (d < 0 ? "down" : "flat");
+    c2.appendChild(el("div","tdelta " + cls,
+      (d > 0 ? "+" : "") + d + " against the 7 days before (" + sum(prev) + ")"));
+  } else {
+    c2.appendChild(el("div","tdelta flat","Not enough recorded days either side to compare yet."));
+  }
+  c2.appendChild(el("p","pcsub","Both weeks are counts of what was LOGGED. A week where one parent "
+    + "logged less will look calmer whether or not it was. " + recd(cur) + " of 7 days recorded this week, "
+    + recd(prev) + " of 7 the week before."));
+  slot.appendChild(c2);
+
+  /* --- how complete the record is --- */
+  const c3 = el("div","tcard");
+  c3.appendChild(el("p","eyebrow","Coverage"));
+  const covered = span.filter(d=>rec[d]).length;
+  const pct = Math.round(100*covered/span.length);
+  const big3 = el("div","tbig", pct + "%");
+  big3.appendChild(el("span","unit","of days recorded"));
+  c3.appendChild(big3);
+  c3.appendChild(el("p","pcsub", covered + " of " + span.length + " days since logging began have an entry "
+    + "or a daily card. Gaps are days nobody recorded — they are not quiet days, and nothing above "
+    + "treats them as quiet."));
+  slot.appendChild(c3);
+}
+
+function renderAll(){
+  if(!State.me) return;
+  renderSync();
+  renderDaily();
+  /* A draft owns its subtree. Store.onChange -> renderAll fires when the OTHER
+     parent logs, or when the db echoes our own write, and that rebuilt the open
+     form mid-entry, dropping the caret, the iOS keyboard and any fade in
+     flight. renderLog's store-dependent half only renders when there is no
+     draft anyway, and all five draft lifecycle functions call it themselves. */
+  if(!State.draft) renderLog();
+  renderHistory();
+  renderTrends();
+  renderPatterns();
+  const all = Store.allEntries().filter(e=>!e.voided);
+  const today = dayOf(Date.now());
+  $("cnt-log").textContent = String(all.filter(e=>dayOf(e.start)===today).length);
+  $("cnt-history").textContent = String(all.length);
+  const days = new Set(all.map(e=>dayOf(e.start))).size;
+  $("cnt-patterns").textContent = days + (days===1?" day":" days");
+  const recDays = new Set(all.map(e=>dayOf(e.start)).concat(Store.allDayCards().map(c=>c.date))).size;
+  $("cnt-trends").textContent = recDays + "d";
+}
+
+$("pickDad").onclick = ()=>chooseMe("dad");
+$("pickMom").onclick = ()=>chooseMe("mom");
+TABS.forEach(t=>{
+  $("t-"+t).onclick = ()=>setTab(t);
+  $("t-"+t).onkeydown = tabKey;
+});
+$("printBtn").onclick = ()=>window.print();
+$("scrim").onclick = (ev)=>{ if(ev.target === $("scrim")) closeSheet(); };
+document.addEventListener("keydown", e=>{ if(e.key === "Escape" && !$("scrim").hidden) closeSheet(); });
+window.addEventListener("online", ()=>Store.flushOutbox());
+
+Store.onChange(()=>{ if(State.me) renderAll(); });
+bootIdentity();
+Store.init();
+
+/* ------------------------------------------------------------
+   SELF-CHECK — runs in the console on every load. Breaks loudly
+   if the append-only guarantee or the duration maths regress.
+   ------------------------------------------------------------ */
+(function selfcheck(){
+  const fail = [];
+  let ran = 0;
+  const ck = (name, cond) => { ran++; if(!cond) fail.push(name); };
+
+  // resolve() must layer revisions without destroying the original
+  const raw = {id:"x", who:"dad", start:0, sev:2, trig:"no", place:"home", note:"first", created:0,
+    revs:[{at:1, by:"dad", patch:{sev:4, note:"second"}}]};
+  const r = resolve(raw);
+  ck("revision applies", r.sev === 4 && r.note === "second");
+  ck("original preserved", r.orig.sev === 2 && r.orig.note === "first");
+  ck("edited flagged", r.edited === true && r.voided === false);
+
+  const v = resolve({id:"y", sev:1, revs:[{at:1, void:true}]});
+  ck("void flagged", v.voided === true);
+
+  const clean = resolve({id:"z", sev:3, revs:[]});
+  ck("clean entry not marked edited", clean.edited === false);
+
+  // duration formatting
+  ck("dur seconds", durText(45) === "45s");
+  ck("dur minutes", durText(120) === "2m");
+  ck("dur mixed", durText(150) === "2m 30s");
+  ck("dur hours", durText(3720) === "1h 02m");
+  ck("stopwatch pads", stopwatch(65) === "01:05");
+
+  ck("median odd", median([1,9,5]) === 5);
+  ck("median even", median([2,4,6,8]) === 5);
+  ck("median empty", median([]) === null);
+
+  // handoff inference: a flip inside 36h counts, a flip across a long gap does not
+  const near = inferHandoffs([{start:0,who:"dad"},{start:36e5*4,who:"mom"}]);
+  ck("near flip infers handoff", near.points.length === 1);
+  const far = inferHandoffs([{start:0,who:"dad"},{start:36e5*80,who:"mom"}]);
+  ck("far flip does not infer", far.points.length === 0);
+  ck("same parent infers nothing", inferHandoffs([{start:0,who:"dad"},{start:36e5,who:"dad"}]).points.length === 0);
+
+  // ---- the retro timestamp. This is the fix the Time of day card rests on:
+  // entries used to be stamped Date.now()-duration, so a 4:30pm episode logged
+  // at 8:45pm was recorded at 8:40pm.
+  (function(){
+    const now = new Date();
+    const mins = now.getHours()*60 + now.getMinutes();
+    // a time 60 minutes in the past must land today and in the past
+    const past = new Date(Date.now() - 36e5);
+    const pv = pad(past.getHours()) + ":" + pad(past.getMinutes());
+    const pr = resolveWhen(pv);
+    ck("resolveWhen accepts a past time", pr != null && pr <= Date.now());
+    ck("resolveWhen keeps it within the last 25h", pr != null && (Date.now()-pr) < 25*36e5);
+    // a time in the future can only mean yesterday
+    if(mins < 22*60){
+      const fut = new Date(Date.now() + 2*36e5);
+      const fr = resolveWhen(pad(fut.getHours())+":"+pad(fut.getMinutes()));
+      ck("resolveWhen rolls a future time back a day", fr != null && fr < Date.now());
+    } else { ck("resolveWhen rolls a future time back a day", true); }
+    ck("resolveWhen rejects junk", resolveWhen("") === null && resolveWhen("99:99") === null
+       && resolveWhen("nope") === null && resolveWhen("12:60") === null);
+    ck("resolveWhen accepts midnight", resolveWhen("00:00") !== null);
+  })();
+
+  // ---- custom options. Normalising is the whole defence against a Triggers
+  // chart that fragments into near-duplicates with n=1 each.
+  ck("customKey normalises case and spacing",
+     customKey("Bath time") === customKey("  BATH   TIME ") && customKey("Bath time") === "c:bath time");
+  ck("customKey rejects empty", customKey("") === null && customKey("   ") === null);
+  ck("customKey is namespaced away from built-ins", customKey("Told no").indexOf("c:") === 0);
+  ck("a built-in typed by hand reuses the built-in key",
+     matchBuiltin("trig","told no") === "no" && matchBuiltin("place","  HOME ") === "home");
+  ck("matchBuiltin does not cross fields", matchBuiltin("place","Told no") === null);
+  ck("matchBuiltin rejects a genuine new value", matchBuiltin("trig","Bath time") === null);
+  ck("labelOf falls back to the typed text for an unknown key",
+     labelOf("c:bath time") === "bath time");
+  ck("labelOf still resolves built-ins", labelOf("no") === LABEL["no"] && labelOf(null) === "");
+  (function(){
+    /* a real add, through the store, then read back by the resolver */
+    const before = JSON.stringify(Store.options);
+    const k = Store.addOption("dad","trig","Bath  Time");
+    ck("addOption returns the normalised key", k === "c:bath time");
+    ck("the added option is resolvable by label", labelOf(k) === "Bath  Time".trim().slice(0,CUSTOM_LEN));
+    ck("the added option is offered in that field",
+       optionsFor("trig").some(o=>o[0] === k));
+    ck("the added option does NOT leak into another field",
+       !optionsFor("place").some(o=>o[0] === k));
+    ck("re-adding the same text does not duplicate",
+       Store.addOption("dad","trig","bath time") === k &&
+       optionsFor("trig").filter(o=>o[0] === k).length === 1);
+    /* the per-field cap must actually refuse */
+    let last = "seed";
+    for(let i=0; i<CUSTOM_MAX + 2; i++) last = Store.addOption("dad","trig","capprobe " + i);
+    ck("the per-field cap refuses past CUSTOM_MAX", last === null);
+    ck("the cap counts per field, not per parent",
+       Store.addOption("dad","place","capprobe place") !== null);
+    Store.options = JSON.parse(before);   /* leave no test data in the record */
+    ck("the self-check left no option behind",
+       !optionsFor("trig").some(o=>o[0] === k) && optionsFor("trig").every(o=>o[1].indexOf("capprobe") !== 0));
+  })();
+
+  // ---- tap acknowledgement. A selection-only tap deliberately does NOT re-render,
+  // so every confirmation has to be updated in place; if it is not, the control
+  // silently gives no feedback at all. That was the reported bug.
+  (function(){
+    let picked = "none";
+    const row = chipRow("Trigger", true, [["a","Alpha"],["b","Beta"]], null,
+                        v=>{ picked = v; }, false);
+    const tag = row.querySelector(".req");
+    ck("an unanswered required field reads REQUIRED",
+       tag && tag.textContent === "REQUIRED" && !tag.className.match(/\bok\b/));
+    const first = row.querySelectorAll("button[aria-pressed]")[0];
+    first.onclick();
+    ck("tapping it flips the tag to ANSWERED",
+       tag.textContent === "✓ ANSWERED" && /\bok\b/.test(tag.className));
+    ck("tapping it still reports the pick", picked === "a");
+    ck("the tapped chip is the pressed one",
+       first.getAttribute("aria-pressed") === "true");
+
+    const pre = chipRow("Where", true, [["a","Alpha"]], "a", ()=>{}, false);
+    ck("an already-answered field opens as ANSWERED",
+       pre.querySelector(".req").textContent === "✓ ANSWERED");
+
+    /* a toggle row must be able to go BACK to unanswered */
+    const tog = chipRow("Ended", true, [["a","Alpha"]], "a", ()=>{}, false, true);
+    const tb = tog.querySelectorAll("button[aria-pressed]")[0];
+    tb.onclick();
+    ck("un-toggling returns the tag to REQUIRED",
+       tog.querySelector(".req").textContent === "REQUIRED");
+  })();
+
+  // ---- mergeDoc. A snapshot used to REPLACE the local document, discarding
+  // anything this device had written but the server had not acknowledged — one
+  // of the two reasons entries "didn't populate". Union is correct BECAUSE the
+  // record is append-only: an item on one side only is always one the other side
+  // has not seen, never a deletion to honour.
+  (function(){
+    const bag = {};
+    Store.mergeDoc(bag, "d1", {who:"dad", items:{a:{id:"a"}}});
+    ck("merge takes the incoming doc when there is no local one",
+       Object.keys(bag.d1.items).join() === "a");
+
+    bag.d2 = {who:"dad", items:{local:{id:"local"}}};
+    Store.mergeDoc(bag, "d2", {who:"dad", items:{remote:{id:"remote"}}});
+    ck("an unsynced local entry SURVIVES a snapshot that lacks it",
+       !!bag.d2.items.local && !!bag.d2.items.remote);
+
+    bag.d3 = {who:"dad", items:{x:{id:"x", sev:1, revs:[]}}};
+    Store.mergeDoc(bag, "d3", {who:"dad", items:{x:{id:"x", sev:9, revs:[]}}});
+    ck("with equal revisions the server copy wins", bag.d3.items.x.sev === 9);
+
+    bag.d4 = {who:"dad", items:{x:{id:"x", sev:5, revs:[{at:1},{at:2}]}}};
+    Store.mergeDoc(bag, "d4", {who:"dad", items:{x:{id:"x", sev:1, revs:[{at:1}]}}});
+    ck("a local edit is NOT rolled back by a staler server copy",
+       bag.d4.items.x.sev === 5 && bag.d4.items.x.revs.length === 2);
+
+    bag.d5 = {who:"dad", items:{x:{id:"x", sev:5, revs:[{at:1}]}}};
+    Store.mergeDoc(bag, "d5", {who:"dad", items:{x:{id:"x", sev:1, revs:[{at:1},{at:2}]}}});
+    ck("a newer server revision DOES win", bag.d5.items.x.sev === 1);
+
+    bag.d6 = {who:"dad", items:{keep:{id:"keep"}}};
+    Store.mergeDoc(bag, "d6", {who:"dad", month:"2026-09", items:{}});
+    ck("an empty snapshot never empties a local document",
+       !!bag.d6.items.keep && bag.d6.month === "2026-09");
+  })();
+
+  // ---- ms() reads the motion scale from CSS rather than duplicating it in JS
+  ck("ms parses a ms token", ms("--t-exit") > 0);
+  ck("ms parses seconds", (function(){
+      const d = document.documentElement;
+      d.style.setProperty("--t-probe","0.25s");
+      const r = ms("--t-probe");
+      d.style.removeProperty("--t-probe");
+      return r === 250; })());
+  ck("ms survives a missing token", ms("--t-nope") === 0);
+
+  // ---- an honest zero draws no bar. The old Math.max(2,...) painted a sliver
+  // for v=0, so "no days" and an empty weekday both showed data.
+  (function(){
+    const c = barChart([{k:"zero",v:0,label:"no days"},{k:"some",v:4}]);
+    const w = [];
+    (function walk(nd){ if(nd.className === "fill") w.push(nd.style.width);
+      (nd.children||[]).forEach(walk); })(c);
+    ck("a zero bar has no width", w[0] === "0%");
+    ck("a non-zero bar has width", w[1] === "100%");
+  })();
+
+  // ---- card() collapses below its threshold and opens at it
+  (function(){
+    const lo = card("T","s",3,10,"entries",()=>{});
+    const hi = card("T","s",10,10,"entries",c=>{ c.appendChild(el("p",null,"body ran")); });
+    ck("card locks below the threshold", lo.getAttribute("data-locked") === "1");
+    ck("card opens at the threshold", hi.getAttribute("data-locked") === null);
+  })();
+
+  // ---- SEVERITY MUST COMMUNICATE, NOT JUST INDEX.
+  // A digit in a coloured square is a rank, not a magnitude. The observed
+  // behaviour is the row's headline and escalates by rung; the number stays.
+  // If the headline ever silently reverts to the trigger — the thing a parent
+  // GUESSED caused it — these go red.
+  (function(){
+    ck("anchorOf sentence-cases the anchor", anchorOf(3) === "Screaming, won't respond");
+    ck("anchorOf covers all five rungs, all distinct",
+       new Set([1,2,3,4,5].map(anchorOf)).size === 5 && [1,2,3,4,5].every(n=>anchorOf(n).length > 3));
+    ck("anchorOf is empty for a rung that does not exist",
+       anchorOf(6) === "" && anchorOf(null) === "");
+    ck("anchorOf does not mutate SEV", SEV[2].anchor === "screaming, won't respond");
+
+    const mk = sev => entryRow(resolve({id:"h"+sev, who:"dad", start:Date.now(), dur:130,
+      measured:true, sev:sev, trig:"no", place:"home", resp:null, note:"", created:Date.now(), revs:[]}));
+    const row = mk(5), title = row.querySelector(".etitle");
+    ck("the row headline is the ANCHOR, not the trigger",
+       !!title && title.textContent === anchorOf(5) && title.textContent !== LABEL["no"]);
+    ck("the headline carries its rung class, so the type escalates",
+       !!title && /(^|\s)a5(\s|$)/.test(title.className));
+    ck("the rung class tracks the severity",
+       /(^|\s)a1(\s|$)/.test(mk(1).querySelector(".etitle").className));
+    ck("the NUMBER is still on the row — severity is never the word alone",
+       (row.querySelector(".stripe")||{}).textContent === "5");
+    ck("the trigger is still shown, demoted to the meta line",
+       (row.querySelector(".etrig")||{}).textContent === LABEL["no"]);
+    ck("the row's own label names the behaviour, not only the rank",
+       (row.getAttribute("aria-label")||"").indexOf(anchorOf(5)) > 0);
+    ck("an unknown rung still renders a headline rather than nothing",
+       mk(9).querySelector(".etitle").textContent === "Severity 9");
+  })();
+
+  // ---- A WITHDRAWAL IS NOT AN EDIT. Counting every revision made a withdrawn
+  // entry that was never corrected read "EDITED 1 TIME" next to "WITHDRAWN",
+  // implying a change that never happened — in a record a third party reads.
+  (function(){
+    const voidOnly = resolve({id:"v1", sev:3, revs:[{at:1, by:"dad", void:true}]});
+    ck("a withdrawal alone is not an edit",
+       voidOnly.voided === true && voidOnly.edited === false && voidOnly.editCount === 0);
+    const both = resolve({id:"v2", sev:3, revs:[{at:1, patch:{sev:4}}, {at:2, void:true}]});
+    ck("a real edit still counts, and the withdrawal does not inflate it",
+       both.edited === true && both.editCount === 1 && both.voided === true && both.sev === 4);
+    const twice = resolve({id:"v3", sev:1, revs:[{at:1, patch:{sev:2}}, {at:2, patch:{sev:3}}, {at:3, void:true}]});
+    ck("two edits plus a withdrawal counts two", twice.editCount === 2);
+    ck("the full revision trail is still kept", twice.revs.length === 3);
+  })();
+
+  // ---- the handoff gate must count CHANGEOVERS, not entries after one.
+  // It used to read a count that grew with total entries, so one inferred
+  // changeover plus 20 later entries opened the card.
+  (function(){
+    const ents = [{start:0,who:"dad"},{start:36e5*4,who:"mom"}];
+    for(let i=1;i<=20;i++) ents.push({start:36e5*(4+i*24), who:"mom"});
+    const f = inferHandoffs(ents);
+    ck("one flip infers exactly one changeover", f.points.length === 1);
+    ck("no entry-count stands in for the changeover count", f.usable === undefined);
+  })();
+
+  if(fail.length) console.error("BBL SELF-CHECK FAILED " + fail.length + "/" + ran + ":", fail);
+  else console.log("BBL self-check: " + ran + "/" + ran + " checks passed");
+})();
+</script>
+
+</body></html>
