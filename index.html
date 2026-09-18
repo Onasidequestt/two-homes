@@ -277,23 +277,30 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
    So the ramp is NOT the encoding — the number and the anchor word are, and
    both stay visible. The stripe width ramp below adds a second non-colour
    channel that also survives greyscale and a printer. */
-.sevgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.sev{padding:10px 4px 9px;border-radius:9px;border:1.5px solid var(--line-strong);background:var(--surface);
-     display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;
+/* ROWS, not five 66px tiles: the descriptions could only fit at 10.5px in a
+   tile, and they are the instrument. A row gives each level a readable line
+   and a 56px target for a thumb. */
+.sevgrid{display:grid;grid-template-columns:1fr;gap:6px}
+.sev{padding:9px 12px 9px 9px;border-radius:9px;border:1.5px solid var(--line-strong);background:var(--surface);
+     display:grid;grid-template-columns:8px 26px 1fr;align-items:center;column-gap:11px;text-align:left;
+     min-height:56px;
      transition:background-color var(--t-sel) var(--ease-settle),
                 border-color     var(--t-sel) var(--ease-settle)}
 .sev[aria-pressed="false"]{transition-duration:var(--t-amb);transition-timing-function:var(--ease-soft)}
-.sev .swatch{width:100%;height:18px;border-radius:5px;border:1px solid}
-.sev .n{font-size:16px;font-weight:700;line-height:1}
+.sev .swatch{width:8px;align-self:stretch;min-height:36px;border-radius:4px;border:1px solid}
+.sev .n{font-size:20px;font-weight:700;line-height:1;text-align:center}
 /* was 9.5px with a 23px cap, which wrapped the anchor to three clipped lines.
    The anchors ARE the rating instrument: without them two parents drift and
    every severity figure is quietly corrupted, so they must be legible at the
    moment of choosing. */
-.sev .anchor{font-size:10.5px;line-height:1.2;color:var(--muted);min-height:38px;
-             display:flex;align-items:center;transition:color var(--t-sel) var(--ease-settle)}
+.sev .anchor{font-size:15.5px;line-height:1.25;color:var(--ink);display:block;
+             transition:color var(--t-sel) var(--ease-settle)}
+.sev .anchor::first-letter{text-transform:uppercase}
+.sev .detail{display:block;font-size:12.5px;line-height:1.35;color:var(--muted);font-weight:400;margin-top:2px}
+.sev .sevtext{min-width:0}
 /* selection changes border WEIGHT as well as colour, so it survives greyscale,
    low vision, and a photograph of the screen */
-.sev[aria-pressed="true"]{border-color:var(--ink);border-width:2.5px;padding:9px 3.5px 8px;background:var(--surface-2)}
+.sev[aria-pressed="true"]{border-color:var(--ink);border-width:2.5px;padding:8px 11px 8px 8px;background:var(--surface-2)}
 .sev[aria-pressed="true"] .anchor{color:var(--ink-2)}
 /* The picker escalates in WEIGHT ONLY, never size: these are five equal-width
    grid columns at phone width, and a size ramp would make the tiles step and
@@ -313,6 +320,11 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 @media (hover:hover) and (pointer:fine){ .sev:hover{border-color:var(--accent)} }
 
 .field{margin-top:16px}
+.qlab .opt{font-weight:500;text-transform:none;letter-spacing:0;font-size:11.5px}
+.whatfield textarea{min-height:64px;font-size:16px}
+.retro-days{justify-content:center}
+.resphint{margin-top:10px;font-size:12.5px;line-height:1.5;color:var(--muted);padding:10px 12px;border-radius:10px;background:var(--surface-2)}
+.resphint b{color:var(--ink-2);font-weight:600}
 .field > .qlab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
                color:var(--muted);margin-bottom:8px;display:flex;gap:7px;align-items:baseline}
 .req{color:var(--danger);font-weight:700;font-size:10px;letter-spacing:.04em}
@@ -323,10 +335,13 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 .field.missing .chips .chip{border-color:var(--danger)}
 
 .bigbtn{width:100%;padding:16px;border-radius:12px;font-size:17px;font-weight:700;
-        background:var(--ink);color:var(--paper);margin-top:18px;
+        background:var(--accent);color:var(--accent-ink);margin-top:18px;   /* ONE primary colour app-wide: the same teal as Start timing */
         transition:filter var(--t-tap) var(--ease-out), border-color var(--t-amb) var(--ease-soft)}
 .bigbtn.ghost{background:var(--surface);color:var(--ink);border:1.5px solid var(--line-strong);font-size:15px;padding:14px}
 .bigbtn:active{filter:brightness(.96)}
+.bigbtn:disabled{background:var(--surface-2);color:var(--muted)}
+.printonly{display:none}
+@media print{ .printonly{display:block !important;margin-top:14px;font-size:11px;color:#333} }
 .err{margin-top:12px;font-size:12.5px;color:var(--danger);font-weight:600}
 /* Saving used to be silent: the form simply vanished. This is a real confirmation
    of a real write — it names what was stored, never a generic "done!". */
@@ -614,9 +629,9 @@ textarea{border-radius:10px}
 .cal-wd{font-size:9.5px;font-weight:700;letter-spacing:.03em;text-align:center;
         color:var(--faint);text-transform:uppercase}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:4px}
-.dcell{position:relative;min-height:50px;border-radius:9px;background:var(--surface);
+.dcell{position:relative;min-height:60px;border-radius:9px;background:var(--surface);
        border:1px solid var(--line);display:flex;flex-direction:column;
-       padding:4px 3px 7px;gap:2px;overflow:hidden;text-align:left;
+       padding:4px 3px 18px;gap:2px;overflow:hidden;text-align:left;
        transition:background-color var(--t-tap) var(--ease-out)}
 .dcell.out{opacity:.42}
 .dcell.today{border-color:var(--accent);border-width:1.5px}
@@ -624,17 +639,45 @@ textarea{border-radius:10px}
 @media (hover:hover) and (pointer:fine){ .dcell:hover{border-color:var(--line-strong)} }
 .dtop{display:flex;align-items:center;justify-content:space-between;width:100%}
 .dnum{font-size:11.5px;font-weight:700;color:var(--ink-2)}
-.dcell.today .dnum{color:var(--accent)}
 .epi{font-size:9px;line-height:1;color:var(--sev4);font-weight:700}
 .dmarks{display:flex;flex-wrap:wrap;gap:2px;width:100%}
 .evtag{font-size:8px;font-weight:700;letter-spacing:.01em;padding:1px 3px;border-radius:3px;
        background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);line-height:1.4}
 .evtag.more{background:none;border:none;color:var(--muted);padding:1px 0}
-.dband{position:absolute;left:0;right:0;bottom:0;height:5px}
-.dband.dad{background:repeating-linear-gradient(45deg, var(--dad) 0 3px, transparent 3px 6px)}
-.dband.mom{background:repeating-linear-gradient(-45deg, var(--mom) 0 3px, transparent 3px 6px)}
-.dband.exception{background:repeating-linear-gradient(45deg, var(--dad) 0 2px, var(--mom) 2px 4px)}
-.dband.none{background:var(--line)}
+/* WHOSE DAY is a LETTER on a tinted band, not the lean of a 5px hatch: a letter
+   reads at a glance, in greyscale, in dark, and in a photo of the screen. The
+   tint is only the secondary hint (state is carried by a glyph, never a fill).
+   A day changed from the schedule adds "*" and a dashed edge. */
+.dband{position:absolute;left:0;right:0;bottom:0;height:15px;display:flex;align-items:center;justify-content:center;
+       font-size:9.5px;font-weight:800;letter-spacing:.05em;line-height:1}
+.dband.dad{background:color-mix(in srgb, var(--dad) 17%, var(--surface));color:var(--dad)}
+.dband.mom{background:color-mix(in srgb, var(--mom) 17%, var(--surface));color:var(--mom)}
+.dband.exception{border-top:1.5px dashed currentColor}
+.dband.none{height:0}
+.dcell.painted{border-color:var(--ink);border-width:2px}
+.dcell.today .dnum{background:var(--accent);color:var(--accent-ink);border-radius:999px;min-width:18px;text-align:center;padding:1px 4px}
+.cal-sum{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;margin-top:10px;padding:0 2px;font-size:13px;color:var(--ink-2)}
+.cal-sum b{font-weight:700;font-variant-numeric:tabular-nums}
+.cal-sum .d{color:var(--dad)} .cal-sum .m{color:var(--mom)}
+.cal-sum .sumnote{color:var(--muted);font-size:12px}
+.calkey{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px;padding:0 2px;font-size:11.5px;color:var(--muted);align-items:center}
+.calkey span.k{display:inline-flex;align-items:center;gap:5px}
+.calkey .dband{position:static;width:22px;height:15px;border-radius:4px}
+.calkey .epi{font-size:10px}
+.paintbar{margin-top:12px;padding:12px 13px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
+.paintbar .prow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.paintbar .phelp{font-size:12.5px;color:var(--muted);line-height:1.45}
+.paintbar .pcount{font-size:13px;font-weight:600;color:var(--ink-2)}
+.paintbar .bigbtn{margin-top:0}
+.seqstrip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.seqday{min-height:46px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:1px;font-size:9.5px;color:var(--muted);font-weight:600;
+        transition:background-color var(--t-tap) var(--ease-out)}
+.seqday b{font-size:14px;font-weight:800;line-height:1}
+.seqday.dad{background:color-mix(in srgb, var(--dad) 17%, var(--surface))} .seqday.dad b{color:var(--dad)}
+.seqday.mom{background:color-mix(in srgb, var(--mom) 17%, var(--surface))} .seqday.mom b{color:var(--mom)}
+.seqday:active{background:var(--surface-2);transition-duration:0s}
+.splitin{width:100%;font-size:18px;letter-spacing:.04em}
 .calev,.calepi,.calswap{margin-top:10px}
 .evtitle{font-size:15.5px;font-weight:700;color:var(--ink);letter-spacing:-.015em;margin-top:2px}
 .calev.voided .evtitle{text-decoration:line-through}
@@ -783,8 +826,8 @@ textarea{border-radius:10px}
       <div>
         <h2 class="sec">Calendar</h2>
         <p class="sub">Events are visible to both parents. Any private note you add to an event is visible
-           only to you — it is never sent to the other parent's device. Custody days are shown as a
-           striped band along the bottom of each date.</p>
+           only to you — it is never sent to the other parent's device. The letter along the bottom of each
+           date is who has her that day.</p>
       </div>
       <div id="calSlot"></div>
       <div class="field no-print">
@@ -818,6 +861,7 @@ textarea{border-radius:10px}
         homes log at different rates for reasons that have nothing to do with the money.
       </div>
       <div id="moneySlot"></div>
+      <p class="sub printonly plimits"></p>
       <button class="bigbtn ghost no-print" id="moneyPrintBtn">Print or save as PDF</button>
     </section>
 
@@ -828,9 +872,12 @@ textarea{border-radius:10px}
         <p class="sub">Nothing is deleted or overwritten: an edit is kept as a revision, and a withdrawn entry
            stays visible, struck through. Each entry carries the name chosen on the device that wrote it —
            the app cannot verify who typed it.</p>
+        <p class="sub" id="limitsLine" hidden></p>
         <p class="sub"><b>est</b> beside a length means it was entered afterwards from memory, not timed. A lock marks an entry the other parent wrote — only they can revise it.</p>
       </div>
+      <p class="sub printonly" id="recordCover"></p>
       <div id="histSlot"></div>
+      <p class="sub printonly plimits"></p>
       <button class="bigbtn ghost no-print" id="printBtn">Print or save as PDF</button>
     </section>
 
@@ -912,11 +959,14 @@ textarea{border-radius:10px}
    that grades the adult's attempt ("can't redirect", "inconsolable") was
    removed for that reason: it scores the parent, not the episode. */
 const SEV = [
-  {n:1, anchor:"complaining, asking again"},
-  {n:2, anchor:"crying, won't move"},
-  {n:3, anchor:"screaming, won't respond"},
-  {n:4, anchor:"hitting, throwing, kicking"},
-  {n:5, anchor:"20m+ or risk of injury"}
+  /* `detail` is what a parent reads AT THE MOMENT OF CHOOSING: what this level
+     looks like, as something seen or heard, never a judgement of her or of the
+     adult. `anchor` stays the short form the Record headline is built from. */
+  {n:1, anchor:"complaining, asking again", detail:"Upset, but still talking and still listening."},
+  {n:2, anchor:"crying, won't move",        detail:"Tears, refusing, staying put. Can still hear you."},
+  {n:3, anchor:"screaming, won't respond",  detail:"Loud, and words are not getting through."},
+  {n:4, anchor:"hitting, throwing, kicking",detail:"Physical, at people or at things."},
+  {n:5, anchor:"20m+ or risk of injury",    detail:"Went past 20 minutes, or someone could have been hurt."}
 ];
 /* The anchor is stored lowercase because inside a picker tile it reads as a
    continuation ("Severity 3 of 5: screaming, won't respond"). As the row's
@@ -1181,8 +1231,97 @@ function friendlyDay(dstr){
    Swapping the artifact db for Supabase replaces this object only:
    the app below never touches claude.* directly.
    ============================================================ */
+/* ============================================================
+   HOSTED SYNC — the family's own web hosting (api.php + MySQL).
+   Deliberately the SAME SHAPE as the artifact db handle Store already speaks:
+   collection(kind).onSnapshot(ok) and doc(path).set(body). Store's push/pull
+   seam is untouched; this is a second thing that fits the socket.
+   Offline-first: a failed request never flips Store out of "sync" — it marks
+   the link "offline", the write stays in bbl.outbox, and the next poll that
+   succeeds flushes it. A parent in a dead-signal car park loses nothing.
+   ponytail: polling, not push. Ceiling = the other parent's entry appears up
+   to POLL_MS later. Upgrade path = Server-Sent Events, if the host allows it.
+   ponytail: every page load pulls the whole record (since=0). Ceiling = slow
+   once years of receipts accumulate. Upgrade path = persist `since` beside
+   the mirror.
+   ============================================================ */
+const FAMILY_KEY = "bbl.key";
+/* The family link is "…/?k=<secret>#dad". The key is kept on the phone and
+   stripped from the address bar so it is not left in a screenshot or a share. */
+function takeFamilyKey(){
+  let k = null;
+  try {
+    const m = /[?&]k=([A-Za-z0-9]{16,128})/.exec(location.search || "");
+    if(m){
+      k = m[1];
+      try { localStorage.setItem(FAMILY_KEY, k); } catch(e){}
+      try { history.replaceState(null, "", location.pathname + location.hash); } catch(e){}
+    } else k = localStorage.getItem(FAMILY_KEY);
+  } catch(e){}
+  return k || null;
+}
+function HostedDb(key, url, fetcher){
+  /* who is read from State.me at SEND time: the chooser may not have been answered yet */
+  this.key = key; this.url = url || "api.php";
+  this.fetcher = fetcher || ((u,o)=>fetch(u,o));
+  this.handlers = {}; this.since = 0; this.link = "connecting";   /* connecting | ok | offline | denied */
+  this.lastOk = 0; this.timer = null;
+}
+HostedDb.POLL_MS = 20000;
+HostedDb.prototype.headers = function(){ return {"X-Family-Key": this.key, "Content-Type":"application/json"}; };
+HostedDb.prototype.setLink = function(v){ if(this.link !== v){ this.link = v; Store.emit(); } };
+HostedDb.prototype.collection = function(kind){
+  const self = this;
+  return { onSnapshot(ok){ self.handlers[kind] = ok; } };
+};
+HostedDb.prototype.doc = function(path){
+  const self = this, cut = path.indexOf("/"), kind = path.slice(0,cut), id = path.slice(cut+1);
+  return { set(body){
+    return self.fetcher(self.url + "?op=put", {method:"POST", headers:self.headers(), credentials:"omit",
+        body:JSON.stringify({who:body.who, kind:kind, id:id, body:body})})
+      .then(r=>{
+        if(r.status === 401){ self.setLink("denied"); throw new Error("denied"); }
+        if(!r.ok) throw new Error("put " + r.status);
+        return r.json();
+      })
+      .then(j=>{ self.lastOk = Date.now(); self.setLink("ok"); return j; },
+            e=>{ if(self.link !== "denied") self.setLink("offline"); throw e; });
+  } };
+};
+HostedDb.prototype.poll = function(){
+  const self = this;
+  if(!State.me) return Promise.resolve();
+  return this.fetcher(this.url + "?op=pull&who=" + State.me + "&since=" + this.since,
+                      {headers:this.headers(), credentials:"omit", cache:"no-store"})
+    .then(r=>{
+      if(r.status === 401){ self.setLink("denied"); throw new Error("denied"); }
+      if(!r.ok) throw new Error("pull " + r.status);
+      return r.json();
+    })
+    .then(j=>{
+      const by = {};
+      (j.docs||[]).forEach(d=>{ (by[d.kind] = by[d.kind] || []).push({id:d.id, data:()=>d.body}); });
+      Object.keys(by).forEach(kind=>{ if(self.handlers[kind]) self.handlers[kind]({docs:by[kind]}); });
+      self.since = Math.max(self.since, j.ver||0);
+      const was = self.link;
+      self.lastOk = Date.now(); self.setLink("ok");
+      /* back in signal: send what queued while we were out of it */
+      if(was !== "ok") Store.flushOutbox();
+      return j;
+    })
+    .catch(e=>{ if(self.link !== "denied") self.setLink("offline"); });
+};
+HostedDb.prototype.start = function(){
+  const self = this;
+  this.poll();
+  this.timer = setInterval(()=>{ if(!document.hidden) self.poll(); }, HostedDb.POLL_MS);
+  document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) self.poll(); });
+  window.addEventListener("online", ()=>self.poll());
+};
+
 const Store = {
   db:null, mode:"connecting",
+  hosted:null,  // the HostedDb handle when this copy shares through the family's own hosting
   entries:{},   // docId -> {who, month, items:{id:entry}}
   days:{},      // docId -> {who, month, items:{date:card}}
   options:{},   // docId -> {who, items:{key:{field,label,at}}}   one doc per PARENT
@@ -1233,9 +1372,31 @@ const Store = {
        not promise a sync that can never happen.
        ponytail: device-only trial. Ceiling = one phone, no sharing between the
        two parents. Upgrade path = the Supabase swap described above. */
-    if(!window.claude){ this.mode = "device"; this.loadLocal(); this.cleanupJunkOptions(); this.emit(); return; }
     let db = null;
-    try { db = await window.claude?.use?.("db"); } catch(e){ db = null; }
+    if(!window.claude){
+      /* The family's own hosting. A key on this phone means "this copy shares":
+         stay in sync mode even with the server unreachable (offline-first), so
+         writes queue instead of being treated as a device-only trial. The
+         mirror is loaded FIRST — the record must be on screen before, and
+         whether or not, the network answers; mergeDoc() unions the pull in. */
+      const key = takeFamilyKey();
+      if(key && location.protocol !== "file:"){
+        this.loadLocal(); this.cleanupJunkOptions();
+        db = new HostedDb(key);
+        this.hosted = db;
+      } else {
+        this.mode = "device"; this.loadLocal(); this.cleanupJunkOptions(); this.emit();
+        /* No key, but is this a hosted copy? Then say so, instead of letting a
+           parent log into a private silo believing it is shared. */
+        if(!key && location.protocol !== "file:"){
+          try { fetch("api.php?op=ping", {cache:"no-store", credentials:"omit"}).then(r=>r.ok ? r.json() : null)
+            .then(j=>{ if(j && j.app === "two-homes" && j.installed){ this.mode = "needkey"; this.emit(); } }).catch(()=>{}); } catch(e){}
+        }
+        return;
+      }
+    } else {
+      try { db = await window.claude?.use?.("db"); } catch(e){ db = null; }
+    }
     this.db = db;
     if(!db){ this.mode = "local"; this.loadLocal(); this.cleanupJunkOptions(); this.emit(); return; }
     this.mode = "sync";
@@ -1287,7 +1448,8 @@ const Store = {
       });
     } catch(e){ this.mode="local"; this.loadLocal(); this.cleanupJunkOptions(); }
     this.emit();
-    this.flushOutbox();
+    if(this.hosted) this.hosted.start();   /* its first good poll flushes the outbox */
+    else this.flushOutbox();
   },
 
   /* ---- local mirror + outbox: a tantrum in a dead-signal car park still logs ---- */
@@ -1984,7 +2146,7 @@ function patternTypeLabel(t){
   if(t === "week") return "Week on / week off";
   if(t === "223") return "2-2-3";
   if(t === "weekend-alt") return "Alternating weekends";
-  if(t === "custom") return "Custom sequence";
+  if(t === "custom") return "Custom split";
   return t ? String(t) : "";
 }
 /* THE DISTINCTION A MEDIATOR NEEDS, IN TEXT/GLYPH ONLY (no colour — the
@@ -2058,6 +2220,7 @@ const State = {
   calSwapOpen:null,  // date whose "request a swap" mini-form is expanded
   calSwapDraft:null, // {wantsCustody,message,missing} while that mini-form is open
   calNoteOpen:{},    // eventId -> the private-note box was opened this session (sheet redraws must not close it)
+  paint:null,             // {parent,days:{date:parent},confirming,nudge} while assigning days by tapping the grid
   custodyDraft:null,      // {patternType,parentPick,startDate,missing,dateMissing,confirming} while the
                           // "set the custody schedule" form is open — renderCalendar() rebuilds the whole
                           // slot on every store echo, so this MUST live here, never read back out of the DOM
@@ -2085,6 +2248,7 @@ function chooseMe(who){
   try{ localStorage.setItem("bbl.me", who); }catch(e){}
   $("gate").hidden = true;
   showApp();
+  if(Store.hosted){ Store.hosted.since = 0; Store.hosted.poll(); }   /* private notes are per-parent: pull again as this one */
 }
 function showApp(){
   $("gate").hidden = true;
@@ -2097,8 +2261,35 @@ function showApp(){
 /* ============================================================
    RENDER — sync status
    ============================================================ */
+/* THE TAMPER DISCLOSURE — a required gate on shipping any backend. Append-only
+   is enforced against both parents and the open internet, NOT against whoever
+   administers the hosting account. The app must never claim more than that,
+   and it says so on screen AND on every printed exhibit (limitsText is the one
+   source for both). Shown only when a server actually exists. */
+function limitsText(){
+  return Store.hosted
+    ? "This record is kept on the family’s own web hosting. Whoever administers that hosting account can change the database directly, and the app cannot detect that."
+    : "";
+}
+/* What a mediator most needs to know and the exhibits never said: the names
+   are labels chosen on each phone. Printed at the foot of all three exhibits. */
+function printLimitsText(){
+  return "Dad and Mom are labels chosen on each phone; the app does not verify who typed an entry. " +
+         "Nothing is deleted: edits are kept as revisions and withdrawn items stay visible. " + limitsText();
+}
 function renderSync(){
+  Array.from(document.querySelectorAll ? document.querySelectorAll(".plimits") : []).forEach(n=>{ n.textContent = printLimitsText(); });
+  const rc = $("recordCover");
+  if(rc){
+    const all = Store.allEntries();
+    rc.textContent = all.length
+      ? "Covering " + friendlyExhibitDate(dayOf(all[all.length-1].start)) + " through " + friendlyExhibitDate(dayOf(all[0].start)) +
+        " · " + all.length + (all.length===1 ? " entry" : " entries") + ", withdrawn ones included · generated " + friendlyExhibitDate(dayOf(Date.now())) + "."
+      : "";
+  }
   const d = $("syncDot"), m = $("syncMsg");
+  const ll = $("limitsLine");
+  if(ll){ const t = limitsText(); ll.textContent = t; ll.hidden = !t; }
   /* A failed local save outranks everything else here, including an unsent
      entry: it means the write this device just made is NOT on disk at all,
      which is worse than merely not yet reaching the other parent. */
@@ -2122,7 +2313,25 @@ function renderSync(){
   }
   if(Store.mode === "device"){
     d.className = "syncdot local";
-    m.textContent = "Trial copy — saved on this device only, not shared";
+    m.textContent = "On this phone only — not shared with the other parent";
+  } else if(Store.mode === "needkey"){
+    d.className = "syncdot local";
+    m.textContent = "Not shared yet — open your family link once on this phone";
+  } else if(Store.mode === "sync" && Store.hosted){
+    const L = Store.hosted.link;
+    if(L === "denied"){
+      d.className = "syncdot danger";
+      m.textContent = "Family link not accepted — saved on this phone. Open the link you were sent again.";
+    } else if(L === "offline"){
+      d.className = "syncdot local";
+      m.textContent = "No connection — saved on this phone, sends when back";
+    } else if(L === "ok"){
+      d.className = "syncdot ok";
+      m.textContent = "Shared — both parents see this";
+    } else {
+      d.className = "syncdot";
+      m.textContent = "Connecting…";
+    }
   } else if(Store.mode === "sync"){
     d.className = "syncdot ok";
     m.textContent = "Shared log — both parents can open this";
@@ -2220,6 +2429,9 @@ let flashT = null;
 function renderLog(){
   const slot = $("logSlot");
   slot.innerHTML = "";
+  /* one job on screen at a time: the morning card steps aside while an episode
+     is being timed or written up, and comes back the moment it is saved */
+  $("dailySlot").hidden = !!State.draft;
 
   if(State.flash){
     const fl = el("div","flash");
@@ -2294,16 +2506,24 @@ function beginRetro(){
        stop to run a live timer in, so the displacement hit the finding
        hardest. Defaults to now, which is correct for "it just ended". */
     whenT: pad(n.getHours()) + ":" + pad(n.getMinutes()),
+    whenD: null,   /* null = today (or last night, for a time still ahead of the clock) */
     sev:null, trig:null, place:null, resp:null, note:""};
   renderLog();
 }
 /* Resolve a wall-clock "HH:MM" against the nearest past occurrence. A time
    later than now can only mean yesterday — logging after midnight is normal. */
-function resolveWhen(hhmm){
+function resolveWhen(hhmm, dayStr){
   const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm||"").trim());
   if(!m) return null;
   const h = +m[1], mi = +m[2];
   if(h > 23 || mi > 59) return null;
+  /* a named day: that day at that time, built from local calendar parts so a
+     DST change cannot slide it onto a neighbour. Never in the future. */
+  const p = dayStr ? dParts(dayStr) : null;
+  if(p){
+    const t = new Date(p.y, p.mo-1, p.d, h, mi, 0, 0).getTime();
+    return t > Date.now() ? null : t;
+  }
   const d = new Date(); d.setHours(h, mi, 0, 0);
   let t = d.getTime();
   if(t > Date.now()) t -= 864e5;
@@ -2311,9 +2531,10 @@ function resolveWhen(hhmm){
 }
 /* Says out loud which day the entered time resolved to, so a post-midnight
    entry cannot silently land on the wrong date. */
-function whenNote(hhmm){
-  const t = resolveWhen(hhmm);
-  if(t == null) return "Enter a time to place this entry.";
+function whenNote(hhmm, dayStr){
+  const t = resolveWhen(hhmm, dayStr);
+  if(t == null) return dayStr && resolveWhen(hhmm) != null ? "That time has not happened yet. Pick an earlier time or day."
+                                                          : "Enter a time to place this entry.";
   const d = dayOf(t);
   const when = d === dayOf(Date.now()) ? "today" : (d === dayOf(Date.now()-864e5) ? "yesterday" : friendlyDay(d));
   return "Recorded as " + when + " at " + clockOf(t) + " · length is an estimate";
@@ -2520,6 +2741,34 @@ function chipRow(labelText, required, opts, cur, onPick, missing, toggle, addFie
   return f;
 }
 
+/* WHAT HAS BEEN TRIED FOR THIS — the one place the log hands something BACK at
+   the moment a parent needs it. Both homes pooled, never split by parent, and
+   it is a COUNT of what was done, not a ranking of what works: the response is
+   chosen in reaction to how bad it was, so "fastest" would be a sign-inverted
+   claim (see "Length by what ended it"). Its use is consistency between two
+   homes that do not speak. Silent below RESP_HINT_MIN — three entries is
+   an anecdote. */
+const RESP_HINT_MIN = 5;
+function respHintData(trig){
+  if(!trig) return null;
+  const rows = Store.allEntries().filter(e=>!e.voided && e.trig === trig && e.resp);
+  if(rows.length < RESP_HINT_MIN) return null;
+  const n = {};
+  rows.forEach(e=>{ n[e.resp] = (n[e.resp]||0) + 1; });
+  const top = Object.keys(n).sort((a,b)=> n[b]-n[a] || (a<b?-1:1)).slice(0,3).map(k=>({key:k, n:n[k]}));
+  return {total:rows.length, top:top};
+}
+function respHint(trig){
+  const box = el("div","resphint"); box.id = "respHint";
+  const data = respHintData(trig);
+  if(!data){ box.hidden = true; return box; }
+  box.appendChild(el("b",null,"Across both homes, for “" + labelOf(trig) + "”: "));
+  box.appendChild(document.createTextNode(
+    data.top.map(t=>labelOf(t.key) + " " + t.n + "×").join(" · ") +
+    ". What was done, from " + data.total + " entries. Not a ranking of what works."));
+  return box;
+}
+
 function draftForm(){
   const d = State.draft;
   const running = d.measured && !d.end;
@@ -2545,12 +2794,38 @@ function draftForm(){
     tw.appendChild(el("div","timerlab","Already ended"));
 
     const wl = el("div","retro");
+    /* WHICH DAY. There was only a time, resolved to "today, or yesterday if
+       that time has not happened yet" — so an episode from two days ago could
+       not be logged on its own date, and never reached its day on the calendar. */
+    const dayRow = el("div","retro-days chips");
+    dayRow.setAttribute("role","group"); dayRow.setAttribute("aria-label","Which day it happened");
+    const todayS = dayOf(Date.now());
+    const dayOpts = [[null,"Today"],[addDaysStr(todayS,-1),"Yesterday"],[addDaysStr(todayS,-2),friendlyDay(addDaysStr(todayS,-2)).split(",")[0]]];
+    const custom = d.whenD && !dayOpts.some(o=>o[0]===d.whenD);
+    const refreshNote = ()=>{ const n=$("whenNote"); if(n) n.textContent = whenNote(d.whenT, d.whenD); };
+    const din = document.createElement("input");
+    din.type = "date"; din.id = "whenD"; din.max = todayS; din.value = d.whenD || todayS;
+    din.setAttribute("aria-label","Date it happened");
+    din.hidden = !custom;
+    dayOpts.forEach(o=>{
+      const b = el("button","chip sm",o[1]); b.type = "button";
+      b.setAttribute("aria-pressed", String(!custom && (d.whenD||null) === o[0]));
+      b.onclick = ()=>{ press(dayRow, b); d.whenD = o[0]; din.hidden = true; refreshNote(); };
+      dayRow.appendChild(b);
+    });
+    const ob = el("button","chip sm","Earlier…"); ob.type = "button";
+    ob.setAttribute("aria-pressed", String(!!custom));
+    ob.onclick = ()=>{ press(dayRow, ob); din.hidden = false; d.whenD = din.value; refreshNote(); };
+    dayRow.appendChild(ob);
+    din.oninput = ()=>{ if(din.value && din.value <= todayS){ d.whenD = din.value; refreshNote(); } };
+    wl.appendChild(dayRow);
+    wl.appendChild(din);
     const w1 = el("label","retro-row");
     w1.appendChild(el("span","retro-lab","Started at"));
     const tin = document.createElement("input");
     tin.type = "time"; tin.id = "whenT"; tin.value = d.whenT;
     tin.setAttribute("aria-label","Time it started");
-    tin.oninput = ()=>{ d.whenT = tin.value; const n=$("whenNote"); if(n) n.textContent = whenNote(d.whenT); };
+    tin.oninput = ()=>{ d.whenT = tin.value; const n=$("whenNote"); if(n) n.textContent = whenNote(d.whenT, d.whenD); };
     w1.appendChild(tin);
     wl.appendChild(w1);
 
@@ -2564,16 +2839,37 @@ function draftForm(){
     w2.appendChild(el("span","retro-unit","min"));
     wl.appendChild(w2);
     tw.appendChild(wl);
-    const note = el("div","whennote"); note.id = "whenNote"; note.textContent = whenNote(d.whenT);
+    const note = el("div","whennote"); note.id = "whenNote"; note.textContent = whenNote(d.whenT, d.whenD);
     tw.appendChild(note);
   }
   wrap.appendChild(tw);
+
+  /* WHAT HAPPENED — first, and in the parent's own words. It was an unlabelled
+     "Note" under four chip groups: the one field that says what she actually
+     DID was the one nobody scrolled to. Optional on purpose — at 4pm with one
+     hand the chips alone must still save — and it is offered while the timer
+     runs too, because that is often when there is a free thumb. Stored in the
+     same `note` field it always was, so no record changes shape. */
+  const nf = el("div","field whatfield");
+  const nl = el("div","qlab"); nl.id = "notelab";
+  nl.appendChild(el("span",null,"What happened"));
+  nl.appendChild(el("span","opt","in your words · both parents read this"));
+  nf.appendChild(nl);
+  const ta = document.createElement("textarea");
+  ta.id = "noteBox"; ta.value = d.note; ta.rows = 2;
+  ta.placeholder = "What she did, and what was going on. One sentence is plenty.";
+  ta.setAttribute("aria-labelledby","notelab");
+  const grow = ()=>{ ta.style.height = "auto"; ta.style.height = Math.max(64, ta.scrollHeight + 2) + "px"; };
+  ta.oninput = ()=>{ d.note = ta.value; grow(); };
+  nf.appendChild(ta);
+  wrap.appendChild(nf);
+  setTimeout(grow, 0);   /* needs layout, so after the form is in the page */
 
   /* severity */
   const miss = d.missing && !d.sev;
   const sf = el("div","field" + (miss ? " missing" : ""));
   const sl = el("div","qlab"); sl.id = "sevlab";
-  sl.appendChild(el("span",null,"Severity"));
+  sl.appendChild(el("span",null,"How far it went"));
   const sevTag = el("span","req" + (d.sev ? " ok" : ""),
     d.sev ? "✓ ANSWERED" : (miss ? "STILL NEEDED" : "REQUIRED"));
   sl.appendChild(sevTag);
@@ -2584,10 +2880,13 @@ function draftForm(){
   SEV.forEach(s=>{
     const b = el("button","sev s"+s.n);
     b.setAttribute("aria-pressed", String(d.sev===s.n));
-    b.setAttribute("aria-label","Severity "+s.n+" of 5: "+s.anchor);
+    b.setAttribute("aria-label","Severity "+s.n+" of 5: "+s.anchor+". "+s.detail);
     b.appendChild(el("span","swatch"));
     b.appendChild(el("span","n mono",String(s.n)));
-    b.appendChild(el("span","anchor",s.anchor));
+    const st = el("span","sevtext");
+    st.appendChild(el("span","anchor",s.anchor));
+    st.appendChild(el("span","detail",s.detail));
+    b.appendChild(st);
     b.onclick = ()=>{
       press(grid, b); d.sev = s.n;
       sevTag.className = "req ok"; sevTag.textContent = "✓ ANSWERED";
@@ -2604,22 +2903,15 @@ function draftForm(){
      needed" line are rebuilt rather than patched. Upgrade path = patch those
      three nodes in place the way renderDaily does, then drop `if(d.missing)`. */
   wrap.appendChild(chipRow("Trigger", true, optionsFor("trig"), d.trig,
-    v=>{ d.trig=v;  if(d.missing) renderLog(); }, d.missing && !d.trig, false, "trig", renderLog));
+    v=>{ d.trig=v; const h=$("respHint"); if(h) h.parentNode.replaceChild(respHint(v), h);
+         if(d.missing) renderLog(); }, d.missing && !d.trig, false, "trig", renderLog));
   wrap.appendChild(chipRow("Where", true, optionsFor("place"), d.place,
     v=>{ d.place=v; if(d.missing) renderLog(); }, d.missing && !d.place, false, "place", renderLog));
 
   if(!running){
     wrap.appendChild(chipRow("What ended it", false, optionsFor("resp"), d.resp,
       v=>{ d.resp = v; }, false, true, "resp", renderLog));
-    const nf = el("div","field");
-    const nl = el("div","qlab","Note"); nl.id = "notelab";
-    nf.appendChild(nl);
-    const ta = document.createElement("textarea");
-    ta.id = "noteBox"; ta.value = d.note; ta.placeholder = "Both parents can read this.";
-    ta.setAttribute("aria-labelledby","notelab");
-    ta.oninput = ()=>{ d.note = ta.value; };
-    nf.appendChild(ta);
-    wrap.appendChild(nf);
+    wrap.appendChild(respHint(d.trig));
   }
 
   /* the error goes BEFORE the button: it was appended after it, so the text
@@ -2667,7 +2959,7 @@ function saveDraft(){
   /* `measured` has always meant "the DURATION was timed". The timestamp needs
      its own provenance: a retro entry's hour is now the one the parent typed,
      not the hour they happened to open the app. */
-  const entered = d.measured ? null : resolveWhen(d.whenT);
+  const entered = d.measured ? null : resolveWhen(d.whenT, d.whenD);
   const start = d.measured ? d.start : (entered == null ? Date.now() - dur*1000 : entered);
 
   const entry = {
@@ -2690,7 +2982,7 @@ function saveDraft(){
   /* Saving was silent — the form just vanished. Name what was actually written,
      never a generic "done": this is a record, and the confirmation should be
      checkable against the row it created. */
-  State.flash = "Saved · " + clockOf(start) + " · severity " + entry.sev + " · " + durText(dur);
+  State.flash = "Saved · " + (dayOf(start) === dayOf(Date.now()) ? "" : friendlyDay(dayOf(start)) + " · ") + clockOf(start) + " · severity " + entry.sev + " · " + durText(dur);
   clearTimeout(flashT);
   flashT = setTimeout(()=>{ State.flash = null; if(!State.draft) renderLog(); }, 6000);
   renderAll();
@@ -4053,16 +4345,37 @@ function renderCalendar(){
   days.forEach(dstr=>grid.appendChild(calDayCell(dstr, dstr===today, evsByDay, episByDay)));
   slot.appendChild(grid);
 
-  slot.appendChild(calCustodyPanel());
+  /* the month at a glance */
+  const sm = monthCustodySummary(ym);
+  if(sm.dad || sm.mom){
+    const sum = el("div","cal-sum"); sum.id = "calSum";
+    const a = el("span","d"); a.appendChild(el("b",null,String(sm.dad))); a.appendChild(document.createTextNode(" days with Dad"));
+    const b = el("span","m"); b.appendChild(el("b",null,String(sm.mom))); b.appendChild(document.createTextNode(" days with Mom"));
+    sum.appendChild(a); sum.appendChild(b);
+    const bits = [];
+    if(sm.changed) bits.push(sm.changed + " changed from the schedule");
+    if(sm.none) bits.push(sm.none + " not covered");
+    if(bits.length) sum.appendChild(el("span","sumnote", bits.join(" · ")));
+    slot.appendChild(sum);
+  }
 
-  const legend = el("div","note-strip");
-  legend.appendChild(el("b",null,"Reading a date: "));
-  legend.appendChild(document.createTextNode(
-    "a small tag is an event (Med = medical, Sch = school, Act = activity, Bir = birthday, Oth = other); " +
-    "a dot means something is in the Record for that day. The stripe along the bottom is custody — " +
-    "right-leaning is Dad's day, left-leaning is Mom's, a crosshatch is a logged exception (including an accepted swap). " +
-    "No stripe means no schedule covers that day."));
-  slot.appendChild(legend);
+  /* a KEY you can see, in the marks the grid actually uses */
+  const key = el("div","calkey"); key.id = "calKey";
+  const kitem = (node, text)=>{ const k = el("span","k"); k.appendChild(node); k.appendChild(document.createTextNode(text)); key.appendChild(k); };
+  const kb = (cls, t)=>{ const n = el("span","dband " + cls, t); n.setAttribute("aria-hidden","true"); return n; };
+  kitem(kb("dad","D"), "Dad’s day");
+  kitem(kb("mom","M"), "Mom’s day");
+  kitem(kb("dad exception","D*"), "changed for that date");
+  kitem(el("span","evtag","Med"), "an event");
+  const kd = el("span","epi","●"); kd.setAttribute("aria-hidden","true");
+  kitem(kd, "an entry in the Record");
+  slot.appendChild(key);
+
+  const pb = el("div","paintbar"); pb.id = "paintBar"; pb.hidden = true;
+  slot.appendChild(pb);
+  calDrawPaintBar();
+
+  if(!State.paint) slot.appendChild(calCustodyPanel());
 
   if(State.calDay) calDrawDaySheet();
 }
@@ -4090,9 +4403,10 @@ function calDayCell(dstr, isToday, evsByDay, episByDay){
     btn.appendChild(marks);
   }
 
-  const band = el("span","dband " + (cst.source==="exception" ? "exception" : (cst.parent || "none")));
+  const band = el("span","dband");
   band.setAttribute("aria-hidden","true");
   btn.appendChild(band);
+  calPaintBand(btn, band, dstr, cst);
 
   const parts = [friendlyDay(dstr)];
   parts.push(cst.parent
@@ -4101,8 +4415,109 @@ function calDayCell(dstr, isToday, evsByDay, episByDay){
   if(evs.length) parts.push(evs.length + (evs.length===1 ? " event" : " events"));
   if(epis.length) parts.push(epis.length + (epis.length===1 ? " entry" : " entries") + " recorded that day");
   btn.setAttribute("aria-label", parts.join(". "));
-  btn.onclick = ()=>calOpenDay(dstr);
+  /* in assign mode a tap assigns; otherwise it opens the day */
+  btn.onclick = ()=>{ if(State.paint) calPaintTap(btn, band, dstr); else calOpenDay(dstr); };
   return btn;
+}
+/* One writer for the band, used by the first render AND by an assign-mode tap,
+   which patches the tapped cell in place (a rebuilt node cannot animate, and
+   rebuilding 30 cells per tap is what makes a control feel dead). */
+function calPaintBand(btn, band, dstr, cst){
+  const pending = State.paint && State.paint.days[dstr];
+  const parent = pending || cst.parent;
+  const changed = pending ? true : cst.source === "exception";
+  band.className = "dband " + (parent || "none") + (changed ? " exception" : "");
+  band.textContent = parent ? (WHO_NAME[parent].charAt(0) + (changed ? "*" : "")) : "";
+  btn.classList.toggle("painted", !!pending);
+}
+
+/* ============================================================
+   ASSIGN DAYS — pick Dad or Mom, tap dates, confirm once.
+   Every tapped day is written as the SAME one-off exception the day sheet
+   writes (Store.putCustodyException): append-only, attributed, outranks the
+   pattern for that date only, and never edits the schedule itself. A day
+   tapped to the parent the schedule already gives it is NOT written — that
+   would log a "change" that changed nothing.
+   ============================================================ */
+function calPaintTap(btn, band, dstr){
+  const P = State.paint;
+  if(!P.parent){ P.nudge = true; calDrawPaintBar(); return; }
+  if(P.days[dstr] === P.parent) delete P.days[dstr];     /* tap again to undo */
+  else P.days[dstr] = P.parent;
+  P.confirming = false;
+  calPaintBand(btn, band, dstr, custodyForDate(dstr));
+  calDrawPaintBar();
+}
+/* the writes a Save would make: pending days that differ from what already holds */
+function paintWrites(){
+  const P = State.paint; if(!P) return [];
+  return Object.keys(P.days).sort().filter(d=> custodyForDate(d).parent !== P.days[d]).map(d=>({date:d, parent:P.days[d]}));
+}
+function commitPaint(){
+  const w = paintWrites();
+  w.forEach(x=>Store.putCustodyException(State.me, x.date, x.parent, "Assigned on the calendar"));
+  const nd = w.filter(x=>x.parent==="dad").length, nm = w.length - nd;
+  State.paint = null;
+  State.custodyFlash = w.length ? ("Assigned · " + [nd ? nd + " to Dad" : "", nm ? nm + " to Mom" : ""].filter(Boolean).join(", ")) : null;
+  clearTimeout(custodyFlashT);
+  custodyFlashT = setTimeout(()=>{ State.custodyFlash = null; if(!State.custodyDraft) renderCalendar(); }, 6000);
+  renderAll();
+}
+function calDrawPaintBar(){
+  const slot = $("paintBar"); if(!slot) return;
+  slot.innerHTML = "";
+  const P = State.paint;
+  if(!P){ slot.hidden = true; return; }
+  slot.hidden = false;
+  const row = el("div","prow");
+  row.setAttribute("role","group"); row.setAttribute("aria-label","Assign days to");
+  ["dad","mom"].forEach(w=>{
+    const b = el("button","chip","Assign to " + WHO_NAME[w]); b.type = "button";
+    b.setAttribute("aria-pressed", String(P.parent === w));
+    b.onclick = ()=>{ P.parent = w; P.nudge = false; calDrawPaintBar(); };
+    row.appendChild(b);
+  });
+  slot.appendChild(row);
+  const w = paintWrites(), picked = Object.keys(P.days).length;
+  slot.appendChild(el("p","phelp", !P.parent
+    ? (P.nudge ? "Choose Dad or Mom first, then tap the dates." : "Choose who, then tap the dates on the calendar above. Tap a date again to undo it. Change month with the arrows; your taps are kept.")
+    : "Now tap dates for " + WHO_NAME[P.parent] + ". Switch to the other parent any time."));
+  if(picked){
+    const same = picked - w.length;
+    slot.appendChild(el("p","pcount", w.length + (w.length===1 ? " day" : " days") + " to change" +
+      (same ? " · " + same + " already " + (same===1 ? "matches" : "match") + " the schedule" : "")));
+  }
+  if(P.confirming && w.length){
+    const box = el("div","confirmbox"); box.setAttribute("role","group");
+    const nd = w.filter(x=>x.parent==="dad").length, nm = w.length - nd;
+    box.appendChild(el("p",null,"Assign " + [nd ? nd + (nd===1?" day":" days") + " to Dad" : "", nm ? nm + (nm===1?" day":" days") + " to Mom" : ""].filter(Boolean).join(" and ") +
+      "? Each is recorded as a change for that date only, made by " + WHO_NAME[State.me] + ". Both parents see it, and it stays on the record."));
+    const act = el("div","confirmact");
+    const no = el("button","cno","Not yet"); no.onclick = ()=>{ P.confirming = false; calDrawPaintBar(); };
+    const yes = el("button","cyes affirm","Assign"); yes.onclick = commitPaint;
+    act.appendChild(no); act.appendChild(yes); box.appendChild(act);
+    slot.appendChild(box);
+  } else {
+    const save = el("button","bigbtn", w.length ? "Review " + w.length + (w.length===1 ? " change" : " changes") : "Tap dates to assign");
+    save.disabled = !w.length;
+    save.onclick = ()=>{ P.confirming = true; calDrawPaintBar(); };
+    slot.appendChild(save);
+  }
+  const cancel = el("button","linkbtn danger-link","Cancel"); 
+  cancel.onclick = ()=>{ State.paint = null; renderCalendar(); };
+  slot.appendChild(cancel);
+}
+/* Days each this month + how many were changed from the schedule. Day-based on
+   purpose: the schedule's unit is a calendar day, and claiming "nights" would
+   claim a handover time the app never asked for. */
+function monthCustodySummary(ym){
+  const out = {dad:0, mom:0, none:0, changed:0};
+  monthDays(ym).forEach(d=>{
+    const c = custodyForDate(d);
+    if(c.parent === "dad") out.dad++; else if(c.parent === "mom") out.mom++; else out.none++;
+    if(c.source === "exception") out.changed++;
+  });
+  return out;
 }
 
 /* ============================================================
@@ -4134,6 +4549,14 @@ function custodyPatternSummary(patternType, def, effectiveFrom){
             " Wed–Thu, " + WHO_NAME[def.parentA] + " Fri–Sun, then the reverse the week after."
     };
   }
+  if(patternType === "custom"){
+    const seq = def.sequence || [], tot = {dad:0, mom:0}; seq.forEach(w=>{ if(tot[w] != null) tot[w]++; });
+    return {
+      who: "repeats every " + seq.length + " days",
+      text: "From " + from + ": " + sequenceRuns(seq).map(r=>WHO_NAME[r.who] + " " + r.n).join(", ") +
+            ", then again. Dad " + tot.dad + ", Mom " + tot.mom + " in each " + seq.length + " days."
+    };
+  }
   // "week"
   return {
     who: WHO_NAME[def.parentA] + " has her first",
@@ -4153,7 +4576,76 @@ function custodyPatternLine(pat, minor){
 }
 
 function blankCustodyDraft(){
-  return {patternType:null, parentPick:null, startDate:dayOf(Date.now()), missing:null, dateMissing:false, confirming:false};
+  return {patternType:null, parentPick:null, startDate:dayOf(Date.now()), missing:null, dateMissing:false, confirming:false,
+          splitText:"", sequence:null};
+}
+/* "5-2", "4 3", "2,2,5,5" -> the repeating day-by-day sequence, first parent first.
+   Runs alternate parents. An EVEN number of runs repeats as typed (5-2: the
+   first parent always has the five). An ODD number cannot alternate back onto
+   itself, so the cycle is followed by its mirror — which is exactly how 2-2-3
+   works. Bounded: 1–31 days per run, cycle at most CUSTOM_MAX_CYCLE days. */
+const CUSTOM_MAX_CYCLE = 56;
+function parseSplit(text, first){
+  const nums = (String(text||"").match(/\d+/g) || []).map(Number);
+  if(!nums.length || nums.some(n=> n < 1 || n > 31)) return null;
+  const other = otherOf(first), seq = [];
+  const lay = flip => nums.forEach((n,i)=>{ const who = ((i % 2 === 0) !== flip) ? first : other; for(let k=0;k<n;k++) seq.push(who); });
+  lay(false);
+  if(nums.length % 2 === 1) lay(true);
+  if(seq.length > CUSTOM_MAX_CYCLE) return null;
+  return seq;
+}
+/* a sequence back to words: "Dad 5, Mom 2" */
+function sequenceRuns(seq){
+  const runs = [];
+  (seq||[]).forEach(w=>{ const last = runs[runs.length-1]; if(last && last.who === w) last.n++; else runs.push({who:w, n:1}); });
+  return runs;
+}
+function customSequenceField(d){
+  const f = el("div","field" + (d.missing && d.seqMissing ? " missing" : ""));
+  const lab = el("div","qlab"); lab.id = "splitLab";
+  lab.appendChild(el("span",null,"Days in a row"));
+  const tag = el("span","req" + (d.sequence ? " ok" : ""), d.sequence ? "✓ ANSWERED" : "REQUIRED");
+  lab.appendChild(tag);
+  f.appendChild(lab);
+  const inp = document.createElement("input");
+  inp.type = "text"; inp.id = "splitText"; inp.className = "splitin"; inp.inputMode = "numeric"; inp.maxLength = 40;
+  inp.placeholder = "5-2"; inp.value = d.splitText || "";
+  inp.setAttribute("aria-labelledby","splitLab");
+  const strip = el("div","seqstrip"); strip.id = "seqStrip";
+  const help = el("p","sub"); help.id = "seqHelp";
+  const draw = ()=>{
+    strip.innerHTML = "";
+    tag.className = "req" + (d.sequence ? " ok" : ""); tag.textContent = d.sequence ? "✓ ANSWERED" : "REQUIRED";
+    if(!d.parentPick){ help.textContent = "Choose who has her first, above, and the days appear here."; return; }
+    if(!d.sequence){ help.textContent = d.splitText ? "Use numbers from 1 to 31, up to " + CUSTOM_MAX_CYCLE + " days in all." : "Type the numbers, like 5-2 or 2-2-5-5. Or pick one below."; return; }
+    d.sequence.forEach((w,i)=>{
+      const b = el("button","seqday " + w); b.type = "button";
+      const ds = addDaysStr(d.startDate, i);
+      b.appendChild(el("span",null, ["Su","Mo","Tu","We","Th","Fr","Sa"][weekdayOf(ds)]));
+      b.appendChild(el("b",null, WHO_NAME[w].charAt(0)));
+      b.setAttribute("aria-label","Day " + (i+1) + ", " + friendlyDay(ds) + ": " + WHO_NAME[w] + ". Tap to switch.");
+      b.onclick = ()=>{ d.sequence = d.sequence.slice(); d.sequence[i] = otherOf(d.sequence[i]); d.confirming = false; draw(); };
+      strip.appendChild(b);
+    });
+    const runs = sequenceRuns(d.sequence);
+    const tot = {dad:0, mom:0}; d.sequence.forEach(w=>tot[w]++);
+    help.textContent = "Repeats every " + d.sequence.length + " days: " + runs.map(r=>WHO_NAME[r.who] + " " + r.n).join(", ") +
+      ". That is Dad " + tot.dad + ", Mom " + tot.mom + ". Tap any day to switch it.";
+  };
+  inp.oninput = ()=>{ d.splitText = inp.value; d.sequence = d.parentPick ? parseSplit(d.splitText, d.parentPick) : null; d.confirming = false; draw(); };
+  f.appendChild(inp);
+  const quick = el("div","chips"); quick.style.marginTop = "8px";
+  ["5-2","4-3","2-2-5-5","3-4-4-3"].forEach(q=>{
+    const b = el("button","chip sm",q); b.type = "button"; b.setAttribute("aria-pressed","false");
+    b.onclick = ()=>{ inp.value = q; inp.oninput(); };
+    quick.appendChild(b);
+  });
+  f.appendChild(quick);
+  f.appendChild(strip);
+  f.appendChild(help);
+  draw();
+  return f;
 }
 
 function custodyForm(){
@@ -4162,12 +4654,16 @@ function custodyForm(){
   wrap.appendChild(el("p","eyebrow","Set the custody schedule"));
 
   wrap.appendChild(chipRow("Pattern", true,
-    [["week","Week on / week off"],["223","2-2-3"],["weekend-alt","Alternating weekends"]],
-    d.patternType, v=>{ d.patternType=v; if(d.missing) renderCalendar(); }, d.missing && !d.patternType, false, null, null));
+    [["week","Week on / week off"],["223","2-2-3"],["weekend-alt","Alternating weekends"],["custom","Custom split"]],
+    d.patternType, v=>{ d.patternType=v; renderCalendar(); }, d.missing && !d.patternType, false, null, null));
 
   const parentLabel = d.patternType === "weekend-alt" ? "Who has her on weekdays" : "Who has her first";
   wrap.appendChild(chipRow(parentLabel, true, [["dad","Dad"],["mom","Mom"]],
-    d.parentPick, v=>{ d.parentPick=v; if(d.missing) renderCalendar(); }, d.missing && !d.parentPick, false, null, null));
+    d.parentPick, v=>{ d.parentPick=v;
+      if(d.patternType === "custom"){ d.sequence = parseSplit(d.splitText, v); renderCalendar(); }
+      else if(d.missing) renderCalendar(); }, d.missing && !d.parentPick, false, null, null));
+
+  if(d.patternType === "custom") wrap.appendChild(customSequenceField(d));
 
   const df = el("div","field" + (d.missing && d.dateMissing ? " missing" : ""));
   const lab = el("div","qlab"); lab.id = "custStartLab";
@@ -4177,12 +4673,12 @@ function custodyForm(){
   const din = document.createElement("input");
   din.type = "date"; din.value = d.startDate;
   din.setAttribute("aria-labelledby","custStartLab");
-  din.oninput = ()=>{ d.startDate = din.value; };
+  din.oninput = ()=>{ d.startDate = din.value; if(d.patternType === "custom") renderCalendar(); };
   df.appendChild(din);
   if(d.patternType === "223") df.appendChild(el("p","sub","Must be a Monday — the 2-2-3 pattern is anchored on one."));
   wrap.appendChild(df);
 
-  if(d.patternType && d.parentPick){
+  if(d.patternType && d.parentPick && d.patternType !== "custom"){
     const other = otherOf(d.parentPick);
     const def = d.patternType === "weekend-alt" ? {primary:d.parentPick, other:other} : {parentA:d.parentPick, parentB:other};
     wrap.appendChild(el("p","sub", custodyPatternSummary(d.patternType, def, d.startDate).text));
@@ -4217,6 +4713,9 @@ function attemptCustodySave(){
     d.dateMissing = true;
     missing.push("a Monday start date for 2-2-3");
   }
+  d.seqMissing = false;
+  if(d.patternType === "custom" && !(d.sequence && d.sequence.length)){ d.seqMissing = true; missing.push("the days in a row"); }
+  if(!d.startDate) missing.push("a start date");
   if(missing.length){ d.missing = missing; d.confirming = false; renderCalendar(); return; }
   d.missing = null;
   d.confirming = true;
@@ -4242,7 +4741,9 @@ function custodyConfirmBox(){
 function commitCustodySave(){
   const d = State.custodyDraft;
   const other = otherOf(d.parentPick);
-  const def = d.patternType === "weekend-alt" ? {primary:d.parentPick, other:other} : {parentA:d.parentPick, parentB:other};
+  const def = d.patternType === "weekend-alt" ? {primary:d.parentPick, other:other}
+            : d.patternType === "custom" ? {parentA:d.parentPick, parentB:other, sequence:d.sequence.slice()}
+            : {parentA:d.parentPick, parentB:other};
   Store.putCustodyPattern(State.me, d.patternType, d.startDate, d.startDate, def);
   State.custodyDraft = null;
   State.custodyFlash = "Schedule set · " + patternTypeLabel(d.patternType) + " · from " + friendlyExhibitDate(d.startDate);
@@ -4251,6 +4752,11 @@ function commitCustodySave(){
   renderAll();
 }
 
+function paintEntryButton(){
+  const b = el("button","bigbtn ghost","Assign days by tapping");
+  b.onclick = ()=>{ State.paint = {parent:null, days:{}, confirming:false, nudge:false}; State.calDay = null; renderCalendar(); window.scrollTo(0,0); };
+  return b;
+}
 function calCustodyPanel(){
   const wrap = el("div","panel");
 
@@ -4271,10 +4777,11 @@ function calCustodyPanel(){
   const pats = Store.allCustodyPatterns();
   if(!pats.length){
     wrap.appendChild(emptyBox("No custody schedule set",
-      "Dates show no stripe until a schedule is set. Either parent can set it here, and both will see it right away."));
-    const b = el("button","bigbtn","Set the custody schedule");
+      "Set a repeating schedule, or tap the dates one by one. Either parent can do it, and both will see it."));
+    const b = el("button","bigbtn","Set a repeating schedule");
     b.onclick = ()=>{ State.custodyDraft = blankCustodyDraft(); renderCalendar(); };
     wrap.appendChild(b);
+    wrap.appendChild(paintEntryButton());
     return wrap;
   }
 
@@ -4286,6 +4793,7 @@ function calCustodyPanel(){
   wrap.appendChild(custodyPatternLine(cur));
   const chg = el("button","linkbtn","Change the schedule");
   chg.onclick = ()=>{ State.custodyDraft = blankCustodyDraft(); renderCalendar(); };
+  wrap.appendChild(paintEntryButton());
   wrap.appendChild(chg);
 
   const earlier = pats.filter(p=>p.id !== cur.id);
@@ -4341,7 +4849,7 @@ function calExceptionForm(){
   const d = State.calExceptionDraft;
   const box = el("div","adder");
   box.style.flexDirection = "column"; box.style.width = "100%";
-  box.appendChild(chipRow("Who actually had her", true, [["dad","Dad"],["mom","Mom"]],
+  box.appendChild(chipRow("Who has her this day", true, [["dad","Dad"],["mom","Mom"]],
     d.parent, v=>{ d.parent=v; if(d.missing) calDrawDaySheet(); }, d.missing && !d.parent, false, null, null));
   const inp = document.createElement("input");
   inp.type = "text"; inp.maxLength = 120;
@@ -4380,7 +4888,7 @@ function calCustodyExceptionSection(dstr){
   if(State.calExceptionDraft && State.calExceptionDraft.date === dstr){
     wrap.appendChild(calExceptionForm());
   } else {
-    const btn = el("button","linkbtn","Log who actually had her this day");
+    const btn = el("button","linkbtn","Change who has her this day");
     btn.onclick = ()=>{ State.calExceptionDraft = {date:dstr, parent:null, note:"", missing:false, confirming:false}; calDrawDaySheet(); };
     wrap.appendChild(btn);
   }
@@ -4788,7 +5296,7 @@ function renderCustodyPrint(fromStr, toStr){
     const tbl = document.createElement("table"); tbl.className = "exhibit-tbl";
     const thead = document.createElement("thead");
     const hr = document.createElement("tr");
-    ["Date","Time","Type","Title","Location","Note","Added by","Status"].forEach(t=>{
+    ["Date","Time","Type","Title","Location","Note","Added by","Changes"].forEach(t=>{
       const th=document.createElement("th"); th.textContent=t; hr.appendChild(th);
     });
     thead.appendChild(hr); tbl.appendChild(thead);
@@ -4804,7 +5312,7 @@ function renderCustodyPrint(fromStr, toStr){
         e.location || "—",
         e.note || "—",
         WHO_NAME[e.who],
-        e.voided ? "Withdrawn" : (e.edited ? "Edited" : "—")
+        e.voided ? "Withdrawn" : (e.edited ? "Edited" : "None")
       ].forEach(v=>{ const td=document.createElement("td"); td.textContent=v; tr.appendChild(td); });
       tbody.appendChild(tr);
     });
@@ -4816,6 +5324,7 @@ function renderCustodyPrint(fromStr, toStr){
   slot.appendChild(el("p","sub exhibit-foot",
     "This exhibit is built from the shared record only. Each parent's private notes on calendar " +
     "events are never included, for either parent, regardless of who prints this page."));
+  slot.appendChild(el("p","sub exhibit-foot plimits", printLimitsText()));
 }
 
 function calBlankDraft(dstr){ return {date:dstr, time:"", type:null, title:"", location:"", note:""}; }
@@ -6404,6 +6913,136 @@ Store.init();
     State.calMonth = beforeMonth; State.calDay = beforeDay; State.custodyDraft = beforeDraft;
     ck("selfcheck custody UI: left no renderCalendar-probe pattern behind",
        !Store.allCustodyPatterns().some(p=>p.anchorDate==="2026-02-02"));
+  })();
+
+  // ---- 2026-09-18: custom split, assign-by-tapping, backdated entries, the
+  // severity descriptions, the tried-before readout. Pure functions first.
+  (function(){
+    const j = a => a.map(w=>w.charAt(0)).join("");
+    ck("split 5-2: first parent always has the five, 7-day cycle", j(parseSplit("5-2","dad")||[]) === "dddddmm");
+    ck("split 2-2-5-5 is a 14-day cycle, 7 each", (function(){ const q=parseSplit("2,2,5,5","mom")||[]; return q.length===14 && q.filter(w=>w==="mom").length===7 && j(q)==="mmddmmmmmddddd"; })());
+    ck("an odd number of runs mirrors, so 2-2-3 typed by hand equals the 2-2-3 preset",
+       j(parseSplit("2-2-3","dad")||[]) === j(buildSequence("223","dad","mom")));
+    ck("split refuses zero, a run over 31, a cycle over the cap, and no numbers",
+       parseSplit("0-3","dad")===null && parseSplit("32","dad")===null && parseSplit("31-31","dad")===null && parseSplit("abc","dad")===null);
+    ck("runs read back in words", sequenceRuns(parseSplit("5-2","dad")).map(r=>r.who+r.n).join(",") === "dad5,mom2");
+    const cp = {patternType:"custom", anchorDate:"2026-09-21", definition:{parentA:"dad",parentB:"mom",sequence:parseSplit("5-2","dad")}};
+    ck("a custom split resolves by date, forwards and BEFORE its anchor",
+       resolvePatternParent(cp,"2026-09-21")==="dad" && resolvePatternParent(cp,"2026-09-25")==="dad" &&
+       resolvePatternParent(cp,"2026-09-26")==="mom" && resolvePatternParent(cp,"2026-09-28")==="dad" &&
+       resolvePatternParent(cp,"2026-09-20")==="mom");
+    ck("a custom split says its own numbers", /: Dad 5, Mom 2, then again/.test(custodyPatternSummary("custom", cp.definition, "2026-09-21").text));
+
+    // backdated entries
+    const today = dayOf(Date.now()), two = addDaysStr(today,-2);
+    const t2 = resolveWhen("16:30", two);
+    ck("an already-ended episode can be placed on an earlier DAY", t2 != null && dayOf(t2) === two && new Date(t2).getHours() === 16 && new Date(t2).getMinutes() === 30);
+    ck("a named day never resolves into the future", resolveWhen("23:59", addDaysStr(today,1)) === null);
+    ck("with no day named the old rule holds (today, or last night)", (function(){ const t=resolveWhen("00:00"); return t!=null && t<=Date.now() && dayOf(t)===today; })());
+    ck("the day is said out loud before saving", whenNote("16:30", two).indexOf(friendlyDay(two)) >= 0 || /yesterday|today/.test(whenNote("16:30", two)));
+
+    ck("every severity level carries a plain description", SEV.length===5 && SEV.every(x=> x.detail && x.detail.length > 15));
+    ck("no severity description characterises her or the adult", !SEV.some(x=>/\b(bad|naughty|brat|tantrum|can't redirect|inconsolable|failed|refuses to listen)\b/i.test(x.detail)));
+  })();
+
+  (function(){
+    // needs the Store: run on an isolated copy with persistence stubbed, like the probes above
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    const keep = {e:JSON.stringify(Store.entries), x:JSON.stringify(Store.custodyExceptions), p:JSON.stringify(Store.custodyPatterns)};
+    const beforeDisk = (function(){ try{ return localStorage.getItem("bbl.mirror"); }catch(e){ return "unreadable"; } })();
+    const bPaint = State.paint, bDraft = State.draft, bMe = State.me, bMonth = State.calMonth;
+    Store.saveLocal = function(){}; Store.push = function(){ return Promise.resolve(); };
+    try {
+      Store.entries = {}; Store.custodyExceptions = {}; Store.custodyPatterns = {};
+      State.me = "dad";   /* Dad taps a day TO MOM: tapper and assignee differ on purpose */
+      Store.putCustodyPattern("dad","custom","2026-02-02","2026-02-02",{parentA:"dad",parentB:"mom",sequence:parseSplit("5-2","dad")});
+      const sm = monthCustodySummary("2026-02");
+      ck("month summary counts every day once", sm.dad + sm.mom + sm.none === 28 && sm.dad === 20 && sm.mom === 7 && sm.none === 1 && sm.changed === 0);
+      // 02-02 is Dad's by pattern: assigning it to Dad is NOT a change; 02-03 to Mom is
+      State.paint = {parent:"mom", days:{"2026-02-02":"dad","2026-02-03":"mom"}, confirming:false};
+      const w = paintWrites();
+      ck("assigning a day to the parent who already has it writes nothing", w.length === 1 && w[0].date === "2026-02-03" && w[0].parent === "mom");
+      commitPaint();
+      const c3 = custodyForDate("2026-02-03"), c2 = custodyForDate("2026-02-02");
+      ck("an assigned day lands as a one-off change by the parent who tapped, and only that day",
+         c3.parent === "mom" && c3.source === "exception" && c2.source === "pattern" &&
+         Store.allCustodyExceptions().length === 1 && Store.allCustodyExceptions()[0].by === "dad" &&
+         Store.allCustodyExceptions()[0].parent === "mom");
+      ck("assigning leaves the schedule itself untouched (append-only)", Store.allCustodyPatterns().length === 1);
+      ck("assign mode closes after saving", State.paint === null);
+      const sm2 = monthCustodySummary("2026-02");
+      ck("the summary follows the change", sm2.dad === 19 && sm2.mom === 8 && sm2.changed === 1);
+      State.calMonth = "2026-02"; State.me = "dad"; renderCalendar();
+      const cells = Array.from($("calSlot").querySelectorAll(".dcell")).filter(c=>!c.classList.contains("out"));
+      const bandOf = n => cells[n-1].querySelector(".dband").textContent;
+      ck("the grid says whose day in a LETTER, and marks a changed day", bandOf(2) === "D" && bandOf(3) === "M*" && bandOf(7) === "M");
+      ck("the key is drawn in the grid's own marks, not a paragraph", !!$("calKey") && $("calKey").querySelectorAll(".dband").length === 3 && !/right-leaning/.test($("calSlot").textContent));
+      ck("the month summary is on screen", !!$("calSum") && (function(t){ return /19 days with Dad/.test(t) && /8 days with Mom/.test(t) && /1 not covered/.test(t); })($("calSum").textContent.replace(/\s+/g," ")));
+
+      // tried-before readout: silent under the threshold, a count never a ranking
+      const mk = (i,resp)=>({id:"rh"+i, who:i%2?"mom":"dad", start:Date.UTC(2026,1,2+i,16), end:Date.UTC(2026,1,2+i,16,5), dur:300, measured:true, sev:2, trig:"no", place:"home", resp:resp, note:"", created:1, revs:[]});
+      for(let i=0;i<RESP_HINT_MIN-1;i++) Store.putEntry(i%2?"mom":"dad", mk(i,"held"));
+      ck("tried-before stays silent below its threshold", respHintData("no") === null && respHint("no").hidden === true);
+      Store.putEntry("dad", mk(9,"quiet"));
+      const h = respHintData("no");
+      ck("tried-before pools both homes and counts", h && h.total === RESP_HINT_MIN && h.top[0].key === "held" && h.top[0].n === RESP_HINT_MIN-1);
+      ck("tried-before never claims what works", /Not a ranking/.test(respHint("no").textContent) && !/\b(best|fastest|works best|most effective)\b/i.test(respHint("no").textContent));
+      const wd = mk(20,"distract"); wd.revs = [{at:2, by:"dad", void:true}];
+      Store.putEntry("dad", wd); Store.putEntry("mom", mk(21,null));
+      const h2 = respHintData("no");
+      ck("tried-before ignores withdrawn entries and ones with no answer", h2 && h2.total === RESP_HINT_MIN && !h2.top.some(t=>t.key==="distract"));
+      ck("tried-before never splits by parent", !/Dad|Mom/.test(respHint("no").textContent));
+
+      // the form: what-happened is first-class and the backdate control exists
+      State.me = "dad"; beginRetro();
+      const f = $("logSlot");
+      const labs = Array.from(f.querySelectorAll(".qlab")).map(n=>n.textContent);
+      ck("What happened comes before the severity question", labs.length > 1 && /^What happened/.test(labs[0]) && /How far it went/.test(labs[1]));
+      ck("each severity row shows its description at the moment of choosing", f.querySelectorAll(".sev .detail").length === 5);
+      ck("the already-ended form asks which DAY", !!$("whenD") && f.querySelectorAll(".retro-days .chip").length === 4);
+      ck("the morning card steps aside while logging", $("dailySlot").hidden === true);
+      // end to end: the chosen DAY is what gets stored, not just what the helper returns
+      const twoAgo = addDaysStr(dayOf(Date.now()), -2);
+      Object.assign(State.draft, {whenD:twoAgo, whenT:"16:30", sev:2, trig:"no", place:"home", note:"selfcheck backdate"});
+      saveDraft();
+      const saved = Store.allEntries().filter(e=>e.note === "selfcheck backdate")[0];
+      ck("a backdated episode is STORED on the day the parent chose", !!saved && dayOf(saved.start) === twoAgo && saved.timeSource === "entered" && saved.measured === false);
+      ck("and it reaches that day on the calendar", !!saved && episodesForDay(twoAgo).some(e=>e.id === saved.id));
+      ck("the save confirmation names the day", /·/.test(State.flash||"") && (State.flash||"").indexOf(friendlyDay(twoAgo)) >= 0);
+      clearTimeout(flashT); State.flash = null;
+      ck("and comes back afterwards", $("dailySlot").hidden === false);
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+      Store.entries = JSON.parse(keep.e); Store.custodyExceptions = JSON.parse(keep.x); Store.custodyPatterns = JSON.parse(keep.p);
+      if(Store._entriesCache) Store._entriesCache = null;
+      State.paint = bPaint; State.draft = bDraft; State.me = bMe; State.calMonth = bMonth; State.custodyFlash = null;
+      clearTimeout(custodyFlashT);
+    }
+    const afterDisk = (function(){ try{ return localStorage.getItem("bbl.mirror"); }catch(e){ return "unreadable2"; } })();
+    ck("the 09-18 probes wrote nothing to this phone's storage", beforeDisk === afterDisk);
+  })();
+
+  (function(){
+    ck("the exhibits say names are not verified, and never claim tamper-evidence",
+       /does not verify who typed/.test(printLimitsText()) && !/tamper-(proof|evident)|cannot be altered|immutable/i.test(printLimitsText()));
+    ck("the hosting disclosure is absent when there is no server, present when there is", (function(){
+       const h = Store.hosted; let ok = limitsText() === (h ? limitsText() : "");
+       Store.hosted = null; ok = ok && limitsText() === "";
+       Store.hosted = {link:"ok"}; ok = ok && /administers that hosting account can change the database/.test(limitsText()) && /hosting account/.test(printLimitsText());
+       Store.hosted = h; return ok; })());
+    /* the static print lines live in the page's own HTML, which only a real DOM holds */
+    if(document.querySelectorAll){
+      renderSync();
+      ["v-history","v-money"].forEach(id=>{
+        const n = $(id).querySelector(".plimits");
+        ck("the " + id + " exhibit carries the disclosure line", !!n && /does not verify/.test(n.textContent));
+      });
+      ck("one primary colour: Save and Start timing share a background", (function(){
+         const a = document.createElement("button"); a.className = "bigbtn"; const b = document.createElement("button"); b.className = "start";
+         document.body.appendChild(a); document.body.appendChild(b);
+         const same = getComputedStyle(a).backgroundColor === getComputedStyle(b).backgroundColor;
+         a.remove(); b.remove(); return same; })());
+    }
   })();
 
   // ---- LEAVE THE APP EXACTLY AS BOOTED. Every probe above borrows the live
