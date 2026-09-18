@@ -828,6 +828,7 @@ textarea{border-radius:10px}
         <p class="sub">Nothing is deleted or overwritten: an edit is kept as a revision, and a withdrawn entry
            stays visible, struck through. Each entry carries the name chosen on the device that wrote it —
            the app cannot verify who typed it.</p>
+        <p class="sub"><b>est</b> beside a length means it was entered afterwards from memory, not timed. A lock marks an entry the other parent wrote — only they can revise it.</p>
       </div>
       <div id="histSlot"></div>
       <button class="bigbtn ghost no-print" id="printBtn">Print or save as PDF</button>
@@ -2056,7 +2057,14 @@ const State = {
   calEditingEvent:null, // draft object while an existing event's form is open
   calSwapOpen:null,  // date whose "request a swap" mini-form is expanded
   calSwapDraft:null, // {wantsCustody,message,missing} while that mini-form is open
-  calNoteOpen:{}     // eventId -> the private-note box was opened this session (sheet redraws must not close it)
+  calNoteOpen:{},    // eventId -> the private-note box was opened this session (sheet redraws must not close it)
+  custodyDraft:null,      // {patternType,parentPick,startDate,missing,dateMissing,confirming} while the
+                          // "set the custody schedule" form is open — renderCalendar() rebuilds the whole
+                          // slot on every store echo, so this MUST live here, never read back out of the DOM
+  custodyHistoryOpen:false, // fold state for "N earlier schedules", same reason as showVoided above
+  custodyFlash:null,       // transient "schedule set" confirmation, same shape as moneyFlash
+  calExceptionDraft:null   // {date,parent,note,missing,confirming} while the day sheet's "log who actually
+                           // had her" mini-form is open, keyed to State.calDay
 };
 
 /* ============================================================
@@ -4045,6 +4053,8 @@ function renderCalendar(){
   days.forEach(dstr=>grid.appendChild(calDayCell(dstr, dstr===today, evsByDay, episByDay)));
   slot.appendChild(grid);
 
+  slot.appendChild(calCustodyPanel());
+
   const legend = el("div","note-strip");
   legend.appendChild(el("b",null,"Reading a date: "));
   legend.appendChild(document.createTextNode(
@@ -4095,6 +4105,288 @@ function calDayCell(dstr, isToday, evsByDay, episByDay){
   return btn;
 }
 
+/* ============================================================
+   CUSTODY SCHEDULE PANEL — sits under the month grid, above the legend.
+   Reuses .panel/.empty/.bigbtn/.linkbtn/.chip/.voidtog/.voidlist/.confirmbox/
+   .cyes/.cno/.flash/.field/.err verbatim; no new CSS class. State lives in
+   State.custodyDraft/custodyHistoryOpen/custodyFlash, never read back out of
+   the DOM, because renderCalendar() wipes and rebuilds this slot on every
+   store echo (see the file-wide innerHTML="" convention).
+   ============================================================ */
+let custodyFlashT = null;
+
+/* One plain-English summary, shared by the pattern-in-force line, the
+   "earlier schedules" fold, and the form's own live preview — so the three
+   places a parent reads this schedule can never disagree with each other. */
+function custodyPatternSummary(patternType, def, effectiveFrom){
+  const from = friendlyExhibitDate(effectiveFrom);
+  if(patternType === "weekend-alt"){
+    return {
+      who: WHO_NAME[def.primary] + " has her on weekdays",
+      text: "From " + from + ": " + WHO_NAME[def.primary] + " has weekdays every week; weekends alternate, " +
+            "starting with " + WHO_NAME[def.other] + "."
+    };
+  }
+  if(patternType === "223"){
+    return {
+      who: WHO_NAME[def.parentA] + " has her first",
+      text: "From " + from + ": " + WHO_NAME[def.parentA] + " Mon–Tue, " + WHO_NAME[def.parentB] +
+            " Wed–Thu, " + WHO_NAME[def.parentA] + " Fri–Sun, then the reverse the week after."
+    };
+  }
+  // "week"
+  return {
+    who: WHO_NAME[def.parentA] + " has her first",
+    text: "From " + from + ": " + WHO_NAME[def.parentA] + " has the full week, then " +
+          WHO_NAME[def.parentB] + " has the full week, alternating."
+  };
+}
+
+function custodyPatternLine(pat, minor){
+  const box = el("div", minor ? "entry" : null);
+  const s = custodyPatternSummary(pat.patternType, pat.definition, pat.effectiveFrom);
+  box.appendChild(el("p", null, patternTypeLabel(pat.patternType) + " — " + s.who + "."));
+  box.appendChild(el("p","sub", s.text));
+  box.appendChild(el("p","sub","In effect from " + friendlyExhibitDate(pat.effectiveFrom) +
+    " · set by " + WHO_NAME[pat.by] + " on " + friendlyExhibitDate(dayOf(pat.at)) + "."));
+  return box;
+}
+
+function blankCustodyDraft(){
+  return {patternType:null, parentPick:null, startDate:dayOf(Date.now()), missing:null, dateMissing:false, confirming:false};
+}
+
+function custodyForm(){
+  const d = State.custodyDraft;
+  const wrap = el("div");
+  wrap.appendChild(el("p","eyebrow","Set the custody schedule"));
+
+  wrap.appendChild(chipRow("Pattern", true,
+    [["week","Week on / week off"],["223","2-2-3"],["weekend-alt","Alternating weekends"]],
+    d.patternType, v=>{ d.patternType=v; if(d.missing) renderCalendar(); }, d.missing && !d.patternType, false, null, null));
+
+  const parentLabel = d.patternType === "weekend-alt" ? "Who has her on weekdays" : "Who has her first";
+  wrap.appendChild(chipRow(parentLabel, true, [["dad","Dad"],["mom","Mom"]],
+    d.parentPick, v=>{ d.parentPick=v; if(d.missing) renderCalendar(); }, d.missing && !d.parentPick, false, null, null));
+
+  const df = el("div","field" + (d.missing && d.dateMissing ? " missing" : ""));
+  const lab = el("div","qlab"); lab.id = "custStartLab";
+  lab.appendChild(el("span",null,"Starts on"));
+  lab.appendChild(el("span","req ok","✓ ANSWERED"));
+  df.appendChild(lab);
+  const din = document.createElement("input");
+  din.type = "date"; din.value = d.startDate;
+  din.setAttribute("aria-labelledby","custStartLab");
+  din.oninput = ()=>{ d.startDate = din.value; };
+  df.appendChild(din);
+  if(d.patternType === "223") df.appendChild(el("p","sub","Must be a Monday — the 2-2-3 pattern is anchored on one."));
+  wrap.appendChild(df);
+
+  if(d.patternType && d.parentPick){
+    const other = otherOf(d.parentPick);
+    const def = d.patternType === "weekend-alt" ? {primary:d.parentPick, other:other} : {parentA:d.parentPick, parentB:other};
+    wrap.appendChild(el("p","sub", custodyPatternSummary(d.patternType, def, d.startDate).text));
+  }
+
+  if(d.missing && d.missing.length){
+    const e = el("div","err","Still needed: " + d.missing.join(", ") + ".");
+    e.setAttribute("role","alert");
+    wrap.appendChild(e);
+  }
+
+  if(d.confirming){
+    wrap.appendChild(custodyConfirmBox());
+  } else {
+    const save = el("button","bigbtn","Set schedule");
+    save.onclick = attemptCustodySave;
+    wrap.appendChild(save);
+  }
+  const cancel = el("button","linkbtn danger-link","Cancel");
+  cancel.onclick = ()=>{ State.custodyDraft = null; renderCalendar(); };
+  wrap.appendChild(cancel);
+  return wrap;
+}
+
+function attemptCustodySave(){
+  const d = State.custodyDraft;
+  const missing = [];
+  if(!d.patternType) missing.push("a pattern");
+  if(!d.parentPick) missing.push(d.patternType === "weekend-alt" ? "who has weekdays" : "who has her first");
+  d.dateMissing = false;
+  if(d.patternType === "223" && d.startDate && weekdayOf(d.startDate) !== 1){
+    d.dateMissing = true;
+    missing.push("a Monday start date for 2-2-3");
+  }
+  if(missing.length){ d.missing = missing; d.confirming = false; renderCalendar(); return; }
+  d.missing = null;
+  d.confirming = true;
+  renderCalendar();
+}
+
+function custodyConfirmBox(){
+  const d = State.custodyDraft;
+  const box = el("div","confirmbox");
+  box.setAttribute("role","group");
+  box.appendChild(el("p",null,"Set this schedule from " + friendlyExhibitDate(d.startDate) +
+    "? Both parents will see it on every date from then on. It can be replaced later, and this one stays on the record."));
+  const act = el("div","confirmact");
+  const no = el("button","cno","Not yet");
+  no.onclick = ()=>{ d.confirming = false; renderCalendar(); };
+  const yes = el("button","cyes affirm","Set schedule");
+  yes.onclick = commitCustodySave;
+  act.appendChild(no); act.appendChild(yes);
+  box.appendChild(act);
+  return box;
+}
+
+function commitCustodySave(){
+  const d = State.custodyDraft;
+  const other = otherOf(d.parentPick);
+  const def = d.patternType === "weekend-alt" ? {primary:d.parentPick, other:other} : {parentA:d.parentPick, parentB:other};
+  Store.putCustodyPattern(State.me, d.patternType, d.startDate, d.startDate, def);
+  State.custodyDraft = null;
+  State.custodyFlash = "Schedule set · " + patternTypeLabel(d.patternType) + " · from " + friendlyExhibitDate(d.startDate);
+  clearTimeout(custodyFlashT);
+  custodyFlashT = setTimeout(()=>{ State.custodyFlash = null; if(!State.custodyDraft) renderCalendar(); }, 6000);
+  renderAll();
+}
+
+function calCustodyPanel(){
+  const wrap = el("div","panel");
+
+  if(State.custodyFlash){
+    const fl = el("div","flash");
+    fl.setAttribute("role","status");
+    const tick = el("span","tick","✓"); tick.setAttribute("aria-hidden","true");
+    fl.appendChild(tick);
+    fl.appendChild(el("span",null,State.custodyFlash));
+    wrap.appendChild(fl);
+  }
+
+  if(State.custodyDraft){
+    wrap.appendChild(custodyForm());
+    return wrap;
+  }
+
+  const pats = Store.allCustodyPatterns();
+  if(!pats.length){
+    wrap.appendChild(emptyBox("No custody schedule set",
+      "Dates show no stripe until a schedule is set. Either parent can set it here, and both will see it right away."));
+    const b = el("button","bigbtn","Set the custody schedule");
+    b.onclick = ()=>{ State.custodyDraft = blankCustodyDraft(); renderCalendar(); };
+    wrap.appendChild(b);
+    return wrap;
+  }
+
+  pats.sort((a,b)=> a.effectiveFrom < b.effectiveFrom ? 1 : a.effectiveFrom > b.effectiveFrom ? -1 : b.at - a.at);
+  const today = dayOf(Date.now());
+  const cur = activeCustodyPattern(today) || pats[0];
+
+  wrap.appendChild(el("p","eyebrow","Custody schedule"));
+  wrap.appendChild(custodyPatternLine(cur));
+  const chg = el("button","linkbtn","Change the schedule");
+  chg.onclick = ()=>{ State.custodyDraft = blankCustodyDraft(); renderCalendar(); };
+  wrap.appendChild(chg);
+
+  const earlier = pats.filter(p=>p.id !== cur.id);
+  if(earlier.length){
+    const open = !!State.custodyHistoryOpen;
+    const tog = el("button","voidtog");
+    tog.setAttribute("aria-expanded", String(open));
+    tog.appendChild(el("span","vt-caret", open ? "▾" : "▸"));
+    tog.appendChild(el("span",null, earlier.length + (earlier.length===1 ? " earlier schedule" : " earlier schedules") +
+      " — kept in the record"));
+    const box = el("div","daylist voidlist");
+    box.hidden = !open;
+    earlier.forEach(p=>box.appendChild(custodyPatternLine(p, true)));
+    tog.onclick = ()=>{
+      const now = !State.custodyHistoryOpen;
+      State.custodyHistoryOpen = now;
+      box.hidden = !now;
+      tog.setAttribute("aria-expanded", String(now));
+      tog.querySelector(".vt-caret").textContent = now ? "▾" : "▸";
+    };
+    wrap.appendChild(tog);
+    wrap.appendChild(box);
+  }
+  return wrap;
+}
+
+/* ---------- day sheet: logged custody exception ---------- */
+function commitCalException(draft){
+  Store.putCustodyException(State.me, draft.date, draft.parent, (draft.note||"").trim());
+}
+
+function calExceptionConfirmBox(){
+  const d = State.calExceptionDraft;
+  const box = el("div","confirmbox");
+  box.setAttribute("role","group");
+  box.appendChild(el("p",null,"Record that " + WHO_NAME[d.parent] + " had her on " + friendlyDay(d.date) +
+    "? This is added to the record as a logged exception. If it is changed later, this version is kept."));
+  const act = el("div","confirmact");
+  const no = el("button","cno","Not yet");
+  no.onclick = ()=>{ d.confirming = false; calDrawDaySheet(); };
+  const yes = el("button","cyes affirm","Log it");
+  yes.onclick = ()=>{
+    commitCalException(d);
+    State.calExceptionDraft = null;
+    calDrawDaySheet();
+  };
+  act.appendChild(no); act.appendChild(yes);
+  box.appendChild(act);
+  return box;
+}
+
+function calExceptionForm(){
+  const d = State.calExceptionDraft;
+  const box = el("div","adder");
+  box.style.flexDirection = "column"; box.style.width = "100%";
+  box.appendChild(chipRow("Who actually had her", true, [["dad","Dad"],["mom","Mom"]],
+    d.parent, v=>{ d.parent=v; if(d.missing) calDrawDaySheet(); }, d.missing && !d.parent, false, null, null));
+  const inp = document.createElement("input");
+  inp.type = "text"; inp.maxLength = 120;
+  inp.placeholder = "What changed — both parents can read this";
+  inp.setAttribute("aria-label","Note on this logged exception");
+  inp.value = d.note; inp.oninput = ()=>{ d.note = inp.value; };
+  box.appendChild(inp);
+
+  if(d.confirming){
+    box.appendChild(calExceptionConfirmBox());
+  } else {
+    const go = el("button","addgo","Log it");
+    go.onclick = ()=>{
+      if(!d.parent){ d.missing = true; calDrawDaySheet(); return; }
+      d.missing = false; d.confirming = true; calDrawDaySheet();
+    };
+    box.appendChild(go);
+  }
+  const cancel = el("button","linkbtn danger-link","Cancel");
+  cancel.onclick = ()=>{ State.calExceptionDraft = null; calDrawDaySheet(); };
+  box.appendChild(cancel);
+  return box;
+}
+
+function calCustodyExceptionSection(dstr){
+  const wrap = el("div","field");
+  const exc = resolveException(dstr);
+  if(exc){
+    const revCount = (exc.revs||[]).length;
+    wrap.appendChild(el("p","sub","Logged by " + WHO_NAME[exc.by] + " on " + friendlyExhibitDate(dayOf(exc.at)) +
+      (exc.note ? " — " + exc.note : ".")));
+    if(revCount){
+      wrap.appendChild(el("p","sub","changed " + revCount + (revCount===1 ? " time" : " times") + " — earlier versions kept"));
+    }
+  }
+  if(State.calExceptionDraft && State.calExceptionDraft.date === dstr){
+    wrap.appendChild(calExceptionForm());
+  } else {
+    const btn = el("button","linkbtn","Log who actually had her this day");
+    btn.onclick = ()=>{ State.calExceptionDraft = {date:dstr, parent:null, note:"", missing:false, confirming:false}; calDrawDaySheet(); };
+    wrap.appendChild(btn);
+  }
+  return wrap;
+}
+
 /* ---------- day sheet ---------- */
 let calSheetT = null;
 function calOpenDay(dstr){
@@ -4103,6 +4395,7 @@ function calOpenDay(dstr){
   State.calEditingEvent = null;
   State.calSwapOpen = null;
   State.calSwapDraft = null;
+  State.calExceptionDraft = null;
   calDrawDaySheet();
   const sc = $("calScrim");
   clearTimeout(calSheetT);
@@ -4119,6 +4412,7 @@ function calCloseDay(){
   sc.classList.remove("opening");
   sc.classList.add("closing");
   State.calDay = null; State.calAdding = null; State.calEditingEvent = null; State.calSwapOpen = null; State.calSwapDraft = null;
+  State.calExceptionDraft = null;
   $("app").removeAttribute("inert");
   clearTimeout(calSheetT);
   calSheetT = setTimeout(()=>{ sc.hidden = true; sc.classList.remove("closing"); }, ms("--t-exit"));
@@ -4144,6 +4438,7 @@ function calDrawDaySheet(){
   s.appendChild(hd);
 
   if(State.calAdding){ s.appendChild(calEventForm(null)); return; }
+  s.appendChild(calCustodyExceptionSection(dstr));
   if(State.calEditingEvent){
     const ev = Store.allEvents().find(e=>e.id === State.calEditingEvent.id);
     if(ev){ s.appendChild(calEventForm(ev)); return; }
@@ -5982,6 +6277,135 @@ Store.init();
        !Store.myNote("dad","selfcheck_printex_ev_normal") && !Store.myNote("mom","selfcheck_printex_ev_normal"));
   })();
 
+  // ---- CUSTODY SCHEDULE UI: setting each of the 3 choosable pattern types
+  // resolves the right parent on 3 hand-picked dates. Mutation target: swap
+  // buildSequence's "223"/"week" arrays, or weekendAltParent's even/odd
+  // branch, and exactly the matching ck below goes red.
+  (function(){
+    const beforePat = JSON.stringify(Store.custodyPatterns);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      Store.putCustodyPattern("dad", "week", "2026-01-05", "2026-01-05", {parentA:"dad", parentB:"mom"}); // Mon
+      ck("selfcheck custody UI: week on/off resolves 3 hand-picked dates",
+         custodyForDate("2026-01-05").parent === "dad" &&   // anchor, cycle day 0
+         custodyForDate("2026-01-10").parent === "dad" &&   // cycle day 5, still parentA's week
+         custodyForDate("2026-01-12").parent === "mom");    // cycle day 7, parentB's week
+    } finally { Store.saveLocal = realSaveLocal; Store.push = realPush; }
+    Store.custodyPatterns = JSON.parse(beforePat);
+    ck("selfcheck custody UI: left no week-pattern probe behind",
+       !Store.allCustodyPatterns().some(p=>p.anchorDate==="2026-01-05" && p.patternType==="week"));
+  })();
+  (function(){
+    const beforePat = JSON.stringify(Store.custodyPatterns);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      Store.putCustodyPattern("mom", "223", "2026-01-05", "2026-01-05", {parentA:"dad", parentB:"mom"}); // Mon
+      ck("selfcheck custody UI: 2-2-3 resolves 3 hand-picked dates",
+         custodyForDate("2026-01-05").parent === "dad" &&   // Mon
+         custodyForDate("2026-01-07").parent === "mom" &&   // Wed
+         custodyForDate("2026-01-09").parent === "dad");    // Fri
+    } finally { Store.saveLocal = realSaveLocal; Store.push = realPush; }
+    Store.custodyPatterns = JSON.parse(beforePat);
+    ck("selfcheck custody UI: left no 223-pattern probe behind",
+       !Store.allCustodyPatterns().some(p=>p.anchorDate==="2026-01-05" && p.patternType==="223"));
+  })();
+  (function(){
+    const beforePat = JSON.stringify(Store.custodyPatterns);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      Store.putCustodyPattern("dad", "weekend-alt", "2026-01-05", "2026-01-05", {primary:"dad", other:"mom"}); // Mon
+      ck("selfcheck custody UI: alternating weekends resolves 3 hand-picked dates",
+         custodyForDate("2026-01-06").parent === "dad" &&   // Tue, weekday -> primary
+         custodyForDate("2026-01-10").parent === "mom" &&   // Sat, week idx 0 (even) -> other
+         custodyForDate("2026-01-17").parent === "dad");    // Sat, week idx 1 (odd) -> primary
+    } finally { Store.saveLocal = realSaveLocal; Store.push = realPush; }
+    Store.custodyPatterns = JSON.parse(beforePat);
+    ck("selfcheck custody UI: left no weekend-alt-pattern probe behind",
+       !Store.allCustodyPatterns().some(p=>p.anchorDate==="2026-01-05" && p.patternType==="weekend-alt"));
+  })();
+
+  // ---- CUSTODY SCHEDULE UI: a non-Monday 2-2-3 start is refused by the
+  // REAL validation function the "Set schedule" button calls, and writes
+  // NOTHING to Store. Mutation target: drop the weekdayOf(...)!==1 guard in
+  // attemptCustodySave and this goes red (both halves).
+  (function(){
+    const beforePat = JSON.stringify(Store.custodyPatterns);
+    const beforeDraft = State.custodyDraft;
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      State.custodyDraft = {patternType:"223", parentPick:"dad", startDate:"2026-01-06",  // a Tuesday
+        missing:null, dateMissing:false, confirming:false};
+      attemptCustodySave();
+      ck("selfcheck custody UI: a non-Monday 2-2-3 start is refused before confirmation",
+         Array.isArray(State.custodyDraft.missing) && State.custodyDraft.dateMissing === true &&
+         State.custodyDraft.confirming === false);
+      ck("selfcheck custody UI: the refused 2-2-3 attempt wrote nothing to Store",
+         JSON.stringify(Store.custodyPatterns) === beforePat);
+    } finally { Store.saveLocal = realSaveLocal; Store.push = realPush; State.custodyDraft = beforeDraft; }
+  })();
+
+  // ---- CUSTODY SCHEDULE UI: logging an exception through the real commit
+  // function makes custodyForDate report source "exception" with that
+  // parent, and a second logged exception for the same date keeps the first
+  // in revs rather than overwriting it. Mutation target: drop the revs
+  // concat in Store.putCustodyException (already covered by B3 above) — this
+  // block instead targets commitCalException/commitCalException's caller
+  // ever failing to route through Store.putCustodyException at all.
+  (function(){
+    const beforeExc = JSON.stringify(Store.custodyExceptions);
+    const beforeMe = State.me;
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      State.me = "dad";
+      commitCalException({date:"2026-04-01", parent:"mom", note:"selfcheck exception one"});
+      ck("selfcheck custody UI: logging an exception reports source exception with that parent",
+         custodyForDate("2026-04-01").parent === "mom" && custodyForDate("2026-04-01").source === "exception");
+      commitCalException({date:"2026-04-01", parent:"dad", note:"selfcheck exception two"});
+      const curDoc = Store.custodyExceptions["dad"];
+      const cur = curDoc && curDoc.items ? curDoc.items["2026-04-01"] : null;
+      ck("selfcheck custody UI: a second logged exception keeps the first in revs",
+         !!cur && (cur.revs||[]).length === 1 && cur.revs[0].parent === "mom" && cur.revs[0].note === "selfcheck exception one");
+    } finally { Store.saveLocal = realSaveLocal; Store.push = realPush; State.me = beforeMe; }
+    Store.custodyExceptions = JSON.parse(beforeExc);
+    ck("selfcheck custody UI: left no logged-exception probe behind",
+       !Store.allCustodyExceptions().some(x=>x.date==="2026-04-01"));
+  })();
+
+  // ---- CUSTODY SCHEDULE UI: the REAL renderCalendar() shows the honest
+  // empty state with no pattern on record, and the pattern summary once one
+  // exists — a DOM-level check, not just the pure custodyForDate() math.
+  // Mutation target: make calCustodyPanel() always show the empty state (or
+  // always show the summary) and one of the two ck()s below goes red.
+  (function(){
+    if(typeof renderCalendar === "undefined" || typeof $ === "undefined") return;
+    const beforePat = JSON.stringify(Store.custodyPatterns);
+    const beforeMonth = State.calMonth, beforeDay = State.calDay, beforeDraft = State.custodyDraft;
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      Store.custodyPatterns = {};
+      State.custodyDraft = null; State.calDay = null; State.calMonth = "2026-02";
+      renderCalendar();
+      ck("selfcheck custody UI: renderCalendar shows the empty state with no pattern on record",
+         $("calSlot").textContent.indexOf("No custody schedule set") >= 0);
+
+      Store.putCustodyPattern("dad", "week", "2026-02-02", "2026-02-02", {parentA:"dad", parentB:"mom"});
+      renderCalendar();
+      ck("selfcheck custody UI: renderCalendar shows the pattern summary once one is on record",
+         $("calSlot").textContent.indexOf("Week on / week off") >= 0 &&
+         $("calSlot").textContent.indexOf("No custody schedule set") === -1);
+    } finally { Store.saveLocal = realSaveLocal; Store.push = realPush; }
+    Store.custodyPatterns = JSON.parse(beforePat);
+    State.calMonth = beforeMonth; State.calDay = beforeDay; State.custodyDraft = beforeDraft;
+    ck("selfcheck custody UI: left no renderCalendar-probe pattern behind",
+       !Store.allCustodyPatterns().some(p=>p.anchorDate==="2026-02-02"));
+  })();
+
   // ---- LEAVE THE APP EXACTLY AS BOOTED. Every probe above borrows the live
   // singletons (State, Store, the DOM) and restores its own patch; this is the
   // belt to those braces, and it is ASSERTED. The first time this self-check
@@ -5994,6 +6418,7 @@ Store.init();
     State.me = bootMe;
     State.draft = null; State.moneyDraft = null; State.settleDraft = null;
     State.calDay = null; State.calAdding = null; State.calEditingEvent = null;
+    State.custodyDraft = null; State.calExceptionDraft = null;
     if(bootMe){
       TABS.forEach(t=>{ renderTab(t); });          /* rebuild every slot from the REAL store */
       setTab(bootTab);
