@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><style id="host-reset">body{margin:0;padding:0}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Bad Behavior Log</title>
+<title>Two Homes</title>
 <style>
 /* The stylesheet goes BEFORE the font links on purpose. The Google Fonts
    <link> is render-blocking, and it used to sit ahead of this block — so on
@@ -115,19 +115,22 @@ html{scroll-padding-top:76px;scroll-padding-bottom:64px}
 .dot.dad{background:var(--dad)} .dot.mom{background:var(--mom)}
 .syncline{margin-top:6px;font-size:11.5px;color:var(--faint);display:flex;align-items:center;gap:6px}
 .syncdot{width:6px;height:6px;border-radius:50%;background:var(--faint);flex:none}
-.syncdot.ok{background:var(--good)} .syncdot.local{background:var(--warn)}
+.syncdot.ok{background:var(--good)} .syncdot.local{background:var(--warn)} .syncdot.danger{background:var(--danger)}
 
 /* ---------- tabs ---------- */
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:.5px solid var(--line);
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:.5px solid var(--line);
       background:color-mix(in srgb, var(--surface) 82%, transparent);
       -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
       position:sticky;bottom:0;z-index:20;padding-bottom:env(safe-area-inset-bottom)}
 .tab{padding:8px 2px 9px;font-size:10.5px;font-weight:500;color:var(--muted);letter-spacing:-.005em;
      display:flex;flex-direction:column;align-items:center;gap:3px;
-     transition:color var(--t-amb) var(--ease-soft)}
+     transition:color var(--t-amb) var(--ease-soft), opacity var(--t-tap) var(--ease-out)}
 .tab svg{width:26px;height:26px;display:block}
 .tab[aria-selected="true"]{color:var(--accent);
      transition-duration:var(--t-sel);transition-timing-function:var(--ease-settle)}
+/* U7: the bottom nav — tapped more than almost anything else in the app — had
+   no :active of its own either, found by the same sweep as .x above. */
+.tab:active{opacity:.6;transition-duration:0s}
 .tab .cnt{font-size:10.5px;font-weight:500;color:inherit;opacity:.75;
      transition:color var(--t-amb) var(--ease-soft)}
 
@@ -202,6 +205,23 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
        transition:filter var(--t-tap) var(--ease-out)}
 .addgo:active{filter:brightness(.95)}
 .adderr{margin-top:8px;font-size:12px;color:var(--danger);font-weight:600}
+/* rename/remove for a parent's own custom options, inside the same "+ Other"
+   panel they used to add one — no settings screen, no 6th tab. */
+.optmgr{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.optlist{display:flex;flex-direction:column;gap:8px}
+.optrow{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.optrowtop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.optlabel{font-size:13px;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.optbtns{display:flex;gap:6px;flex:none}
+.optbtn{padding:7px 11px;border-radius:8px;font-size:12px;font-weight:600;
+        border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);
+        transition:filter var(--t-tap) var(--ease-out)}
+.optbtn:active{background:var(--sunk);transition-duration:0s}
+.optbtn-danger{border-color:var(--danger);color:var(--danger)}
+.optslot{margin-top:9px}
+.optslot .adder{margin-top:0}
+.optslot .confirmbox{margin-top:0}
+.optnote{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.45}
 /* Acknowledge the TOUCH, not just the result. Every other button in the app had
    an :active state; the chips — the controls actually being tapped — had none, so
    the only feedback was a colour easing in afterwards. Background + border only:
@@ -219,6 +239,12 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 .linkbtn{background:none;color:var(--accent);font-size:13px;font-weight:600;text-decoration:underline;
          text-underline-offset:3px;padding:13px 8px;align-self:center;
          transition:color var(--t-tap) var(--ease-out)}
+/* U7: .linkbtn had NO :active anywhere — Edit/Cancel/Save private note/etc. in
+   both new modules lean on it for their most common secondary action, and this
+   is the exact defect class that made Withdraw and the daily chips read as
+   dead controls before (v4, v8). Instant, never eased, matching every other
+   :active rule in the file. */
+.linkbtn:active{opacity:.6;transition-duration:0s}
 /* the destructive link used to begin at the exact pixel the Save button ended,
    so a thumb overshooting Save discarded a just-logged entry */
 .linkbtn.danger-link{color:var(--danger);margin-top:10px}
@@ -382,6 +408,9 @@ input[type="number"]{width:78px}
        border-radius:4px;background:var(--surface-2);color:var(--muted)}
 .badge.dad{color:var(--dad)} .badge.mom{color:var(--mom)}
 .badge.edited{color:var(--warn)}
+.badge.renamed{color:var(--warn)}
+.renamefoot{margin-top:12px}
+.renamefoot p+p{margin-top:6px}
 .lock{font-size:11px;color:var(--faint);flex:none;align-self:center}
 
 /* ---------- withdrawn entries: folded, never removed ---------- */
@@ -495,7 +524,12 @@ input[type="number"]{width:78px}
 .scrim.closing .sheet{animation:sheetOut var(--t-exit) var(--ease-soft) both}
 .sheet h3{margin:0 0 3px;font-size:16px;font-weight:700}
 .sheethd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
-.x{font-size:22px;color:var(--muted);line-height:1;padding:11px 14px;margin:-11px -10px 0 0}
+.x{font-size:22px;color:var(--muted);line-height:1;padding:11px 14px;margin:-11px -10px 0 0;
+   transition:opacity var(--t-tap) var(--ease-out)}
+/* U7: audited every tappable selector in the file — this sheet-close glyph had
+   NO :active anywhere, found only by grepping for it, not by trusting the
+   existing gate (which never knew this selector existed either). */
+.x:active{opacity:.55;transition-duration:0s}
 .revlist{margin-top:14px;border-top:1px solid var(--line);padding-top:11px}
 .rev{font-size:11.5px;color:var(--muted);padding:6px 0}
 .rev + .rev{border-top:1px solid var(--line)}
@@ -526,6 +560,26 @@ input[type="number"]{width:78px}
 .cno{background:var(--surface-2);color:var(--ink);border:1px solid var(--line-strong)}
 .cno:active{background:var(--sunk)}
 
+/* ---------- money ----------
+   Reuses .panel/.field/.chips/.chip/.bigbtn/.badge/.daylist/.entry/.voidtog/
+   .voidlist/.confirmbox/.flash/.empty verbatim (they are already generic, not
+   behaviour-specific) — the additions below are only what those genuinely
+   lack: a balance banner, a split-preset row, and a receipt thumbnail. */
+.moneybanner{background:var(--surface);border-radius:var(--r);padding:18px 16px;box-shadow:var(--shadow);text-align:center}
+.moneybanner .big{font-size:21px;font-weight:700;letter-spacing:-.02em;line-height:1.35}
+.moneybanner .sub2{font-size:12.5px;color:var(--muted);margin-top:5px}
+.eamt{font-size:15px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.mtitle{font-size:15px;font-weight:600;color:var(--ink);margin-top:1px}
+.splitrow{margin-top:8px}
+.splitrow .chip{flex:1;text-align:center}
+.receipt-thumb{margin-top:10px;display:flex;align-items:center;gap:10px}
+.receipt-thumb img{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--line-strong)}
+.receipt-rm{font-size:12px;font-weight:700;color:var(--danger);padding:6px 2px;
+            transition:opacity var(--t-tap) var(--ease-out)}
+.receipt-rm:active{opacity:.6}
+.settlebadge{color:var(--accent)}
+/* .badge.dad / .badge.mom already exist above (entry styling) and are reused as-is */
+
 /* ---------- identity gate ---------- */
 .gate{max-width:420px;margin:0 auto;padding:40px 20px;display:flex;flex-direction:column;gap:14px}
 .gate h1{font-size:20px;margin:0;font-weight:700}
@@ -535,6 +589,52 @@ input[type="number"]{width:78px}
              font-size:16px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:8px;
              transition:border-color var(--t-sel) var(--ease-settle)}
 .pick .dot{width:13px;height:13px}
+
+/* ---------- calendar ---------- */
+.cal-hd{display:flex;align-items:center;justify-content:space-between;padding:0 2px}
+.cal-mo{font-size:16px;font-weight:700;letter-spacing:-.015em}
+.cal-nav{display:flex;gap:6px}
+.cal-nav button{width:34px;height:34px;border-radius:9px;background:var(--surface);
+                border:1px solid var(--line-strong);font-size:15px;font-weight:700;
+                display:flex;align-items:center;justify-content:center;
+                transition:background-color var(--t-tap) var(--ease-out)}
+.cal-nav button:active{background:var(--surface-2)}
+@media (hover:hover) and (pointer:fine){ .cal-nav button:hover{border-color:var(--accent)} }
+.cal-wds{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.cal-wd{font-size:9.5px;font-weight:700;letter-spacing:.03em;text-align:center;
+        color:var(--faint);text-transform:uppercase}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:4px}
+.dcell{position:relative;min-height:50px;border-radius:9px;background:var(--surface);
+       border:1px solid var(--line);display:flex;flex-direction:column;
+       padding:4px 3px 7px;gap:2px;overflow:hidden;text-align:left;
+       transition:background-color var(--t-tap) var(--ease-out)}
+.dcell.out{opacity:.42}
+.dcell.today{border-color:var(--accent);border-width:1.5px}
+.dcell:active{background:var(--surface-2);transition-duration:0s}
+@media (hover:hover) and (pointer:fine){ .dcell:hover{border-color:var(--line-strong)} }
+.dtop{display:flex;align-items:center;justify-content:space-between;width:100%}
+.dnum{font-size:11.5px;font-weight:700;color:var(--ink-2)}
+.dcell.today .dnum{color:var(--accent)}
+.epi{font-size:9px;line-height:1;color:var(--sev4);font-weight:700}
+.dmarks{display:flex;flex-wrap:wrap;gap:2px;width:100%}
+.evtag{font-size:8px;font-weight:700;letter-spacing:.01em;padding:1px 3px;border-radius:3px;
+       background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);line-height:1.4}
+.evtag.more{background:none;border:none;color:var(--muted);padding:1px 0}
+.dband{position:absolute;left:0;right:0;bottom:0;height:5px}
+.dband.dad{background:repeating-linear-gradient(45deg, var(--dad) 0 3px, transparent 3px 6px)}
+.dband.mom{background:repeating-linear-gradient(-45deg, var(--mom) 0 3px, transparent 3px 6px)}
+.dband.exception{background:repeating-linear-gradient(45deg, var(--dad) 0 2px, var(--mom) 2px 4px)}
+.dband.none{background:var(--line)}
+.calev,.calepi,.calswap{margin-top:10px}
+.evtitle{font-size:15.5px;font-weight:700;color:var(--ink);letter-spacing:-.015em;margin-top:2px}
+.calev.voided .evtitle{text-decoration:line-through}
+.calev.voided{opacity:.85}
+.privnote{margin-top:10px;padding:10px 11px;border-radius:10px;background:var(--surface-2);
+          border:1px dashed var(--line-strong)}
+.privlab{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+         color:var(--ink-2);margin-bottom:7px}
+.privlock{font-size:12px}
+.calswap .etime{font-size:11.5px}
 
 /* ---------- print: the RECORD, and nothing else ----------
    The dark palette used to survive into print because only body{color} was
@@ -572,7 +672,23 @@ input[type="number"]{width:78px}
      surfaces, not the record, and a chart built on a thin sample is the last
      thing that should travel as an exhibit. */
   #v-history[hidden]{display:flex !important}
-  #v-log,#v-patterns,#v-trends{display:none !important}
+  #v-log,#v-insights,#v-calendar{display:none !important}
+  /* Money is its own exhibit, kept OUT of a normal Record print by default so
+     printing does not silently grow a second document nobody asked for. */
+  #v-money{display:none !important}
+}
+/* ---------- money print exhibit ----------
+   A second, independent @media print block rather than editing the one above:
+   the Money print button sets this class on <body> right before window.print()
+   (never before, so a normal Record print is never affected), swapping which
+   view is forced visible. Same treatment as the Record: light palette (already
+   re-declared on :root above, this block adds nothing new there), folds forced
+   open — .voidlist/.voidtog are the SAME classes the money ledger's own
+   withdrawn-items fold uses, so the print rule above already forces it open,
+   nothing money-specific needed for that half of the guarantee. */
+@media print{
+  body.print-money #v-history{display:none !important}
+  body.print-money #v-money[hidden]{display:flex !important}
 }
 
 /* ---------- reduced motion ----------
@@ -600,10 +716,10 @@ input[type="number"]{width:78px}
 <div class="app" id="app" hidden>
   <header class="hdr">
     <div class="hdr-row">
-      <h1 class="brand">Bad Behavior Log</h1>
+      <h1 class="brand">Two Homes</h1>
       <div class="whoami"><span class="dot" id="meDot"></span><span id="meName"></span></div>
     </div>
-    <div class="syncline"><span class="syncdot" id="syncDot"></span><span id="syncMsg">Connecting…</span></div>
+    <div class="syncline" role="status"><span class="syncdot" id="syncDot"></span><span id="syncMsg">Connecting…</span></div>
   </header>
 
   <main>
@@ -615,7 +731,35 @@ input[type="number"]{width:78px}
       <div id="dailySlot"></div>
     </section>
 
-    <!-- ============ HISTORY ============ -->
+    <!-- ============ CALENDAR ============ -->
+    <section class="view" id="v-calendar" role="tabpanel" aria-labelledby="t-calendar" tabindex="0" hidden>
+      <div>
+        <h2 class="sec">Calendar</h2>
+        <p class="sub">Events are visible to both parents. Any private note you add to an event is visible
+           only to you — it is never sent to the other parent's device. Custody days are shown as a
+           striped band along the bottom of each date.</p>
+      </div>
+      <div id="calSlot"></div>
+    </section>
+
+    <!-- ============ MONEY ============ -->
+    <section class="view" id="v-money" role="tabpanel" aria-labelledby="t-money" tabindex="0" hidden>
+      <div>
+        <h2 class="sec">Money</h2>
+        <p class="sub">Each expense is split between you — 50/50 by default, adjustable per claim. Nothing is deleted or overwritten: a
+           withdrawn claim stays visible, struck through, and a settlement is added to the record, never
+           edited into an old total.</p>
+      </div>
+      <div class="note-strip">
+        <b>This is a balance, not a scoreboard.</b> The number below is what is owed, worked out from the
+        splits on each claim. It is never a comparison of how much either parent has spent — the two
+        homes log at different rates for reasons that have nothing to do with the money.
+      </div>
+      <div id="moneySlot"></div>
+      <button class="bigbtn ghost no-print" id="moneyPrintBtn">Print or save as PDF</button>
+    </section>
+
+    <!-- ============ HISTORY (Record) ============ -->
     <section class="view" id="v-history" role="tabpanel" aria-labelledby="t-history" tabindex="0" hidden>
       <div>
         <h2 class="sec">The record</h2>
@@ -627,21 +771,16 @@ input[type="number"]{width:78px}
       <button class="bigbtn ghost no-print" id="printBtn">Print or save as PDF</button>
     </section>
 
-    <!-- ============ TRENDS ============ -->
-    <section class="view" id="v-trends" role="tabpanel" aria-labelledby="t-trends" tabindex="0" hidden>
+    <!-- ============ INSIGHTS (Trends + Patterns merged, 2026-09-17 ruling:
+         a 6-tab bar does not fit a phone) — the time series answers "is this
+         changing", the cards below answer "what does the lifetime shape look
+         like"; the no-parent-comparison caveat is shared by both and sits
+         once, up top, verbatim from the old Patterns tab. ============ -->
+    <section class="view" id="v-insights" role="tabpanel" aria-labelledby="t-insights" tabindex="0" hidden>
       <div>
-        <h2 class="sec">Trends</h2>
-        <p class="sub">How much is being recorded, day by day. This is the only view that can tell a
-           repeating pattern apart from one difficult stretch.</p>
-      </div>
-      <div id="trendSlot"></div>
-    </section>
-
-    <!-- ============ PATTERNS ============ -->
-    <section class="view" id="v-patterns" role="tabpanel" aria-labelledby="t-patterns" tabindex="0" hidden>
-      <div>
-        <h2 class="sec">Patterns</h2>
-        <p class="sub">Each card stays locked until a count here would mean more than chance.</p>
+        <h2 class="sec">Insights</h2>
+        <p class="sub">How much is being recorded over time, and the shapes in the record as a whole. Each
+           card below stays locked until a count here would mean more than chance.</p>
       </div>
       <div class="note-strip">
         <b>This log does not rank the two homes.</b> The two parents log different amounts, and that gap
@@ -649,15 +788,17 @@ input[type="number"]{width:78px}
         entry in the record does show which name logged it, so nothing below should be read as being
         about one home.
       </div>
+      <div id="trendSlot"></div>
       <div id="patSlot"></div>
     </section>
   </main>
 
   <nav class="tabs" role="tablist" aria-label="Views">
     <button class="tab" role="tab" id="t-log" aria-controls="v-log" aria-selected="true" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Log</span><span class="cnt" id="cnt-log">—</span></button>
+    <button class="tab" role="tab" id="t-calendar" aria-controls="v-calendar" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg><span>Calendar</span><span class="cnt" id="cnt-calendar">—</span></button>
+    <button class="tab" role="tab" id="t-money" aria-controls="v-money" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5a2.5 2.5 0 0 1 2.5-1.5h1a2.25 2.25 0 0 1 0 4.5h-1a2.25 2.25 0 0 0 0 4.5h1a2.5 2.5 0 0 0 2.5-1.5"/></svg><span>Money</span><span class="cnt" id="cnt-money">—</span></button>
     <button class="tab" role="tab" id="t-history" aria-controls="v-history" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg><span>Record</span><span class="cnt" id="cnt-history">—</span></button>
-    <button class="tab" role="tab" id="t-trends" aria-controls="v-trends" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l5-5 3.5 3.5L20 8"/><path d="M20 13V8h-5"/></svg><span>Trends</span><span class="cnt" id="cnt-trends">—</span></button>
-    <button class="tab" role="tab" id="t-patterns" aria-controls="v-patterns" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>Patterns</span><span class="cnt" id="cnt-patterns">—</span></button>
+    <button class="tab" role="tab" id="t-insights" aria-controls="v-insights" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l5-5 3.5 3.5L20 8"/><path d="M20 13V8h-5"/></svg><span>Insights</span><span class="cnt" id="cnt-insights">—</span></button>
   </nav>
 </div>
 
@@ -674,11 +815,14 @@ input[type="number"]{width:78px}
 <div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"
      aria-labelledby="sheetTitle" tabindex="-1"></div></div>
 
+<div class="scrim" id="calScrim" hidden><div class="sheet" id="calSheetEl" role="dialog" aria-modal="true"
+     aria-labelledby="calSheetTitle" tabindex="-1"></div></div>
+
 <script>
 "use strict";
 
 /* ============================================================
-   Bad Behavior Log
+   Two Homes — shared record for co-parents
    Single child by design.
    ponytail: one child only. Upgrade path = add a `kid` field to every
    entry + day record and a selector in the header; the month-document
@@ -759,8 +903,134 @@ function labelOf(key){
 function optionsFor(field){
   return (CUSTOM_FIELDS[field]||[]).concat(Store.customOptions(field));
 }
+/* True once a custom option's label has been changed at least once — the
+   ONLY mutable string in an otherwise append-only record. Built-ins can never
+   be renamed (CUSTOM_FIELDS doesn't offer the control), so this is always
+   false for them without needing to special-case them here. */
+function wasRenamed(key){
+  return Store.renameTrail(key).length > 0;
+}
+const FIELD_NAME = {trig:"Trigger", place:"Where", resp:"What ended it"};
 
 const WHO_NAME = {dad:"Dad", mom:"Mom"};
+/* generalises over WHO_NAME's keys rather than hardcoding "dad"/"mom" a
+   second time, so this stays correct if a third identity is ever added */
+function otherWho(){ return Object.keys(WHO_NAME).find(w=>w!==State.me); }
+
+/* ============================================================
+   MONEY — a separate small domain, so it gets its own ONE resolver
+   (moneyCatLabel) rather than overloading labelOf(), which is scoped to the
+   behaviour log's trigger/place/response vocabulary and its custom-option
+   machinery. Money categories are a closed list; nothing here is user-added.
+   ============================================================ */
+const MONEY_CATEGORIES = [
+  ["medical","Medical"],["childcare","Childcare"],["school","School"],
+  ["clothing","Clothing"],["activities","Activities"],["other","Other"]
+];
+const MONEY_CAT_LABEL = {};
+MONEY_CATEGORIES.forEach(([k,v])=>MONEY_CAT_LABEL[k]=v);
+function moneyCatLabel(key){ return MONEY_CAT_LABEL[key] || String(key||""); }
+const WHO_OPTS = [["dad","Dad"],["mom","Mom"]];
+/* payerPct is always the PAYER's share of the total — framing every split
+   relative to "payer"/"other" rather than to fixed parent names means the
+   same three presets work no matter who is picked as payer. */
+/* U8: short chip labels — "Payer covers all"/"Payer covers none" (17-18 chars) don't
+   fit a 375px-wide 4-chip row (~52.5px text area per chip) without wrapping and
+   stepping the row's height. The full meaning still reaches a screen reader via
+   the third element (aria-label) and reaches every reader via updateSplitPreview()'s
+   dollar breakdown just below the row. */
+const SPLIT_PRESETS = [["50","50/50","Split 50/50"],["100","All","Payer covers all"],["0","None","Payer covers none"],["custom","Custom %","Custom percent"]];
+
+/* ---------- money is INTEGER CENTS, never a float ----------
+   Every amount a parent types is a decimal-dollar STRING. It is parsed here
+   with string/integer arithmetic only — never parseFloat feeding a sum — so
+   the classic 0.1 + 0.2 !== 0.3 drift is structurally impossible: nothing
+   in this file ever adds two dollar floats together. Rejects anything that
+   is not plain digits with an optional 1-2 digit fraction, rather than
+   silently flooring or truncating a typo into a smaller, wrong number. */
+/* A sane ceiling on a single logged amount. Past this, integer-cents
+   arithmetic is no longer guaranteed exact by IEEE-754 doubles (a 15-digit
+   dollar string parses past Number.MAX_SAFE_INTEGER), which is exactly the
+   drift this file's cents-only design exists to prevent. Rejecting is an
+   HONEST REFUSAL, not a silent clamp: a rejected amount returns null, the
+   same value an empty or malformed input already returns, so it flows
+   through the existing "a valid amount" missing-field validation that is
+   already visible (red border, REQUIRED tag) rather than being quietly
+   rounded down to something the parent never typed. */
+const AMOUNT_CENTS_MAX = 100000000; // $1,000,000.00
+function dollarsToCents(str){
+  const s = String(str==null?"":str).trim();
+  if(!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+  const parts = s.split(".");
+  const whole = parseInt(parts[0], 10);
+  const fracStr = (parts[1] || "").padEnd(2, "0").slice(0,2);
+  const frac = parseInt(fracStr, 10);
+  if(!Number.isFinite(whole) || !Number.isFinite(frac)) return null;
+  const cents = whole * 100 + frac;
+  if(!Number.isSafeInteger(cents) || cents > AMOUNT_CENTS_MAX) return null;
+  return cents;
+}
+function centsToDollars(cents){
+  const c = Math.round(Math.abs(cents));
+  const whole = Math.floor(c/100), frac = c%100;
+  return (cents < 0 ? "-" : "") + "$" + whole + "." + String(frac).padStart(2,"0");
+}
+
+/* ---------- the split ----------
+   payerPct is the PAYER's percentage of the total (0-100, default 50). The
+   OTHER party's cents is computed as amount - payerCents — a subtraction,
+   never a second independent rounding — which is what GUARANTEES the two
+   shares always sum to exactly the total, including on an odd cent. For the
+   default 50/50 case this means: the payer's cents rounds UP (Math.round on
+   .5 goes to +Infinity for a positive number), so a $1.01 claim splits
+   51/50 and the PAYER — the parent who actually fronted the money — is the
+   one who absorbs the leftover cent. That is the whole rounding rule: it is
+   fixed, it does not depend on which parent happens to be dad or mom, and
+   the row always prints both shares so the split is never ambiguous. */
+function splitCents(amountCents, payerPct){
+  const pct = Math.max(0, Math.min(100, payerPct));
+  const payerCents = Math.round(amountCents * pct / 100);
+  const otherCents = amountCents - payerCents;
+  return {payerCents, otherCents};
+}
+function assignSplit(amountCents, payerWho, payerPct){
+  const {payerCents, otherCents} = splitCents(amountCents, payerPct);
+  return payerWho === "dad" ? {dadCents:payerCents, momCents:otherCents}
+                             : {dadCents:otherCents, momCents:payerCents};
+}
+
+/* ---------- the balance ----------
+   Positive = Dad is owed; negative = Mom is owed; zero = settled. Every
+   claim's OTHER party (not the payer) owes their share to the payer, so it
+   moves the balance toward whichever parent paid. A settlement is a direct
+   payment from its `payer` to the other parent, so it moves the balance the
+   SAME direction a claim paid by that parent would — which is exactly what
+   reduces an existing debt back toward zero: if Mom owes Dad and Mom pays
+   Dad directly (a settlement with payer:"mom"), that is mathematically
+   identical in sign to Mom having "paid a claim", and it pulls the balance
+   down toward zero the same way. Checked by hand and in the self-check
+   below: a claim paid by Dad (Mom owes Dad her share) followed by a
+   settlement of exactly that share with payer:"mom" must return exactly 0,
+   in both directions — that is the case a sign inversion would break. */
+function ledgerBalance(claims, settlements){
+  let cents = 0;
+  (claims||[]).forEach(c=>{
+    if(c.voided) return;
+    const otherShare = c.payer === "dad" ? c.momCents : c.dadCents;
+    cents += (c.payer === "dad" ? 1 : -1) * otherShare;
+  });
+  (settlements||[]).forEach(s=>{
+    if(s.voided) return;
+    cents += (s.payer === "dad" ? 1 : -1) * s.amount;
+  });
+  return cents;
+}
+function balanceSentence(cents, anyRecords){
+  if(!anyRecords) return "Nothing has been logged. The balance is $0.00 because nothing is on the record yet.";
+  if(cents === 0) return "Settled — nothing outstanding.";
+  const who = cents > 0 ? "Dad" : "Mom";
+  return who + " is owed " + centsToDollars(Math.abs(cents)) + ".";
+}
 
 /* ---------- motion helpers ----------
    A CSS transition needs a BEFORE-change style. A node that was not in the
@@ -791,7 +1061,16 @@ const el = (tag, cls, txt) => { const n=document.createElement(tag); if(cls)n.cl
 const pad = n => String(n).padStart(2,"0");
 const ymOf = ms => { const d=new Date(ms); return d.getFullYear()+"-"+pad(d.getMonth()+1); };
 const dayOf = ms => { const d=new Date(ms); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); };
-const clockOf = ms => { const d=new Date(ms); let h=d.getHours(); const ap=h<12?"am":"pm"; h=h%12||12; return h+":"+pad(d.getMinutes())+ap; };
+const formatClock = (h, m) => { const ap=h<12?"am":"pm"; const hh=h%12||12; return hh+":"+pad(m)+ap; };
+const clockOf = ms => { const d=new Date(ms); return formatClock(d.getHours(), d.getMinutes()); };
+/* U5: a calendar event's <input type="time"> value is a bare "HH:MM" wall-clock
+   string, not a timestamp — there is no Date to hand clockOf(). Same resolver,
+   same output shape ("2:30pm"), so an event on the day sheet no longer shows raw
+   24-hour "14:30" beside episode rows that already read through clockOf(). */
+const clockOfTimeStr = hhmm => {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(hhmm||""));
+  return m ? formatClock(+m[1], +m[2]) : "";
+};
 
 function durText(sec){
   if(sec==null) return "—";
@@ -829,9 +1108,22 @@ const Store = {
   entries:{},   // docId -> {who, month, items:{id:entry}}
   days:{},      // docId -> {who, month, items:{date:card}}
   options:{},   // docId -> {who, items:{key:{field,label,at}}}   one doc per PARENT
+  expenses:{},    // docId -> {who, month, items:{id:claim}}      same shape as entries
+  settlements:{}, // docId -> {who, month, items:{id:settlement}} same shape as entries
   listeners:[],
   chain:{},     // docPath -> promise, so writes to one document never overlap
 
+  /* ---- calendar bags. Shapes follow the same two families as above:
+          an accumulating collection is <period>__<who> like entries/days;
+          a lookup/config collection is one doc per parent like options. ---- */
+  calEvents:{},          // docId (<YYYY-MM>__<who>) -> {who, month, items:{id:event}}
+  calNotes:{},           // who -> {who, items:{eventId:{text,at,revs}}}  — never merged/read cross-parent
+  custodyPatterns:{},    // who -> {who, items:{id:pattern}}   pure inserts, never edited
+  custodyExceptions:{},  // who -> {who, items:{date:exception}}
+  swapRequests:{},       // who -> {who, items:{id:request}}
+  swapResponses:{},      // who -> {who, items:{requestId:response}}
+  storageError:null,     // {at,message} set by saveLocal() when the local write
+                          // failed (quota, etc), cleared the next time one succeeds
 
   onChange(fn){ this.listeners.push(fn); },
   emit(){ this.listeners.forEach(f=>f()); },
@@ -863,20 +1155,28 @@ const Store = {
        not promise a sync that can never happen.
        ponytail: device-only trial. Ceiling = one phone, no sharing between the
        two parents. Upgrade path = the Supabase swap described above. */
-    if(!window.claude){ this.mode = "device"; this.loadLocal(); this.emit(); return; }
+    if(!window.claude){ this.mode = "device"; this.loadLocal(); this.cleanupJunkOptions(); this.emit(); return; }
     let db = null;
     try { db = await window.claude?.use?.("db"); } catch(e){ db = null; }
     this.db = db;
-    if(!db){ this.mode = "local"; this.loadLocal(); this.emit(); return; }
+    if(!db){ this.mode = "local"; this.loadLocal(); this.cleanupJunkOptions(); this.emit(); return; }
     this.mode = "sync";
     try {
       db.collection("entries").onSnapshot(
         snap => { snap.docs.forEach(d=>{ this.mergeDoc(this.entries, d.id, d.data()||{}); });
                   this.saveLocal(); this.emit(); },
-        err  => { this.mode = "local"; this.loadLocal(); this.emit(); }
+        err  => { this.mode = "local"; this.loadLocal(); this.cleanupJunkOptions(); this.emit(); }
       );
+      /* "db" mode: the junk this cleans may live on the SERVER document (it was
+         pushed there before the source fix), so a local-only delete cannot
+         survive the next snapshot re-merging the same key back in — mergeDoc()
+         unions, it never subtracts. Cleaning here, after the merge and before
+         saveLocal(), and letting cleanupJunkOptions() push the corrected doc
+         upstream, is what actually fixes it instead of just masking it on
+         this one device until the next snapshot arrives. */
       db.collection("options").onSnapshot(
         snap => { snap.docs.forEach(d=>{ this.mergeDoc(this.options, d.id, d.data()||{}); });
+                  this.cleanupJunkOptions();
                   this.saveLocal(); this.emit(); },
         err  => {}
       );
@@ -886,7 +1186,28 @@ const Store = {
         err  => { this.mode = "local"; this.emit(); }   /* was swallowed: the daily
                 card could stop syncing with the header still saying "Shared" */
       );
-    } catch(e){ this.mode="local"; this.loadLocal(); }
+      /* Same union-merge, same per-parent write isolation, same chained push —
+         the ledger is append-only for the identical reason the behaviour log
+         is, so it reuses mergeDoc()/push() rather than a parallel mechanism. */
+      db.collection("expenses").onSnapshot(
+        snap => { snap.docs.forEach(d=>{ this.mergeDoc(this.expenses, d.id, d.data()||{}); });
+                  this.saveLocal(); this.emit(); },
+        err  => { this.mode = "local"; this.loadLocal(); this.emit(); }
+      );
+      db.collection("settlements").onSnapshot(
+        snap => { snap.docs.forEach(d=>{ this.mergeDoc(this.settlements, d.id, d.data()||{}); });
+                  this.saveLocal(); this.emit(); },
+        err  => { this.mode = "local"; this.loadLocal(); this.emit(); }
+      );
+      /* calendar collections — same mergeDoc/saveLocal/emit wiring as above */
+      ["calEvents","calNotes","custodyPatterns","custodyExceptions","swapRequests","swapResponses"].forEach(kind=>{
+        db.collection(kind).onSnapshot(
+          snap => { snap.docs.forEach(d=>{ this.mergeDoc(this[kind], d.id, d.data()||{}); });
+                    this.saveLocal(); this.emit(); },
+          err  => {}
+        );
+      });
+    } catch(e){ this.mode="local"; this.loadLocal(); this.cleanupJunkOptions(); }
     this.emit();
     this.flushOutbox();
   },
@@ -895,11 +1216,31 @@ const Store = {
   loadLocal(){
     try {
       const raw = localStorage.getItem("bbl.mirror");
-      if(raw){ const m = JSON.parse(raw); this.entries = m.entries||{}; this.days = m.days||{}; this.options = m.options||{}; }
+      if(raw){ const m = JSON.parse(raw); this.entries = m.entries||{}; this.days = m.days||{}; this.options = m.options||{};
+        this.expenses = m.expenses||{}; this.settlements = m.settlements||{};
+        this.calEvents = m.calEvents||{}; this.calNotes = m.calNotes||{};
+        this.custodyPatterns = m.custodyPatterns||{}; this.custodyExceptions = m.custodyExceptions||{};
+        this.swapRequests = m.swapRequests||{}; this.swapResponses = m.swapResponses||{}; }
     } catch(e){}
   },
+  /* Once localStorage is full, THIS call throws — and used to be swallowed by
+     an empty catch, so the write disappeared with no signal anywhere: the
+     entry still rendered (it lives in memory) and the "Saved" flash still
+     fired, but nothing reached disk, and in device mode localStorage IS the
+     database. storageError is read by renderSync() every render (Store.emit()
+     fires right after this on every write), so the header carries the failure
+     to the user in the app, honestly, at the moment it happens — not a
+     console log. It self-clears the next time a save actually lands. */
   saveLocal(){
-    try { localStorage.setItem("bbl.mirror", JSON.stringify({entries:this.entries, days:this.days, options:this.options})); } catch(e){}
+    try {
+      localStorage.setItem("bbl.mirror", JSON.stringify({entries:this.entries, days:this.days, options:this.options,
+        expenses:this.expenses, settlements:this.settlements,
+        calEvents:this.calEvents, calNotes:this.calNotes, custodyPatterns:this.custodyPatterns,
+        custodyExceptions:this.custodyExceptions, swapRequests:this.swapRequests, swapResponses:this.swapResponses}));
+      this.storageError = null;
+    } catch(e){
+      this.storageError = {at:Date.now(), message:(e && e.message) || "Storage is full"};
+    }
   },
   queue(kind, docId){
     try {
@@ -976,6 +1317,34 @@ const Store = {
     return this.push("days", docId);
   },
 
+  /* ---- money: claims and settlements ----
+     Same shape and the same write-isolation rule as putEntry: `who` is always
+     the WRITER (State.me at save time), stored into THEIR OWN doc, never a
+     doc two parents both write to. Who actually paid is a data field on the
+     item itself (`payer`), independent of who is logging it — one parent can
+     log a receipt the other one handed them. Revisions (withdraw) go through
+     the same push()/mergeDoc() plumbing as everything else; resolve() is
+     reused as-is for reading them back, since it only depends on `revs`
+     existing, not on what else is in the record. */
+  putExpense(who, item){
+    const docId = this.entryDoc(who, ymOf(item.date));
+    const doc = this.expenses[docId] || {who, month: ymOf(item.date), items:{}};
+    doc.items = Object.assign({}, doc.items);
+    doc.items[item.id] = item;
+    this.expenses[docId] = doc;
+    this.saveLocal(); this.emit();
+    return this.push("expenses", docId);
+  },
+  putSettlement(who, item){
+    const docId = this.entryDoc(who, ymOf(item.date));
+    const doc = this.settlements[docId] || {who, month: ymOf(item.date), items:{}};
+    doc.items = Object.assign({}, doc.items);
+    doc.items[item.id] = item;
+    this.settlements[docId] = doc;
+    this.saveLocal(); this.emit();
+    return this.push("settlements", docId);
+  },
+
   /* Custom options live in ONE DOCUMENT PER PARENT, keyed by `who` alone — the
      same write-isolation rule as entries and day cards, so two parents adding an
      option at the same moment still cannot clobber each other. They are READ as
@@ -986,11 +1355,29 @@ const Store = {
     if(!key) return null;
     const doc = this.options[who] || {who, items:{}};
     doc.items = Object.assign({}, doc.items);
-    if(!doc.items[key]){
-      const mine = Object.values(doc.items).filter(o=>o.field===field).length;
+    const clean = String(label).trim().slice(0,CUSTOM_LEN);
+    const existing = doc.items[key];
+    if(!existing){
+      const mine = Object.values(doc.items).filter(o=>o.field===field && !o.removed).length;
       if(mine >= CUSTOM_MAX) return null;
-      doc.items[key] = {field:field, label:String(label).trim().slice(0,CUSTOM_LEN), at:Date.now()};
+      doc.items[key] = {field:field, label:clean, at:Date.now(), revs:[]};
+    } else if(existing.removed){
+      /* Reviving a removed option through the SAME "+ Other" box a parent
+         used to remove it. Retyping it under different capitalisation would
+         otherwise relabel every past entry that still carries this key with
+         no trace at all — the identical evidence gap a rename has, reached
+         by a different door. So a revive that changes the label goes through
+         the same trail a rename does, not a silent label swap. */
+      const revived = Object.assign({}, existing, {removed:false});
+      if(clean && clean !== existing.label){
+        revived.revs = (existing.revs||[]).concat(
+          [{from:existing.label, to:clean, at:Date.now(), by:who}]);
+        revived.label = clean;
+      }
+      doc.items[key] = revived;
     }
+    /* existing and active: unchanged, matches prior behaviour — retyping an
+       option that is already live and unchanged is a no-op, not a rename. */
     this.options[who] = doc;
     this.saveLocal(); this.emit();
     this.push("options", who);
@@ -1000,11 +1387,15 @@ const Store = {
     const seen = {}, out = [];
     Object.values(this.options).forEach(doc=>{
       Object.entries(doc.items||{}).forEach(([k,o])=>{
-        if(o && o.field === field && !seen[k]){ seen[k] = 1; out.push([k, o.label]); }
+        if(o && o.field === field && !o.removed && !seen[k]){ seen[k] = 1; out.push([k, o.label]); }
       });
     });
     return out.sort((a,b)=>a[1].localeCompare(b[1]));
   },
+  /* Union read, deliberately NOT filtered by `removed` — a past entry that
+     used a now-removed option must still resolve to its real label (and its
+     rename history, if any), never fall back to raw key text just because
+     the picker no longer offers it. */
   optionLabel(key){
     let hit = null;
     Object.values(this.options).forEach(doc=>{
@@ -1012,6 +1403,138 @@ const Store = {
       if(o && !hit) hit = o.label;
     });
     return hit;
+  },
+  /* The rename trail for one option, union-read the same way optionLabel()
+     is (a key only ever lives in one parent's document). Empty for an
+     option that has never been renamed — the no-false-positive case. */
+  renameTrail(key){
+    let hit = null;
+    Object.values(this.options).forEach(doc=>{
+      const o = (doc.items||{})[key];
+      if(o && !hit) hit = o.revs || [];
+    });
+    return hit || [];
+  },
+  /* This parent's OWN custom options for one field — the set they are allowed
+     to rename or remove. Reads only Store.options[who], never the union, which
+     is what keeps management scoped to what that parent actually wrote.
+     Removed options are excluded — they're not offered for further
+     management until (if ever) revived by re-adding the same text. */
+  myCustomOptions(who, field){
+    const doc = this.options[who];
+    if(!doc || !doc.items) return [];
+    return Object.entries(doc.items)
+      .filter(([k,o])=>o && o.field === field && !o.removed)
+      .map(([k,o])=>[k, o.label])
+      .sort((a,b)=>a[1].localeCompare(b[1]));
+  },
+  /* Removes an option from the PICKER only. Options are picker vocabulary, not
+     the append-only record — unlike an entry or day card, taking one out of
+     the picker destroys nothing a mediator would ever need to read back,
+     because optionLabel()/labelOf() still resolve it for any entry that
+     references it. A SOFT delete (`removed:true`), not a hard one: the label
+     and its rename trail stay in the document so a later revive (typing the
+     same option back in) can be checked against the label it had, instead of
+     silently starting a fresh, historyless item under the same key. Scoped to
+     `who`'s own document by construction — a parent calling this with
+     anyone's `who` but their own finds nothing to remove, the same
+     write-isolation the entries/days docs already rely on. */
+  removeOption(who, key){
+    const doc = this.options[who];
+    if(!doc || !doc.items || !doc.items[key] || doc.items[key].removed) return false;
+    doc.items = Object.assign({}, doc.items);
+    doc.items[key] = Object.assign({}, doc.items[key], {removed:true});
+    this.options[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("options", who);
+    return true;
+  },
+  /* Renames in place — the STORED key never changes, only its label. Past
+     entries keep the key, and labelOf() reads the label live off this same
+     document, so every past entry that used the option immediately shows the
+     NEW label too. That is a deliberate choice: an entry's stored fact is
+     "which category", not "which spelling of it".
+     ⛔ THE FIX: that live-resolution used to be silent — a rename left no
+     trace, in a record built to be tamper-evident, of the fact that a rename
+     happened at all. `revs` (same field name and shape entries/days already
+     use: {at, by, ...}) now appends {from, to, at, by} on every rename, is
+     NEVER overwritten, and rides mergeDoc()'s existing "more revs wins"
+     freshness rule for free — options are merged through the identical
+     generic mergeDoc() entries and days use, keyed on revs.length, so this
+     needed no change there at all. */
+  renameOption(who, key, label){
+    const doc = this.options[who];
+    if(!doc || !doc.items || !doc.items[key] || doc.items[key].removed) return false;
+    const item = doc.items[key];
+    const clean = String(label||"").trim().slice(0,CUSTOM_LEN);
+    if(!clean || clean === item.label) return false;   /* no text, or no actual change: not a rename */
+    doc.items = Object.assign({}, doc.items);
+    doc.items[key] = Object.assign({}, item, {
+      label: clean,
+      revs: (item.revs||[]).concat([{from:item.label, to:clean, at:Date.now(), by:who}])
+    });
+    this.options[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("options", who);
+    return true;
+  },
+
+  /* ---- one-time cleanup: purge test junk the old self-check minted before it
+     was isolated (grep the self-check block below for the isolation fix).
+     Options are picker vocabulary, not the record, so outright deletion is
+     fine here in a way it never is for entries/days.
+     Matcher is deliberately narrow, in two different ways for two different
+     reasons:
+       - "c:capprobe*" by KEY ALONE. No real parent types the word "capprobe";
+         matching on the key is safe and also catches every cap-probe field
+         (trig AND place) in one rule.
+       - "c:bath time" only when the stored LABEL is the exact literal the
+         probe minted, "Bath  Time" (a double space before "Time", because the
+         probe's source text was `"Bath  Time"`). Matching this one by KEY
+         ALONE would be wrong: a real parent typing "bath time" by hand
+         produces the identical key (customKey() lowercases + collapses
+         whitespace), and that parent's option must survive a cleanup that
+         is only supposed to remove test data. The double space is the one
+         signal that distinguishes the probe's artifact from a real parent's
+         normal typing, so the label is part of the match, not just the key. */
+  isJunkOption(key, opt){
+    if(/^c:capprobe/.test(String(key))) return true;
+    if(key === "c:bath time" && opt && opt.label === "Bath  Time") return true;
+    return false;
+  },
+  CLEANUP_KEY: "bbl.cleanupV1",
+  cleanupRan(){
+    try { return localStorage.getItem(this.CLEANUP_KEY) === "1"; } catch(e){ return true; }
+  },
+  /* Runs once per device, in EITHER Store.mode: called after loadLocal() in
+     device/local mode (junk that never reached a server, only ever on this
+     one phone's disk) and again from inside the options onSnapshot handler in
+     sync/db mode (junk that DID reach the server before the source fix, and
+     would otherwise come back on every device via the union merge — a
+     local-only delete cannot survive mergeDoc() pulling the same key back off
+     a still-dirty server document, since mergeDoc unions rather than
+     subtracts). The marker makes the second call, and every call after the
+     first in either mode, a no-op. */
+  cleanupJunkOptions(){
+    if(this.cleanupRan()) return;
+    try { localStorage.setItem(this.CLEANUP_KEY, "1"); } catch(e){}
+    let touched = false;
+    Object.keys(this.options).forEach(docId=>{
+      const doc = this.options[docId];
+      if(!doc || !doc.items) return;
+      const kept = {};
+      let removedHere = false;
+      Object.keys(doc.items).forEach(k=>{
+        if(this.isJunkOption(k, doc.items[k])) removedHere = true;
+        else kept[k] = doc.items[k];
+      });
+      if(removedHere){ touched = true; this.options[docId] = Object.assign({}, doc, {items:kept}); }
+    });
+    if(touched){
+      this.saveLocal();
+      Object.keys(this.options).forEach(docId=>this.push("options", docId));
+      this.emit();
+    }
   },
 
   /* ---- reads ---- */
@@ -1032,6 +1555,202 @@ const Store = {
       Object.entries(doc.items||{}).forEach(([d,c])=>out.push(Object.assign({date:d, who:doc.who}, c)));
     });
     return out;
+  },
+  allExpenses(){
+    const out = [];
+    Object.values(this.expenses).forEach(doc=>{
+      Object.values(doc.items||{}).forEach(e=>out.push(resolve(e)));
+    });
+    return out.sort((a,b)=>b.date-a.date);
+  },
+  allSettlements(){
+    const out = [];
+    Object.values(this.settlements).forEach(doc=>{
+      Object.values(doc.items||{}).forEach(e=>out.push(resolve(e)));
+    });
+    return out.sort((a,b)=>b.date-a.date);
+  },
+
+  /* ---- calendar: events. Same shape as entries — month-doc-per-parent,
+          write isolation preserved even though EITHER parent may add one:
+          the writer's own doc is always the one written, and only the
+          writer may later revise it (gated in the UI the same way "mine"
+          gates an entry edit on the Record tab). ---- */
+  putEvent(who, ev){
+    const docId = ev.date.slice(0,7) + "__" + who;
+    const doc = this.calEvents[docId] || {who, month:ev.date.slice(0,7), items:{}};
+    doc.items = Object.assign({}, doc.items);
+    doc.items[ev.id] = ev;
+    this.calEvents[docId] = doc;
+    this.saveLocal(); this.emit();
+    return this.push("calEvents", docId);
+  },
+  allEvents(){
+    const out = [];
+    Object.values(this.calEvents).forEach(doc=>{
+      Object.values(doc.items||{}).forEach(e=>out.push(resolve(e)));
+    });
+    return out.sort((a,b)=>a.date.localeCompare(b.date) || String(a.time||"").localeCompare(String(b.time||"")));
+  },
+  /* ---- month-scoped reads: a calendar grid never needs more than the
+          visible month, and every calEvents/entries doc is already keyed
+          "<ym>__<who>" (entryDoc), so this is a 2-doc lookup (one per
+          parent) instead of flattening the app's entire lifetime history.
+          U1: eventsForDay/episodesForDay used to call allEvents()/allEntries()
+          — a full flatten+sort of ALL history for BOTH parents — once per
+          calendar day cell (~42x per render). Fixed at the shared reader,
+          not the call site, so every caller (day sheet, self-check, grid)
+          gets the bound for free. ---- */
+  eventsForMonth(ym){
+    const out = [];
+    Object.keys(WHO_NAME).forEach(who=>{
+      const doc = this.calEvents[ym + "__" + who];
+      if(doc && doc.items) Object.values(doc.items).forEach(e=>out.push(resolve(e)));
+    });
+    return out.sort((a,b)=>a.date.localeCompare(b.date) || String(a.time||"").localeCompare(String(b.time||"")));
+  },
+  entriesForMonth(ym){
+    const out = [];
+    Object.keys(WHO_NAME).forEach(who=>{
+      const doc = this.entries[this.entryDoc(who, ym)];
+      if(doc && doc.items) Object.values(doc.items).forEach(e=>out.push(resolve(e)));
+    });
+    return out.sort((a,b)=>b.start-a.start);
+  },
+  eventsForDay(dstr){ return this.eventsForMonth(dstr.slice(0,7)).filter(e=>e.date===dstr); },
+
+  /* ---- private notes: one doc per parent, like options. This method is
+          also the ONLY reader — nothing else in the app ever opens
+          calNotes[otherParent], so there is no code path anywhere that could
+          show one parent a note the other parent wrote. */
+  putCalNote(who, eventId, text){
+    const doc = this.calNotes[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    const prev = doc.items[eventId];
+    const revs = prev ? (prev.revs||[]).concat([{at:Date.now(), was:prev.text||""}]) : [];
+    doc.items[eventId] = {text:text||"", at:Date.now(), revs:revs};
+    this.calNotes[who] = doc;
+    this.saveLocal(); this.emit();
+    return this.push("calNotes", who);
+  },
+  myNote(who, eventId){
+    const doc = this.calNotes[who];
+    return doc && doc.items ? (doc.items[eventId] || null) : null;
+  },
+
+  /* ---- custody pattern: a pure insert, never an edit — a correction is a
+          new pattern with its own effectiveFrom, exactly like an entry
+          revision layers on top instead of overwriting. ---- */
+  putCustodyPattern(who, patternType, anchorDate, effectiveFrom, definition){
+    const id = "pat_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    const doc = this.custodyPatterns[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    doc.items[id] = {id, patternType, anchorDate, effectiveFrom, definition, at:Date.now(), by:who};
+    this.custodyPatterns[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("custodyPatterns", who);
+    return id;
+  },
+  allCustodyPatterns(){
+    const out = [];
+    Object.values(this.custodyPatterns).forEach(doc=>Object.values(doc.items||{}).forEach(p=>out.push(p)));
+    return out;
+  },
+  /* Append-only, same guarantee as every other collection: a second accepted
+     swap landing on a date this parent already has an exception for used to
+     REPLACE the first exception with no trace it ever existed. The prior
+     full value (whatever it was — an earlier accepted swap, an ad-hoc "Dad
+     kept her" entry) is now layered into `revs` before being replaced, so
+     nothing this doc ever recorded for a date is lost. resolveException()
+     still reads the top-level fields directly (parent/note/at/by) for
+     whichever doc+date has the newest `.at` — that cross-doc "latest wins"
+     rule is unchanged; this only stops a doc from destroying its OWN history
+     on a second write to the same date. */
+  putCustodyException(who, dstr, parent, note){
+    const doc = this.custodyExceptions[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    const prev = doc.items[dstr];
+    const revs = prev ? (prev.revs||[]).concat([{parent:prev.parent, note:prev.note||"", at:prev.at, by:prev.by}]) : [];
+    doc.items[dstr] = {date:dstr, parent, note:note||"", at:Date.now(), by:who, revs:revs};
+    this.custodyExceptions[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("custodyExceptions", who);
+  },
+  allCustodyExceptions(){
+    const out = [];
+    Object.values(this.custodyExceptions).forEach(doc=>Object.values(doc.items||{}).forEach(x=>out.push(x)));
+    return out;
+  },
+
+  /* ---- swap requests: the ASKING is the requester's own doc; the ANSWER is
+          the responder's own doc, keyed by the request id it answers — two
+          independent per-parent writes, never one document both parents
+          set(). Accepting ALSO inserts the resulting custody exception in
+          this same call: a deliberate app-layer decision, not a trigger, so
+          the exception is traceable to one explicit write. A decline is
+          recorded exactly the same permanent way — it is never deleted and
+          the record never editorialises it.
+
+          `wantsCustody` is the fix for a real bug: a swap used to have NO
+          direction at all (just a free-text message), and accepting always
+          handed the day to whoever clicked Accept — backwards whenever the
+          requester was asking to RECEIVE the day rather than give it away.
+          "requester" = after acceptance the REQUESTER (who asked) ends up
+          with the day; "responder" = the RESPONDER (who is answering) ends
+          up with the day. It is required on every new request and echoed in
+          the row so both parents read the identical sentence before anyone
+          can accept. A request made before this fix has no `wantsCustody` —
+          see respondToSwap for how that legacy case is handled: NEVER
+          guessed. ---- */
+  putSwapRequest(who, dstr, message, wantsCustody){
+    const id = "swp_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    const doc = this.swapRequests[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    doc.items[id] = {id, date:dstr, message:message||"", wantsCustody:wantsCustody||null, at:Date.now(), by:who};
+    this.swapRequests[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("swapRequests", who);
+    return id;
+  },
+  /* `direction` is only ever consulted for a LEGACY request that has no
+     `wantsCustody` of its own — it lets the responder state, at accept time,
+     who the day should go to (see calSwapRow's two-button legacy path). A
+     request that already carries a direction always wins with its own
+     value, so a legacy caller can never override a direction both parents
+     already saw. If neither is present, the accept is still recorded
+     permanently, but NO custody exception is created — an unknown direction
+     is never guessed into a custody assignment. */
+  respondToSwap(requestId, who, decision, note, direction){
+    const req = this.allSwapRequests().find(r=>r.id===requestId);
+    if(!req) return;
+    const doc = this.swapResponses[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    const wants = req.wantsCustody || direction || null;
+    doc.items[requestId] = {decision, note:note||"", at:Date.now(), by:who, direction:wants};
+    this.swapResponses[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("swapResponses", who);
+    if(decision === "accept" && wants){
+      const winner = wants === "requester" ? req.by : who;
+      this.putCustodyException(who, req.date, winner, "Swap accepted");
+    }
+  },
+  allSwapRequests(){
+    const out = [];
+    Object.values(this.swapRequests).forEach(doc=>Object.values(doc.items||{}).forEach(r=>out.push(r)));
+    return out;
+  },
+  allSwapResponses(){
+    const out = [];
+    Object.values(this.swapResponses).forEach(doc=>
+      Object.entries(doc.items||{}).forEach(([reqId,r])=>out.push(Object.assign({requestId:reqId}, r))));
+    return out;
+  },
+  swapWithResponse(){
+    const resp = {};
+    this.allSwapResponses().forEach(r=>{ resp[r.requestId] = r; });
+    return this.allSwapRequests().map(r=>Object.assign({}, r, {response: resp[r.id]||null}))
+      .sort((a,b)=>b.at-a.at);
   }
 };
 
@@ -1057,6 +1776,128 @@ function resolve(raw){
 }
 
 /* ============================================================
+   CALENDAR — pure date + schedule math, kept apart from the DOM so the
+   self-check can exercise it directly without touching Store or render.
+   ============================================================ */
+const CAL_TYPES = [["birthday","Birthday"],["medical","Medical"],["school","School"],
+                    ["activity","Activity"],["other","Other"]];
+function calTypeLabel(k){ const hit = CAL_TYPES.find(([kk])=>kk===k); return hit ? hit[1] : String(k||""); }
+function otherOf(who){ return who === "dad" ? "mom" : "dad"; }
+
+/* Every date below is a "YYYY-MM-DD" string, converted through Date.UTC
+   (which has no DST) before any arithmetic. A plain `ms/86400000` day-diff
+   uses LOCAL time under the hood, and local days are 23h or 25h long on the
+   two days a year the clock changes — so a custody index built that way can
+   land on the wrong side of midnight for exactly the week it matters most.
+   Date.UTC has no such transition, so this is DST-proof by construction,
+   not by testing around one date. */
+function dParts(dstr){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dstr||""));
+  return m ? {y:+m[1], mo:+m[2], d:+m[3]} : null;
+}
+function daysBetween(aStr, bStr){
+  const a = dParts(aStr), b = dParts(bStr);
+  if(!a || !b) return null;
+  return Math.round((Date.UTC(b.y,b.mo-1,b.d) - Date.UTC(a.y,a.mo-1,a.d)) / 864e5);
+}
+function weekdayOf(dstr){    // 0=Sun..6=Sat, via Date.UTC — see note above
+  const p = dParts(dstr);
+  return p ? new Date(Date.UTC(p.y,p.mo-1,p.d)).getUTCDay() : null;
+}
+function addDaysStr(dstr, n){
+  const p = dParts(dstr);
+  if(!p) return null;
+  const dt = new Date(Date.UTC(p.y,p.mo-1,p.d) + n*864e5);
+  return dt.getUTCFullYear() + "-" + pad(dt.getUTCMonth()+1) + "-" + pad(dt.getUTCDate());
+}
+function monthDays(ym){       // every "YYYY-MM-DD" in a month, in order
+  const [y,mo] = ym.split("-").map(Number);
+  const n = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+  const out = [];
+  for(let d=1; d<=n; d++) out.push(y+"-"+pad(mo)+"-"+pad(d));
+  return out;
+}
+function shiftYm(ym, n){
+  const [y,mo] = ym.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, mo-1+n, 1));
+  return dt.getUTCFullYear() + "-" + pad(dt.getUTCMonth()+1);
+}
+
+/* week-on/week-off and 2-2-3 are both just a repeating SEQUENCE indexed by
+   offset from an anchor date — one resolver covers both instead of two
+   near-duplicate ones, and "custom" reuses the exact same mechanism with a
+   caller-supplied sequence. Sequence index 0 is the anchor date itself. */
+function buildSequence(type, parentA, parentB, customSeq){
+  if(type === "week") return [parentA,parentA,parentA,parentA,parentA,parentA,parentA,
+                               parentB,parentB,parentB,parentB,parentB,parentB,parentB];
+  /* 2-2-3, anchored on a Monday: Mon-Tue A, Wed-Thu B, Fri-Sat-Sun A,
+     then the mirror image the following week — a 14-day cycle. */
+  if(type === "223") return [parentA,parentA,parentB,parentB,parentA,parentA,parentA,
+                              parentB,parentB,parentA,parentA,parentB,parentB,parentB];
+  if(type === "custom") return (customSeq && customSeq.length) ? customSeq : null;
+  return null;
+}
+/* Alternating weekends needs real weekday knowledge (Saturday/Sunday), not a
+   bare cycle offset, so it is resolved on its own rather than forced into
+   buildSequence's shape. */
+function weekendAltParent(anchorDate, primary, other, dstr){
+  const wd = weekdayOf(dstr);
+  if(wd == null) return null;
+  if(wd !== 0 && wd !== 6) return primary;
+  const off = daysBetween(anchorDate, dstr);
+  if(off == null) return null;
+  const weekIdx = Math.floor(off / 7);
+  return (((weekIdx % 2) + 2) % 2) === 0 ? other : primary;
+}
+function resolvePatternParent(pat, dstr){
+  if(!pat || !pat.definition) return null;
+  if(pat.patternType === "weekend-alt")
+    return weekendAltParent(pat.anchorDate, pat.definition.primary, pat.definition.other, dstr);
+  const seq = buildSequence(pat.patternType, pat.definition.parentA, pat.definition.parentB, pat.definition.sequence);
+  if(!seq || !seq.length) return null;
+  const off = daysBetween(pat.anchorDate, dstr);
+  if(off == null) return null;
+  const idx = ((off % seq.length) + seq.length) % seq.length;
+  return seq[idx];
+}
+/* A one-off exception OUTRANKS the pattern for its date. Two exceptions on
+   the same date (both parents logging a swap independently) resolve to
+   whichever was written most recently — the same "more recent wins" idea
+   the sync tie-break already uses, not a new rule. A pattern is a pure
+   INSERT (never edited); the one that governs a date is whichever proposal
+   has the latest effectiveFrom at or before it, and among ties, the one
+   most recently written — so a correction supersedes what it corrects. */
+function resolveException(dstr){
+  let hit = null;
+  Store.allCustodyExceptions().filter(x=>x.date===dstr).forEach(x=>{
+    if(!hit || x.at > hit.at) hit = x;
+  });
+  return hit;
+}
+function activeCustodyPattern(dstr){
+  let hit = null;
+  Store.allCustodyPatterns().filter(p=>p.effectiveFrom <= dstr).forEach(p=>{
+    if(!hit || p.effectiveFrom > hit.effectiveFrom ||
+       (p.effectiveFrom === hit.effectiveFrom && p.at > hit.at)) hit = p;
+  });
+  return hit;
+}
+function custodyForDate(dstr){
+  const exc = resolveException(dstr);
+  if(exc) return {parent:exc.parent, source:"exception", note:exc.note||""};
+  const pat = activeCustodyPattern(dstr);
+  if(!pat) return {parent:null, source:"none"};
+  return {parent:resolvePatternParent(pat, dstr), source:"pattern", patternType:pat.patternType};
+}
+/* The behaviour-log overlay: read-only, existing entries shown on their own
+   day. A withdrawn entry is excluded, matching how Trends/Patterns already
+   treat a void — it is still in the permanent record on the Record tab,
+   just not surfaced here as something that "happened" for calendar purposes. */
+function episodesForDay(dstr){
+  return Store.entriesForMonth(dstr.slice(0,7)).filter(e=>!e.voided && dayOf(e.start)===dstr);
+}
+
+/* ============================================================
    STATE
    ============================================================ */
 const State = {
@@ -1066,8 +1907,26 @@ const State = {
   flash:null,      // transient "what was just saved" confirmation
   tick:null,
   editing:null,
-  showVoided:{}    /* day -> is its withdrawn group open. Outside the DOM, because
+  showVoided:{},   /* day -> is its withdrawn group open. Outside the DOM, because
                       renderHistory rebuilds its whole subtree on every echo. */
+  staleTabs:{},    /* U2: tabname -> "a store echo landed while this tab was in the
+                      background, its slot needs a rebuild before it's shown again".
+                      Populated for every non-active tab right after TABS exists (below);
+                      renderAll() only rebuilds State.tab, setTab() rebuilds a tab it's
+                      about to reveal if this flag is set, so a backgrounded tab is never
+                      stale WHEN THE USER ACTUALLY SEES IT, only while hidden. */
+  moneyDraft:null,    // {amount,dateStr,cat,payer,desc,split,splitPct,receipt,receiptError,missing}
+  settleDraft:null,   // {payer,amount,dateStr,note,missing}
+  moneyFlash:null,
+  showVoidedMoney:false,  /* same reason as showVoided: renderMoney rebuilds its
+                             whole subtree on every echo, so the fold state
+                             cannot live on the DOM node itself. */
+  calMonth:null,    // "YYYY-MM" the grid is showing
+  calDay:null,      // "YYYY-MM-DD" whose day sheet is open, or null
+  calAdding:null,   // draft object while the "add event" form is open
+  calEditingEvent:null, // draft object while an existing event's form is open
+  calSwapOpen:null,  // date whose "request a swap" mini-form is expanded
+  calSwapDraft:null  // {wantsCustody,message,missing} while that mini-form is open
 };
 
 /* ============================================================
@@ -1102,6 +1961,14 @@ function showApp(){
    ============================================================ */
 function renderSync(){
   const d = $("syncDot"), m = $("syncMsg");
+  /* A failed local save outranks everything else here, including an unsent
+     entry: it means the write this device just made is NOT on disk at all,
+     which is worse than merely not yet reaching the other parent. */
+  if(Store.storageError){
+    d.className = "syncdot danger";
+    m.textContent = "Not saved — this device's storage is full. Delete a receipt photo or free up space, then try again.";
+    return;
+  }
   /* An unsent entry outranks the connection state. mode flips to "sync" the
      moment a db handle exists — before any document has been read and
      regardless of whether a write later failed into the outbox — so without
@@ -1413,6 +2280,99 @@ function chipRow(labelText, required, opts, cur, onPick, missing, toggle, addFie
       if(open) inp.focus();
     };
     box.appendChild(inp); box.appendChild(go);
+
+    /* ---- manage: rename/remove the OPTIONS THIS PARENT ADDED, right where
+       they were added. No settings screen exists and a 6th tab is off the
+       table, so this lives inside the same "+ Other" panel a parent already
+       opens to create one — the natural place to find the control, and one
+       fewer surface to build and gate. Only MY custom options are editable
+       here (Store.myCustomOptions reads Store.options[State.me] only, the
+       same write-isolation boundary entries and day cards already keep); the
+       other parent's are visible in every chip row and simply not offered a
+       control here — the note below says why, instead of the control just
+       silently not being there. */
+    const mine = Store.myCustomOptions(State.me, addField);
+    const othersCount = Store.customOptions(addField).length - mine.length;
+    if(mine.length || othersCount > 0){
+      const mgr = el("div","optmgr");
+      if(mine.length){
+        const list = el("div","optlist");
+        mine.forEach(([k,label])=>{
+          const row = el("div","optrow");
+          const top = el("div","optrowtop");
+          const lwrap = el("div", null);
+          lwrap.appendChild(el("span","optlabel", label));
+          /* same discoverability rule as the entry rows: a renamed option
+             must be marked right where its label is shown, in text. */
+          if(wasRenamed(k)) lwrap.appendChild(el("span","badge renamed","renamed"));
+          top.appendChild(lwrap);
+          const btns = el("div","optbtns");
+          const ren = el("button","optbtn","Rename");
+          const rem = el("button","optbtn optbtn-danger","Remove");
+          btns.appendChild(ren); btns.appendChild(rem);
+          top.appendChild(btns);
+          row.appendChild(top);
+          const slot = el("div","optslot"); slot.hidden = true;
+          row.appendChild(slot);
+
+          ren.onclick = ()=>{
+            slot.innerHTML = ""; slot.hidden = false;
+            const wrap2 = el("div","adder");
+            const ri = document.createElement("input");
+            ri.type = "text"; ri.maxLength = CUSTOM_LEN; ri.value = label;
+            ri.setAttribute("aria-label","Rename \"" + label + "\"");
+            const rgo = el("button","addgo","Save");
+            const rno = el("button","cno","Cancel");
+            rgo.onclick = ()=>{
+              const nv = ri.value.trim().replace(/\s+/g," ");
+              if(!nv){ ri.focus(); return; }
+              Store.renameOption(State.me, k, nv);
+              if(onAdded) onAdded();
+            };
+            rno.onclick = ()=>{ slot.innerHTML = ""; slot.hidden = true; };
+            wrap2.appendChild(ri); wrap2.appendChild(rgo); wrap2.appendChild(rno);
+            slot.appendChild(wrap2);
+            ri.focus();
+          };
+          /* removing is not part of the append-only record (options are
+             picker vocabulary, see Store.removeOption) but it still takes a
+             chip away a parent may be used to reaching for, so it gets the
+             same two-step confirmation as Withdraw — the page's own
+             .confirmbox, never window.confirm(). */
+          rem.onclick = ()=>{
+            slot.innerHTML = ""; slot.hidden = false;
+            const cbox = el("div","confirmbox");
+            cbox.setAttribute("role","group");
+            cbox.appendChild(el("p",null,
+              "Remove \"" + label + "\" from the " + labelText.toLowerCase() +
+              " list? Entries that already used it still show it. This only takes it out of the picker, and you can add it again any time."));
+            const act = el("div","confirmact");
+            const no = el("button","cno","Keep it");
+            no.onclick = ()=>{ slot.innerHTML = ""; slot.hidden = true; };
+            const yes = el("button","cyes","Remove");
+            yes.onclick = ()=>{
+              Store.removeOption(State.me, k);
+              if(cur === k) onPick(null);
+              if(onAdded) onAdded();
+            };
+            act.appendChild(no); act.appendChild(yes);
+            cbox.appendChild(act);
+            slot.appendChild(cbox);
+            yes.focus();
+          };
+          list.appendChild(row);
+        });
+        mgr.appendChild(list);
+      }
+      if(othersCount > 0){
+        mgr.appendChild(el("p","optnote",
+          (othersCount === 1 ? "One option" : othersCount + " options") +
+          " here " + (othersCount === 1 ? "was" : "were") + " added by " +
+          WHO_NAME[otherWho()] + ". Each parent can only rename or remove the ones they added."));
+      }
+      box.appendChild(mgr);
+    }
+
     f.appendChild(box);
     f.appendChild(err);
     return f;
@@ -1661,6 +2621,47 @@ function renderHistory(){
     }
     slot.appendChild(g);
   });
+
+  const foot = renameFootnote(all);
+  if(foot) slot.appendChild(foot);
+}
+
+/* The PRINT EXHIBIT's footnote: a renamed option must carry its history on
+   the surface a mediator actually reads, not just a badge on-screen. Scans
+   every entry once (not every option ever created) so it lists only options
+   actually IN USE in this record, and lists BOTH previous names in order for
+   an option renamed twice — the trail array already keeps them in order, this
+   just prints it. Plain text, calm voice: "the category is unchanged, only
+   its spelling was corrected" — a typo fix should not read as an accusation.
+   Returns null (nothing appended) when no option in use has ever been
+   renamed — the no-clutter, no-false-positive case. */
+function renameFootnote(entries){
+  const seen = {};
+  entries.forEach(e=>{
+    ["trig","place","resp"].forEach(f=>{
+      const k = e[f];
+      if(!k || seen[k]) return;
+      const trail = Store.renameTrail(k);
+      if(trail.length) seen[k] = {field:f, label:labelOf(k), trail:trail};
+    });
+  });
+  const keys = Object.keys(seen);
+  if(!keys.length) return null;
+  const fmtDate = ts => new Date(ts).toLocaleDateString(undefined,{month:"short", day:"numeric", year:"numeric"});
+  const box = el("div","note-strip renamefoot");
+  const title = el("p",null); title.appendChild(el("b",null,
+    (keys.length===1 ? "One option" : keys.length + " options") + " renamed"));
+  box.appendChild(title);
+  box.appendChild(el("p",null,
+    "The category is unchanged for every entry below — only its spelling was corrected. " +
+    "Previous names are kept here so nothing about how an entry was originally logged is lost."));
+  keys.forEach(k=>{
+    const info = seen[k];
+    const parts = info.trail.map(r=>'"'+r.from+'" until '+fmtDate(r.at));
+    box.appendChild(el("p",null,
+      FIELD_NAME[info.field] + ": " + parts.join(", then ") + ", now \"" + info.label + "\"."));
+  });
+  return box;
 }
 
 function entryRow(e){
@@ -1694,15 +2695,26 @@ function entryRow(e){
   meta.appendChild(el("span","badge "+e.who, WHO_NAME[e.who]));
   if(e.edited) meta.appendChild(el("span","badge edited","edited " + e.editCount + (e.editCount===1?" time":" times")));
   if(e.voided) meta.appendChild(el("span","badge","withdrawn"));
+  /* One of trig/place/resp resolves through an option that has since been
+     renamed. Text, not a background tint (§5's rule, measured 1.12:1 in dark
+     for a fill-only signal) — same badge family as "edited"/"withdrawn", so
+     it reads as one more fact about the row rather than a new alarm. Full
+     previous-name history lives in the History tab's footnote, not repeated
+     on every row that uses the option. */
+  const anyRenamed = [e.trig, e.place, e.resp].some(k=>k && wasRenamed(k));
+  if(anyRenamed) meta.appendChild(el("span","badge renamed","renamed"));
   b.appendChild(meta);
 
   if(e.note) b.appendChild(el("div","enote",e.note));
   row.appendChild(b);
 
+  /* aria-label overrides all child text for AT, so the "renamed" badge above
+     is invisible to a screen reader unless it's folded into the sentence too. */
+  const renameNote = anyRenamed ? " One of this entry's labels has since been renamed; see the renamed-options note on this tab." : "";
   if(mine){
     row.onclick = ()=>openEdit(e);
     row.setAttribute("aria-label", "Your entry, " + friendlyDay(dayOf(e.start)) + " " + clockOf(e.start) +
-      ", severity " + e.sev + " of 5, " + anchor + ", after " + labelOf(e.trig) + ". Tap to revise.");
+      ", severity " + e.sev + " of 5, " + anchor + ", after " + labelOf(e.trig) + ". Tap to revise." + renameNote);
   } else {
     /* the glyph stays as the visual cue but is hidden from AT, which otherwise
        announced a bare "locked" with no subject; the meaning goes on the row */
@@ -1711,7 +2723,7 @@ function entryRow(e){
     row.appendChild(lk);
     row.setAttribute("aria-label", WHO_NAME[e.who] + " logged this entry. Severity " + e.sev +
       " of 5, " + anchor + ", after " + labelOf(e.trig) + ". Only " +
-      WHO_NAME[e.who] + "'s link can revise it.");
+      WHO_NAME[e.who] + "'s link can revise it." + renameNote);
   }
   return row;
 }
@@ -2054,7 +3066,7 @@ function renderPatterns(){
       const by = {};
       measured.forEach(e=>{ (by[e.resp] = by[e.resp]||[]).push(e.dur); });
       const rows = Object.entries(by).filter(([k,v])=>v.length >= MIN_PER_RESP)
-        .map(([k,v])=>({k:labelOf(k), v:median(v), label:durText(median(v)) + "  n=" + v.length}))
+        .map(([k,v])=>({k:labelOf(k), v:median(v), label:durText(median(v)) + ", from " + v.length + (v.length===1 ? " timed episode" : " timed episodes")}))
         .sort((a,b)=>a.v-b.v);
       if(!rows.length){
         c.appendChild(el("p","lockmsg","No response has " + MIN_PER_RESP +
@@ -2089,7 +3101,8 @@ function renderPatterns(){
       const otherD = all.filter(e=>e.measured && e.resp && e.resp!=="gavein").map(e=>e.dur);
       if(gaveD.length >= MIN_PER_RESP && otherD.length >= MIN_PER_RESP){
         c.appendChild(el("p","pcsub","Median timed length when it was given: " + durText(median(gaveD)) +
-          " (n=" + gaveD.length + "). All other responses: " + durText(median(otherD)) + " (n=" + otherD.length + ")."));
+          ", from " + gaveD.length + " timed entries. All other responses: " + durText(median(otherD)) +
+          ", from " + otherD.length + " timed entries."));
       } else {
         c.appendChild(el("p","pcsub","A length comparison needs " + MIN_PER_RESP +
           " timed entries on each side — " + gaveD.length + " and " + otherD.length + " so far."));
@@ -2141,7 +3154,7 @@ function renderPatterns(){
         const g = groups[k];
         if(g.length < MIN_DAYS) return {k:lab, v:0, label:(g.length ? g.length + "d — too few" : "no days")};
         const avg = g.reduce((a,x)=>a+x,0)/g.length;
-        return {k:lab, v:Number(avg.toFixed(2)), label:avg.toFixed(1)+"/day  n="+g.length+"d"};
+        return {k:lab, v:Number(avg.toFixed(2)), label:avg.toFixed(1)+"/day, from "+g.length+(g.length===1?" day":" days")};
       });
       c.appendChild(barChart(rows));
       const thin = rows.filter(r=>/too few|no days/.test(r.label)).length;
@@ -2174,12 +3187,519 @@ function inferHandoffs(all){
 }
 
 /* ============================================================
+   RENDER — money
+   Same rebuild-the-whole-subtree pattern as every other tab (renderHistory,
+   renderTrends, ...): slot.innerHTML="" + re-append on every call. A claim
+   or settlement form in progress owns its subtree the same way State.draft
+   does for the Log tab (renderAll skips renderMoney entirely while either
+   is open) — see the guard next to renderMoney() in renderAll().
+   ============================================================ */
+let moneyFlashT = null;
+
+function renderMoney(){
+  const slot = $("moneySlot");
+  slot.innerHTML = "";
+
+  const claims = Store.allExpenses();
+  const settles = Store.allSettlements();
+  const liveClaims = claims.filter(c=>!c.voided);
+  const liveSettles = settles.filter(s=>!s.voided);
+  const voidedClaims = claims.filter(c=>c.voided);
+  const voidedSettles = settles.filter(s=>s.voided);
+  const anyRecord = claims.length > 0 || settles.length > 0;
+  const cents = ledgerBalance(liveClaims, liveSettles);
+
+  if(State.moneyFlash){
+    const fl = el("div","flash");
+    fl.setAttribute("role","status");
+    const tick = el("span","tick","✓"); tick.setAttribute("aria-hidden","true");
+    fl.appendChild(tick);
+    fl.appendChild(el("span",null,State.moneyFlash));
+    slot.appendChild(fl);
+  }
+
+  const banner = el("div","moneybanner");
+  banner.appendChild(el("div","big", balanceSentence(cents, anyRecord)));
+  if(anyRecord){
+    const voidedCount = voidedClaims.length + voidedSettles.length;
+    banner.appendChild(el("div","sub2",
+      liveClaims.length + (liveClaims.length===1?" claim":" claims") + " · " +
+      liveSettles.length + (liveSettles.length===1?" settlement":" settlements") +
+      (voidedCount ? " · " + voidedCount + " withdrawn" : "")));
+  }
+  slot.appendChild(banner);
+
+  if(State.moneyDraft){ slot.appendChild(claimForm()); updateSplitPreview(); }
+  else { const b = el("button","bigbtn","Log a claim"); b.onclick = beginClaim; slot.appendChild(b); }
+
+  if(State.settleDraft) slot.appendChild(settleForm());
+  else { const b2 = el("button","bigbtn ghost","Record a settlement"); b2.onclick = beginSettle; slot.appendChild(b2); }
+
+  const live = liveClaims.map(c=>Object.assign({kind:"expense"},c))
+    .concat(liveSettles.map(s=>Object.assign({kind:"settlement"},s)))
+    .sort((a,b)=>b.date-a.date);
+  const voided = voidedClaims.map(c=>Object.assign({kind:"expense"},c))
+    .concat(voidedSettles.map(s=>Object.assign({kind:"settlement"},s)))
+    .sort((a,b)=>b.date-a.date);
+
+  if(!live.length && !voided.length){
+    slot.appendChild(emptyBox("Nothing logged yet",
+      "The first claim or settlement you save will appear here, with the running balance above."));
+    return;
+  }
+
+  const list = el("div","daylist");
+  if(live.length){
+    live.forEach(e=>list.appendChild(moneyRow(e)));
+  } else {
+    list.appendChild(el("p","nolive","Every claim and settlement on record was withdrawn."));
+  }
+  slot.appendChild(list);
+
+  /* Same fold as History's withdrawn entries: never removed, collapsed behind
+     a count, and @media print already forces .voidlist/.voidtog open/hidden
+     globally (see the print block) — nothing extra needed for that here. */
+  if(voided.length){
+    const open = !!State.showVoidedMoney;
+    const tog = el("button","voidtog");
+    tog.setAttribute("aria-expanded", String(open));
+    tog.appendChild(el("span","vt-caret", open ? "▾" : "▸"));
+    tog.appendChild(el("span",null, voided.length + (voided.length===1 ? " withdrawn item" : " withdrawn items") +
+      " — kept in the record"));
+    const box = el("div","daylist voidlist");
+    box.hidden = !open;
+    voided.forEach(e=>box.appendChild(moneyRow(e)));
+    tog.onclick = ()=>{
+      const now = !State.showVoidedMoney;
+      State.showVoidedMoney = now;
+      box.hidden = !now;
+      tog.setAttribute("aria-expanded", String(now));
+      tog.querySelector(".vt-caret").textContent = now ? "▾" : "▸";
+    };
+    slot.appendChild(tog);
+    slot.appendChild(box);
+  }
+}
+
+function splitSummary(e){
+  const note = (e.splitPct===50 && e.amount % 2 === 1)
+    ? " (odd cent to " + WHO_NAME[e.payer] + ", who paid)" : "";
+  return "Dad " + centsToDollars(e.dadCents) + " · Mom " + centsToDollars(e.momCents) + note;
+}
+
+function moneyRow(e){
+  const mine = e.who === State.me;
+  const row = el("div","entry" + (e.voided ? " voided" : ""));
+  const body = el("div","ebody");
+  const top = el("div","etop");
+  top.appendChild(el("span","etime", new Date(e.date).toLocaleDateString(undefined,{month:"short",day:"numeric"})));
+  if(e.kind === "settlement"){
+    top.appendChild(el("span","badge settlebadge","Settlement"));
+    body.appendChild(top);
+    body.appendChild(el("div","mtitle",
+      WHO_NAME[e.payer] + " paid " + WHO_NAME[e.payer==="dad"?"mom":"dad"] + " " + centsToDollars(e.amount)));
+    if(e.note) body.appendChild(el("div","enote", e.note));
+  } else {
+    top.appendChild(el("span","eamt", centsToDollars(e.amount)));
+    body.appendChild(top);
+    body.appendChild(el("div","mtitle", moneyCatLabel(e.cat)));
+    const meta = el("div","emeta");
+    meta.appendChild(el("span","badge "+e.payer, WHO_NAME[e.payer] + " paid"));
+    body.appendChild(meta);
+    body.appendChild(el("div","enote", splitSummary(e)));
+    if(e.desc) body.appendChild(el("div","enote", e.desc));
+    if(e.receipt && e.receipt.dataUrl){
+      const tw = el("div","receipt-thumb");
+      const img = document.createElement("img"); img.src = e.receipt.dataUrl; img.alt = "Receipt photo";
+      tw.appendChild(img);
+      body.appendChild(tw);
+    }
+  }
+  const badges = el("div","emeta");
+  if(e.edited) badges.appendChild(el("span","badge edited","edited " + e.editCount + (e.editCount===1?" time":" times")));
+  if(e.voided) badges.appendChild(el("span","badge","withdrawn"));
+  if(badges.children.length) body.appendChild(badges);
+  row.appendChild(body);
+
+  /* Only the parent who LOGGED it (the write-owner, same rule as an entry)
+     can withdraw it — not necessarily the payer, since either parent can log
+     a claim the other one paid. Inline confirmbox, same two-step pattern as
+     Withdraw everywhere else in this app, built right into the row so this
+     never needs the shared edit sheet at all. */
+  if(mine && !e.voided){
+    const wrap = el("div","delwrap");
+    const del = el("button","linkbtn danger-link","Withdraw");
+    del.onclick = ()=>{
+      wrap.innerHTML = "";
+      const box = el("div","confirmbox");
+      box.setAttribute("role","group");
+      box.appendChild(el("p",null,"Withdraw this " + (e.kind==="settlement"?"settlement":"claim") +
+        "? It stays visible in the record, struck through, and the balance updates. Nothing is erased."));
+      const act = el("div","confirmact");
+      const no = el("button","cno","Keep it");
+      no.onclick = ()=>{ wrap.innerHTML = ""; wrap.appendChild(del); };
+      const yes = el("button","cyes","Withdraw");
+      yes.onclick = ()=>{ voidMoneyItem(e.kind, e); renderAll(); };
+      act.appendChild(no); act.appendChild(yes);
+      box.appendChild(act);
+      wrap.appendChild(box);
+      yes.focus();
+    };
+    wrap.appendChild(del);
+    row.appendChild(wrap);
+  }
+  return row;
+}
+
+function voidMoneyItem(kind, e){
+  const docId = Store.entryDoc(e.who, ymOf(e.date));
+  const bag = kind === "expense" ? Store.expenses : Store.settlements;
+  const doc = bag[docId];
+  if(!doc || !doc.items || !doc.items[e.id]) return;
+  const raw = doc.items[e.id];
+  const next = Object.assign({}, raw);
+  next.revs = (raw.revs||[]).concat([{at:Date.now(), by:State.me, void:true}]);
+  if(kind === "expense") Store.putExpense(e.who, next); else Store.putSettlement(e.who, next);
+}
+
+/* ---- log a claim ---- */
+function beginClaim(){
+  State.moneyDraft = {amount:"", dateStr:dayOf(Date.now()), cat:null, payer:State.me, desc:"",
+    split:"50", splitPct:50, receipt:null, receiptError:null, missing:null};
+  renderMoney();
+}
+function cancelClaim(){ State.moneyDraft = null; renderMoney(); }
+
+function updateSplitPreview(){
+  const d = State.moneyDraft;
+  if(!d) return;
+  const node = $("splitPreview");
+  if(!node) return;
+  const cents = dollarsToCents(d.amount);
+  if(cents == null){ node.textContent = "Enter an amount to see the split."; return; }
+  const {dadCents, momCents} = assignSplit(cents, d.payer, d.splitPct);
+  const oddNote = (d.splitPct===50 && cents % 2 === 1)
+    ? " (the odd cent goes to " + WHO_NAME[d.payer] + ", who paid)" : "";
+  node.textContent = "Dad's share " + centsToDollars(dadCents) + " · Mom's share " + centsToDollars(momCents) + oddNote;
+}
+
+const RECEIPT_MAX_DIM = 900;         // longest edge, px, after downscale
+const RECEIPT_MAX_BYTES = 220000;    // cap on the stored data: URL — see report for why
+/* # ponytail: this caps a SINGLE photo, not the cumulative total across every
+   receipt ever attached, and there is no pre-commit "is there room" check
+   before a claim with a photo is saved. A reliable synchronous "remaining
+   localStorage quota" read does not exist (only a trial write reveals it,
+   which is what saveLocal() already does), and navigator.storage.estimate()
+   is async and only an estimate. Ceiling for now: if the eventual save fails,
+   Store.saveLocal()'s catch sets storageError and renderSync() surfaces it
+   immediately (the B2 fix) — after the fact, not predictively. Upgrade path:
+   once this ships on the real PWA/Supabase backend, move large receipt blobs
+   out of localStorage entirely (object storage, not an inline data: URL),
+   which removes the shared-quota problem at its root instead of warning
+   about it. */
+/* Downscales and compresses client-side, then CAPS rather than truncates: if
+   it still will not fit under the cap after shrinking, the photo is refused
+   with a visible reason and the claim still saves without one. Never a
+   silent drop, never a silently truncated file. ⛔ UNVERIFIED — this touches
+   FileReader/Image/canvas, none of which exist in the headless harness, so
+   it could only be exercised in a real browser; see the report. */
+function handleReceiptFile(file){
+  const d = State.moneyDraft;
+  if(!d || !file) return;
+  d.receiptError = null;
+  if(!/^image\//.test(file.type||"")){
+    d.receiptError = "That file is not a photo. Try a JPG or PNG.";
+    renderMoney(); return;
+  }
+  const reader = new FileReader();
+  reader.onerror = ()=>{ d.receiptError = "Could not read that photo. Try again."; renderMoney(); };
+  reader.onload = ()=>{
+    const img = new Image();
+    img.onerror = ()=>{ d.receiptError = "Could not read that photo. Try again."; renderMoney(); };
+    img.onload = ()=>{
+      const scale = Math.min(1, RECEIPT_MAX_DIM / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      const ctx = cv.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      let quality = 0.72;
+      let dataUrl = cv.toDataURL("image/jpeg", quality);
+      while(dataUrl.length > RECEIPT_MAX_BYTES && quality > 0.3){
+        quality -= 0.1;
+        dataUrl = cv.toDataURL("image/jpeg", quality);
+      }
+      if(dataUrl.length > RECEIPT_MAX_BYTES){
+        d.receiptError = "This photo is too large to attach even after shrinking. " +
+          "The claim still saves without it — try a lighter photo instead.";
+        d.receipt = null;
+      } else {
+        d.receiptError = null;
+        d.receipt = {dataUrl:dataUrl, bytes:dataUrl.length};
+      }
+      renderMoney();
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function claimForm(){
+  const d = State.moneyDraft;
+  const wrap = el("div","panel");
+  wrap.appendChild(el("p","eyebrow","Log a claim"));
+
+  const amtOk = dollarsToCents(d.amount) != null && dollarsToCents(d.amount) > 0;
+  const af = el("div","field" + (d.missing && !amtOk ? " missing" : ""));
+  const al = el("div","qlab"); al.id = "mAmtLab";
+  al.appendChild(el("span",null,"Amount"));
+  al.appendChild(el("span","req" + (amtOk?" ok":""), amtOk ? "✓ ANSWERED" : "REQUIRED"));
+  af.appendChild(al);
+  const ain = document.createElement("input");
+  ain.type = "text"; ain.inputMode = "decimal"; ain.placeholder = "0.00";
+  ain.value = d.amount; ain.setAttribute("aria-labelledby","mAmtLab");
+  ain.oninput = ()=>{ d.amount = ain.value; updateSplitPreview(); };
+  af.appendChild(ain);
+  wrap.appendChild(af);
+
+  const df = el("div","field");
+  df.appendChild(el("div","qlab","Date"));
+  const din = document.createElement("input");
+  din.type = "date"; din.value = d.dateStr; din.max = dayOf(Date.now());
+  din.setAttribute("aria-label","Date of the claim");
+  din.oninput = ()=>{ d.dateStr = din.value; };
+  df.appendChild(din);
+  wrap.appendChild(df);
+
+  wrap.appendChild(chipRow("Category", true, MONEY_CATEGORIES, d.cat,
+    v=>{ d.cat=v; if(d.missing) renderMoney(); }, d.missing && !d.cat, false, null, null));
+
+  wrap.appendChild(chipRow("Who paid", true, WHO_OPTS, d.payer,
+    v=>{ d.payer=v; if(d.missing) renderMoney(); else updateSplitPreview(); }, d.missing && !d.payer, false, null, null));
+
+  const sf = el("div","field");
+  sf.appendChild(el("div","qlab","Split"));
+  const srow = el("div","chips splitrow");
+  srow.setAttribute("role","radiogroup");
+  SPLIT_PRESETS.forEach(([k,label,full])=>{
+    const b = el("button","chip",label);
+    b.setAttribute("aria-label", full);
+    b.setAttribute("aria-pressed", String(d.split===k));
+    b.onclick = ()=>{
+      press(srow,b); d.split=k;
+      if(k!=="custom") d.splitPct = Number(k);
+      customWrap.hidden = (k!=="custom");
+      updateSplitPreview();
+    };
+    srow.appendChild(b);
+  });
+  sf.appendChild(srow);
+  const customWrap = el("div","adder"); customWrap.hidden = (d.split!=="custom");
+  const pctIn = document.createElement("input");
+  pctIn.type = "number"; pctIn.min = "0"; pctIn.max = "100"; pctIn.value = String(d.splitPct);
+  pctIn.setAttribute("aria-label","Payer's share, percent");
+  pctIn.oninput = ()=>{ d.splitPct = Math.max(0, Math.min(100, parseInt(pctIn.value||"0",10) || 0)); updateSplitPreview(); };
+  customWrap.appendChild(pctIn);
+  customWrap.appendChild(el("span","retro-unit","% to payer"));
+  sf.appendChild(customWrap);
+  const preview = el("div","enote"); preview.id = "splitPreview";
+  sf.appendChild(preview);
+  wrap.appendChild(sf);
+
+  const nf = el("div","field");
+  nf.appendChild(el("div","qlab","Description"));
+  const ta = document.createElement("textarea");
+  ta.value = d.desc; ta.placeholder = "What this was for. Both parents can read this.";
+  ta.oninput = ()=>{ d.desc = ta.value; };
+  nf.appendChild(ta);
+  wrap.appendChild(nf);
+
+  const rf = el("div","field");
+  rf.appendChild(el("div","qlab","Receipt (optional)"));
+  if(d.receipt){
+    const tw = el("div","receipt-thumb");
+    const img = document.createElement("img"); img.src = d.receipt.dataUrl; img.alt = "Receipt photo";
+    tw.appendChild(img);
+    const rm = el("button","receipt-rm","Remove photo");
+    rm.onclick = ()=>{ d.receipt=null; renderMoney(); };
+    tw.appendChild(rm);
+    rf.appendChild(tw);
+  } else {
+    const lbl = document.createElement("label");
+    lbl.className = "bigbtn ghost";
+    lbl.appendChild(document.createTextNode("Attach a receipt photo"));
+    const fin = document.createElement("input");
+    fin.type = "file"; fin.accept = "image/*"; fin.style.display = "none";
+    fin.setAttribute("aria-label","Attach a receipt photo");
+    fin.onchange = ()=> handleReceiptFile(fin.files && fin.files[0]);
+    lbl.appendChild(fin);
+    rf.appendChild(lbl);
+  }
+  if(d.receiptError){
+    const rerr = el("div","err", d.receiptError);
+    rerr.setAttribute("role","alert");
+    rf.appendChild(rerr);
+  }
+  wrap.appendChild(rf);
+
+  if(d.missing){
+    const still = [];
+    if(!amtOk) still.push("a valid amount");
+    if(!d.cat) still.push("category");
+    if(!d.payer) still.push("who paid");
+    if(still.length){
+      const e = el("div","err","Still needed: " + still.join(", ") + ".");
+      e.setAttribute("role","alert");
+      wrap.appendChild(e);
+    }
+  }
+
+  const save = el("button","bigbtn","Save claim");
+  save.onclick = saveClaim;
+  wrap.appendChild(save);
+  const disc = el("button","linkbtn danger-link","Discard");
+  disc.onclick = cancelClaim;
+  wrap.appendChild(disc);
+  return wrap;
+}
+
+function saveClaim(){
+  const d = State.moneyDraft;
+  const cents = dollarsToCents(d.amount);
+  const missing = [];
+  if(cents == null || cents <= 0) missing.push("a valid amount");
+  if(!d.cat) missing.push("category");
+  if(!d.payer) missing.push("who paid");
+  if(missing.length){ d.missing = missing; renderMoney(); return; }
+  d.missing = null;
+
+  const parts = d.dateStr.split("-").map(Number);
+  const date = new Date(parts[0], parts[1]-1, parts[2]).getTime();
+  const split = assignSplit(cents, d.payer, d.splitPct);
+
+  const claim = {
+    id: "x" + Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+    who: State.me, payer: d.payer, amount: cents, date: date, cat: d.cat,
+    desc: (d.desc||"").trim(), splitPct: d.splitPct,
+    dadCents: split.dadCents, momCents: split.momCents,
+    receipt: d.receipt || null,
+    created: Date.now(), revs: []
+  };
+  Store.putExpense(State.me, claim);
+  State.moneyDraft = null;
+  State.moneyFlash = "Saved · " + centsToDollars(cents) + " · " + moneyCatLabel(claim.cat);
+  clearTimeout(moneyFlashT);
+  moneyFlashT = setTimeout(()=>{ State.moneyFlash = null; if(!State.moneyDraft) renderMoney(); }, 6000);
+  renderAll();
+}
+
+/* ---- record a settlement ---- */
+function beginSettle(){
+  State.settleDraft = {payer:State.me, amount:"", dateStr:dayOf(Date.now()), note:"", missing:null};
+  renderMoney();
+}
+function cancelSettle(){ State.settleDraft = null; renderMoney(); }
+
+function settleForm(){
+  const d = State.settleDraft;
+  const wrap = el("div","panel");
+  wrap.appendChild(el("p","eyebrow","Record a settlement"));
+  wrap.appendChild(el("p","sub","An explicit payment between the two of you, outside any single claim. " +
+    "It is added to the record and moves the balance by exactly this amount."));
+
+  wrap.appendChild(chipRow("Who paid", true, WHO_OPTS, d.payer,
+    v=>{ d.payer=v; if(d.missing) renderMoney(); }, d.missing && !d.payer, false, null, null));
+
+  const amtOk = dollarsToCents(d.amount) != null && dollarsToCents(d.amount) > 0;
+  const af = el("div","field" + (d.missing && !amtOk ? " missing" : ""));
+  const al = el("div","qlab"); al.id = "sAmtLab";
+  al.appendChild(el("span",null,"Amount"));
+  al.appendChild(el("span","req" + (amtOk?" ok":""), amtOk ? "✓ ANSWERED" : "REQUIRED"));
+  af.appendChild(al);
+  const ain = document.createElement("input");
+  ain.type = "text"; ain.inputMode = "decimal"; ain.placeholder = "0.00"; ain.value = d.amount;
+  ain.setAttribute("aria-labelledby","sAmtLab");
+  ain.oninput = ()=>{ d.amount = ain.value; };
+  af.appendChild(ain);
+  wrap.appendChild(af);
+
+  const df = el("div","field");
+  df.appendChild(el("div","qlab","Date"));
+  const din = document.createElement("input");
+  din.type = "date"; din.value = d.dateStr; din.max = dayOf(Date.now());
+  din.setAttribute("aria-label","Date of the settlement");
+  din.oninput = ()=>{ d.dateStr = din.value; };
+  df.appendChild(din);
+  wrap.appendChild(df);
+
+  const nf = el("div","field");
+  nf.appendChild(el("div","qlab","Note (optional)"));
+  const ta = document.createElement("textarea");
+  ta.value = d.note; ta.placeholder = "Both parents can read this.";
+  ta.oninput = ()=>{ d.note = ta.value; };
+  nf.appendChild(ta);
+  wrap.appendChild(nf);
+
+  if(d.missing){
+    const still = [];
+    if(!d.payer) still.push("who paid");
+    if(!amtOk) still.push("a valid amount");
+    if(still.length){
+      const e = el("div","err","Still needed: " + still.join(", ") + ".");
+      e.setAttribute("role","alert");
+      wrap.appendChild(e);
+    }
+  }
+  const save = el("button","bigbtn","Save settlement");
+  save.onclick = saveSettle;
+  wrap.appendChild(save);
+  const disc = el("button","linkbtn danger-link","Discard");
+  disc.onclick = cancelSettle;
+  wrap.appendChild(disc);
+  return wrap;
+}
+
+function saveSettle(){
+  const d = State.settleDraft;
+  const cents = dollarsToCents(d.amount);
+  const missing = [];
+  if(!d.payer) missing.push("who paid");
+  if(cents == null || cents <= 0) missing.push("a valid amount");
+  if(missing.length){ d.missing = missing; renderMoney(); return; }
+  d.missing = null;
+
+  const parts = d.dateStr.split("-").map(Number);
+  const date = new Date(parts[0], parts[1]-1, parts[2]).getTime();
+  const settle = {
+    id: "s" + Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+    who: State.me, payer: d.payer, amount: cents, date: date,
+    note: (d.note||"").trim(), created: Date.now(), revs: []
+  };
+  Store.putSettlement(State.me, settle);
+  State.settleDraft = null;
+  State.moneyFlash = "Recorded · " + WHO_NAME[settle.payer] + " paid " + centsToDollars(cents);
+  clearTimeout(moneyFlashT);
+  moneyFlashT = setTimeout(()=>{ State.moneyFlash = null; if(!State.settleDraft) renderMoney(); }, 6000);
+  renderAll();
+}
+
+/* ============================================================
    TABS + BOOT
    ============================================================ */
-const TABS = ["log","history","trends","patterns"];
+/* U3: 6 -> 5 tabs, Trends+Patterns merged into one "Insights" tab (a 6-tab bar
+   does not fit a phone — sealed ruling, 2026-09-17). Order: Log, Calendar,
+   Money, Record, Insights. */
+const TABS = ["log","calendar","money","history","insights"];
+/* every tab starts stale except the one that's visible on first paint —
+   renderAll()'s first call (once State.me is chosen) renders State.tab and
+   leaves these alone; setTab() below rebuilds a tab the moment it's actually
+   opened, so no tab is ever SHOWN stale, only left un-rebuilt while hidden. */
+TABS.forEach(t=>{ if(t !== State.tab) State.staleTabs[t] = true; });
 let enterT = null;
 function setTab(name, focusTab){
   State.tab = name;
+  if(State.staleTabs[name]) renderTab(name);
   TABS.forEach(t=>{
     const v = $("v-"+t);
     v.classList.remove("entering");
@@ -2251,10 +3771,16 @@ function renderTrends(){
   }
 
   const first = days[0];
-  const start = new Date(first.slice(0,4), +first.slice(5,7)-1, +first.slice(8,10));
-  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = dayOf(Date.now());
+  /* U9: this used to build a local Date at midnight and add 864e5 (24h) per
+     step — a local day is 23h or 25h long on the two days a year the clock
+     changes, so that loop doubled (or dropped) a calendar column across the
+     US fall-back/spring-forward transition, contradicting the file's own
+     Date.UTC-everywhere claim (see dParts, above). Fixed the same way the
+     custody resolver is DST-proof: step whole UTC days via addDaysStr. */
+  const totalDays = daysBetween(first, todayStr);
   const span = [];
-  for(let t = start.getTime(); t <= today.getTime(); t += 864e5) span.push(dayOf(t));
+  for(let i=0; i<=totalDays; i++) span.push(addDaysStr(first, i));
   const window = span.slice(-56);              /* eight weeks reads at phone width */
   const max = Math.max.apply(null, window.map(d=>cnt[d]||0).concat([1]));
 
@@ -2329,27 +3855,602 @@ function renderTrends(){
   slot.appendChild(c3);
 }
 
-function renderAll(){
-  if(!State.me) return;
-  renderSync();
-  renderDaily();
-  /* A draft owns its subtree. Store.onChange -> renderAll fires when the OTHER
-     parent logs, or when the db echoes our own write, and that rebuilt the open
-     form mid-entry, dropping the caret, the iOS keyboard and any fade in
-     flight. renderLog's store-dependent half only renders when there is no
-     draft anyway, and all five draft lifecycle functions call it themselves. */
-  if(!State.draft) renderLog();
-  renderHistory();
-  renderTrends();
-  renderPatterns();
+/* ============================================================
+   CALENDAR — month grid + day sheet
+   ============================================================ */
+/* THE HARD PROBLEM: one 375px-wide grid column is ~48px, minus the app's own
+   gutters — not enough to set a title, a private-note glyph AND a custody
+   band in legible type all at once, in EITHER theme, in a black-and-white
+   print. Rather than shrink text until it fails contrast, or pick one signal
+   and drop the other two, the cell carries compact INDICATORS only (up to
+   two 3-letter event tags + an overflow count, one dot for "something was
+   recorded", a patterned band for custody) and states everything in full,
+   in a sentence, on the cell's own aria-label. Tapping opens the day sheet,
+   where all three are laid out as full rows with real labels — that is
+   where this design asks to be read, not the grid. */
+function renderCalendar(){
+  const slot = $("calSlot");
+  slot.innerHTML = "";
+  if(!State.calMonth) State.calMonth = dayOf(Date.now()).slice(0,7);
+  const ym = State.calMonth;
+
+  const hd = el("div","cal-hd");
+  const moDate = new Date(Date.UTC(+ym.slice(0,4), +ym.slice(5,7)-1, 1));
+  hd.appendChild(el("span","cal-mo", moDate.toLocaleDateString(undefined,{month:"long",year:"numeric",timeZone:"UTC"})));
+  const nav = el("div","cal-nav");
+  const prevB = el("button",null,"‹"); prevB.setAttribute("aria-label","Previous month");
+  prevB.onclick = ()=>{ State.calMonth = shiftYm(ym,-1); renderCalendar(); };
+  const todayB = el("button",null,"•"); todayB.setAttribute("aria-label","Jump to this month");
+  todayB.onclick = ()=>{ State.calMonth = dayOf(Date.now()).slice(0,7); renderCalendar(); };
+  const nextB = el("button",null,"›"); nextB.setAttribute("aria-label","Next month");
+  nextB.onclick = ()=>{ State.calMonth = shiftYm(ym,1); renderCalendar(); };
+  nav.appendChild(prevB); nav.appendChild(todayB); nav.appendChild(nextB);
+  hd.appendChild(nav);
+  slot.appendChild(hd);
+
+  const wds = el("div","cal-wds");
+  ["S","M","T","W","T","F","S"].forEach(w=>{
+    const s = el("span","cal-wd",w); s.setAttribute("aria-hidden","true"); wds.appendChild(s);
+  });
+  slot.appendChild(wds);
+
+  const days = monthDays(ym);
+  const lead = weekdayOf(days[0]);
+  const grid = el("div","cal-grid");
+  for(let i=0;i<lead;i++){
+    const padCell = el("div","dcell out");
+    padCell.setAttribute("aria-hidden","true");
+    grid.appendChild(padCell);
+  }
+  const today = dayOf(Date.now());
+  /* U1: build this month's date-keyed index ONCE, not once per cell (~42x/render).
+     Both maps come from the month-scoped Store readers above, so this is a
+     bounded 2-doc-per-collection read regardless of how many years of history
+     the record holds. */
+  const evsByDay = {};
+  Store.eventsForMonth(ym).filter(e=>!e.voided).forEach(e=>{
+    (evsByDay[e.date] = evsByDay[e.date] || []).push(e);
+  });
+  const episByDay = {};
+  Store.entriesForMonth(ym).filter(e=>!e.voided).forEach(e=>{
+    const d = dayOf(e.start);
+    (episByDay[d] = episByDay[d] || []).push(e);
+  });
+  days.forEach(dstr=>grid.appendChild(calDayCell(dstr, dstr===today, evsByDay, episByDay)));
+  slot.appendChild(grid);
+
+  const legend = el("div","note-strip");
+  legend.appendChild(el("b",null,"Reading the band: "));
+  legend.appendChild(document.createTextNode(
+    "a right-leaning stripe is Dad's custody day, a left-leaning stripe is Mom's, a crosshatch is " +
+    "a logged exception (including an accepted swap). No band means nothing is scheduled yet."));
+  slot.appendChild(legend);
+
+  if(State.calDay) calDrawDaySheet();
+}
+
+function calDayCell(dstr, isToday, evsByDay, episByDay){
+  const p = dParts(dstr);
+  const evs = evsByDay ? (evsByDay[dstr] || []) : Store.eventsForDay(dstr).filter(e=>!e.voided);
+  const epis = episByDay ? (episByDay[dstr] || []) : episodesForDay(dstr);
+  const cst = custodyForDate(dstr);
+  const btn = el("button","dcell" + (isToday ? " today" : ""));
+  btn.type = "button";
+
+  const top = el("div","dtop");
+  top.appendChild(el("span","dnum", String(p.d)));
+  const epi = el("span","epi","●");
+  epi.setAttribute("aria-hidden","true");
+  if(!epis.length) epi.hidden = true;
+  top.appendChild(epi);
+  btn.appendChild(top);
+
+  if(evs.length){
+    const marks = el("div","dmarks");
+    evs.slice(0,2).forEach(e=>marks.appendChild(el("span","evtag", calTypeLabel(e.type).slice(0,3))));
+    if(evs.length > 2) marks.appendChild(el("span","evtag more", "+" + (evs.length-2)));
+    btn.appendChild(marks);
+  }
+
+  const band = el("span","dband " + (cst.source==="exception" ? "exception" : (cst.parent || "none")));
+  band.setAttribute("aria-hidden","true");
+  btn.appendChild(band);
+
+  const parts = [friendlyDay(dstr)];
+  parts.push(cst.parent
+    ? (WHO_NAME[cst.parent] + "'s custody day" + (cst.source==="exception" ? " (exception)" : ""))
+    : "No custody schedule set");
+  if(evs.length) parts.push(evs.length + (evs.length===1 ? " event" : " events"));
+  if(epis.length) parts.push(epis.length + (epis.length===1 ? " entry" : " entries") + " recorded that day");
+  btn.setAttribute("aria-label", parts.join(". "));
+  btn.onclick = ()=>calOpenDay(dstr);
+  return btn;
+}
+
+/* ---------- day sheet ---------- */
+let calSheetT = null;
+function calOpenDay(dstr){
+  State.calDay = dstr;
+  State.calAdding = null;
+  State.calEditingEvent = null;
+  State.calSwapOpen = null;
+  State.calSwapDraft = null;
+  calDrawDaySheet();
+  const sc = $("calScrim");
+  clearTimeout(calSheetT);
+  sc.classList.remove("closing");
+  sc.hidden = false;
+  void sc.offsetWidth;
+  sc.classList.add("opening");
+  $("app").setAttribute("inert","");
+  $("calSheetEl").focus();
+}
+function calCloseDay(){
+  const sc = $("calScrim");
+  if(sc.hidden || sc.classList.contains("closing")) return;
+  sc.classList.remove("opening");
+  sc.classList.add("closing");
+  State.calDay = null; State.calAdding = null; State.calEditingEvent = null; State.calSwapOpen = null; State.calSwapDraft = null;
+  $("app").removeAttribute("inert");
+  clearTimeout(calSheetT);
+  calSheetT = setTimeout(()=>{ sc.hidden = true; sc.classList.remove("closing"); }, ms("--t-exit"));
+}
+
+function calDrawDaySheet(){
+  const dstr = State.calDay;
+  const s = $("calSheetEl");
+  s.innerHTML = "";
+  if(!dstr) return;
+
+  const hd = el("div","sheethd");
+  const l = el("div");
+  const ht = el("h3",null, friendlyDay(dstr)); ht.id = "calSheetTitle";
+  l.appendChild(ht);
+  const cst = custodyForDate(dstr);
+  l.appendChild(el("p","sub", cst.parent
+    ? (WHO_NAME[cst.parent] + "’s custody day" + (cst.source==="exception" ? " — logged exception" : ""))
+    : "No custody schedule covers this day yet."));
+  hd.appendChild(l);
+  const x = el("button","x","×"); x.setAttribute("aria-label","Close"); x.onclick = calCloseDay;
+  hd.appendChild(x);
+  s.appendChild(hd);
+
+  if(State.calAdding){ s.appendChild(calEventForm(null)); return; }
+  if(State.calEditingEvent){
+    const ev = Store.allEvents().find(e=>e.id === State.calEditingEvent.id);
+    if(ev){ s.appendChild(calEventForm(ev)); return; }
+    State.calEditingEvent = null;
+  }
+
+  const evWrap = el("div","field");
+  evWrap.appendChild(el("div","qlab","Events"));
+  const evs = Store.eventsForDay(dstr);
+  if(!evs.length) evWrap.appendChild(el("p","sub","Nothing on the calendar for this day."));
+  else evs.forEach(e=>evWrap.appendChild(calEventCard(e)));
+  s.appendChild(evWrap);
+  const addBtn = el("button","bigbtn ghost","+ Add an event");
+  addBtn.onclick = ()=>{ State.calAdding = calBlankDraft(dstr); calDrawDaySheet(); };
+  s.appendChild(addBtn);
+
+  const epis = episodesForDay(dstr);
+  if(epis.length){
+    const epWrap = el("div","field");
+    epWrap.appendChild(el("div","qlab","Recorded that day"));
+    epWrap.appendChild(el("p","sub","From the Record tab. Read-only here — open Record to revise or withdraw one."));
+    epis.forEach(e=>epWrap.appendChild(calEpisodeRow(e)));
+    s.appendChild(epWrap);
+  }
+
+  s.appendChild(calSwapSection(dstr));
+}
+
+function calEventCard(e){
+  const mine = e.who === State.me;
+  const card = el("div","panel calev" + (e.voided ? " voided" : ""));
+  const top = el("div","etop");
+  if(e.time) top.appendChild(el("span","etime", clockOfTimeStr(e.time)));
+  top.appendChild(el("span","evtag", calTypeLabel(e.type)));
+  if(e.voided) top.appendChild(el("span","badge","withdrawn"));
+  card.appendChild(top);
+  card.appendChild(el("div","evtitle", e.title));
+  const meta = el("div","emeta");
+  if(e.location) meta.appendChild(el("span",null, e.location));
+  meta.appendChild(el("span","badge "+e.who, WHO_NAME[e.who]));
+  if(e.edited) meta.appendChild(el("span","badge edited","edited " + e.editCount + (e.editCount===1?" time":" times")));
+  card.appendChild(meta);
+  if(e.note){
+    const nb = el("div","enote");
+    nb.appendChild(el("b",null,"Note — both parents can see this: "));
+    nb.appendChild(document.createTextNode(e.note));
+    card.appendChild(nb);
+  }
+  if(mine){
+    const eb = el("button","linkbtn","Edit");
+    eb.onclick = ()=>{ State.calEditingEvent = {id:e.id}; calDrawDaySheet(); };
+    card.appendChild(eb);
+  } else {
+    const lk = el("p","sub","🔒 " + WHO_NAME[e.who] + " added this — only " + WHO_NAME[e.who] + " can revise it.");
+    card.appendChild(lk);
+  }
+  card.appendChild(calNoteBox(e));
+  return card;
+}
+
+/* ---------- PRIVACY LEGIBILITY ----------
+   The label is not a hint, it names the exact audience every time the field
+   is shown, to either parent, on every event regardless of who created it —
+   so there is no state in which a parent sees this box without also seeing
+   who can read it. It never shares a border, background or heading style
+   with the shared note above (see .privnote / .enote in the CSS), so the two
+   cannot be confused for one another even glancing past them. */
+function calNoteBox(e){
+  const box = el("div","privnote");
+  const lab = el("div","privlab");
+  const lock = el("span","privlock","🔒"); lock.setAttribute("aria-hidden","true");
+  lab.appendChild(lock);
+  lab.appendChild(el("span",null,"Only you can see this note — " + WHO_NAME[State.me]));
+  box.appendChild(lab);
+  const existing = Store.myNote(State.me, e.id);
+  const ta = document.createElement("textarea");
+  ta.value = existing ? existing.text : "";
+  ta.setAttribute("aria-label", "Your private note on this event, not visible to " + WHO_NAME[otherOf(State.me)]);
+  box.appendChild(ta);
+  const save = el("button","linkbtn","Save private note");
+  save.onclick = ()=>{ Store.putCalNote(State.me, e.id, ta.value); calDrawDaySheet(); };
+  box.appendChild(save);
+  return box;
+}
+
+function calEpisodeRow(e){
+  const row = el("div","panel calepi");
+  const top = el("div","etop");
+  top.appendChild(el("span","etime", clockOf(e.start)));
+  const dur = el("span","edur mono", durText(e.dur));
+  if(!e.measured){ const s = el("span","est"," est"); dur.appendChild(s); }
+  top.appendChild(dur);
+  row.appendChild(top);
+  row.appendChild(el("div","evtitle a"+e.sev, anchorOf(e.sev)));
+  const meta = el("div","emeta");
+  meta.appendChild(el("span","badge "+e.who, WHO_NAME[e.who]));
+  row.appendChild(meta);
+  return row;
+}
+
+/* The sentence both parents read for a request's direction — the ONE
+   resolver for this, so the asking row, the pending-accept row and the
+   answered row can never say something different from each other.
+   "requester" = after acceptance the day goes to whoever ASKED.
+   "responder" = after acceptance the day goes to whoever is ANSWERING.
+   A request with neither (made before direction tracking existed) says so
+   plainly rather than guessing. */
+function swapDirectionText(r){
+  if(r.wantsCustody === "requester") return WHO_NAME[r.by] + " asked to take this day.";
+  if(r.wantsCustody === "responder") return WHO_NAME[r.by] + " asked " + WHO_NAME[otherOf(r.by)] + " to take this day.";
+  return "This request predates direction tracking — no direction was recorded.";
+}
+
+function calSwapSection(dstr){
+  const wrap = el("div","field");
+  wrap.appendChild(el("div","qlab","Swap requests"));
+  const rows = Store.swapWithResponse().filter(r=>r.date===dstr);
+  if(!rows.length) wrap.appendChild(el("p","sub","No swap has been requested for this day."));
+  else rows.forEach(r=>wrap.appendChild(calSwapRow(r)));
+
+  const pending = rows.some(r=>!r.response);
+  if(!pending){
+    const ask = el("button","linkbtn", State.calSwapOpen===dstr ? "Cancel" : "Request a swap for this day");
+    ask.onclick = ()=>{
+      State.calSwapOpen = State.calSwapOpen===dstr ? null : dstr;
+      /* B1 fix: a swap used to be a free-text message with NO direction, so
+         accepting always handed the day to whoever clicked Accept — silently
+         backwards whenever the requester was asking to RECEIVE the day. Both
+         choices are now required and phrased symmetrically, and the request
+         echoes back the exact same sentence on the row (swapDirectionText)
+         so both parents read one unambiguous statement before anyone acts
+         on it. */
+      State.calSwapDraft = State.calSwapOpen ? {wantsCustody:null, message:"", missing:false} : null;
+      calDrawDaySheet();
+    };
+    wrap.appendChild(ask);
+    if(State.calSwapOpen === dstr){
+      const box = el("div","adder");
+      const d = State.calSwapDraft || (State.calSwapDraft = {wantsCustody:null, message:"", missing:false});
+      box.appendChild(chipRow("What are you asking?", true,
+        [["requester","I'll take this day"], ["responder","Can you take this day?"]],
+        d.wantsCustody, v=>{ d.wantsCustody = v; }, d.missing && !d.wantsCustody, false, null, null));
+      const inp = document.createElement("input");
+      inp.type = "text"; inp.maxLength = 140; inp.placeholder = "Optional message";
+      inp.setAttribute("aria-label","Message with this swap request");
+      inp.value = d.message; inp.oninput = ()=>{ d.message = inp.value; };
+      const go = el("button","addgo","Ask");
+      go.onclick = ()=>{
+        if(!d.wantsCustody){ d.missing = true; calDrawDaySheet(); return; }
+        Store.putSwapRequest(State.me, dstr, inp.value.trim(), d.wantsCustody);
+        State.calSwapOpen = null; State.calSwapDraft = null; calDrawDaySheet();
+      };
+      box.appendChild(inp); box.appendChild(go);
+      wrap.appendChild(box);
+    }
+  }
+  return wrap;
+}
+
+function calSwapRow(r){
+  const row = el("div","panel calswap");
+  const top = el("div","etop");
+  top.appendChild(el("span","badge "+r.by, WHO_NAME[r.by] + " asked"));
+  /* time portion through clockOf(), same as every other timestamp in the app —
+     toLocaleString's hour:"numeric" is locale-dependent (24h, or a differently
+     cased "AM/PM", depending on the device) rather than the app's own format. */
+  top.appendChild(el("span","etime", new Date(r.at).toLocaleDateString(undefined,{month:"short",day:"numeric"}) + " " + clockOf(r.at)));
+  row.appendChild(top);
+  row.appendChild(el("p","sub", swapDirectionText(r)));
+  if(r.message) row.appendChild(el("p","sub", r.message));
+  if(!r.response){
+    if(r.by !== State.me){
+      if(r.wantsCustody){
+        const act = el("div","confirmact");
+        const yes = el("button","cyes","Accept");
+        yes.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "accept"); calDrawDaySheet(); };
+        /* copy rule: "Declined" — never "refused", never "wouldn't". The record
+           states an outcome, not a character judgement, because both parents
+           and eventually a mediator read it. */
+        const no = el("button","cno","Decline");
+        no.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "decline"); calDrawDaySheet(); };
+        act.appendChild(yes); act.appendChild(no);
+        row.appendChild(act);
+      } else {
+        /* Legacy request, no direction on record. NEVER guess which parent
+           the day should go to — make the responder state it explicitly,
+           right here, at the moment they accept, and record exactly what
+           they chose (respondToSwap's `direction` argument) rather than
+           inventing it in code. */
+        row.appendChild(el("p","sub","Choose who ends up with this day before accepting."));
+        const act = el("div","confirmact");
+        const yesMe = el("button","cyes","Accept — I take it");
+        yesMe.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "accept", "", "responder"); calDrawDaySheet(); };
+        const yesThem = el("button","cyes","Accept — " + WHO_NAME[r.by] + " keeps it");
+        yesThem.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "accept", "", "requester"); calDrawDaySheet(); };
+        const no = el("button","cno","Decline");
+        no.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "decline"); calDrawDaySheet(); };
+        act.appendChild(yesMe); act.appendChild(yesThem); act.appendChild(no);
+        row.appendChild(act);
+      }
+    } else {
+      row.appendChild(el("p","sub","Waiting on " + WHO_NAME[otherOf(r.by)] + "."));
+    }
+  } else {
+    const verdict = r.response.decision === "accept" ? "Accepted" : "Declined";
+    row.appendChild(el("p","sub", verdict + " by " + WHO_NAME[r.response.by] + " · " +
+      new Date(r.response.at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})));
+  }
+  return row;
+}
+
+function calBlankDraft(dstr){ return {date:dstr, time:"", type:null, title:"", location:"", note:""}; }
+
+function calEventForm(existing){
+  const isEdit = !!existing;
+  const d = isEdit ? State.calEditingEvent : State.calAdding;
+  if(isEdit && d.title === undefined){
+    Object.assign(d, {date:existing.date, time:existing.time||"", type:existing.type,
+      title:existing.title, location:existing.location||"", note:existing.note||""});
+  }
+  const s = el("div");
+  s.appendChild(el("p","sub", isEdit
+    ? "Changes are saved as a revision. The original stays in the record."
+    : "Either parent can add an event. Both parents see it, except a private note you add separately."));
+
+  const tf = el("div","field");
+  tf.appendChild(el("div","qlab","Title"));
+  const ti = document.createElement("input");
+  ti.type = "text"; ti.value = d.title||""; ti.maxLength = 80; ti.placeholder = "e.g. Dentist";
+  ti.setAttribute("aria-label","Event title");
+  ti.oninput = ()=>{ d.title = ti.value; };
+  tf.appendChild(ti);
+  s.appendChild(tf);
+
+  const df = el("div","field");
+  const drow = el("label","retro-row");
+  drow.appendChild(el("span","retro-lab","Date"));
+  const din = document.createElement("input");
+  din.type = "date"; din.value = d.date;
+  din.setAttribute("aria-label","Event date");
+  din.oninput = ()=>{ d.date = din.value; };
+  drow.appendChild(din);
+  df.appendChild(drow);
+  const trow = el("label","retro-row");
+  trow.appendChild(el("span","retro-lab","Time"));
+  const tin = document.createElement("input");
+  tin.type = "time"; tin.value = d.time||"";
+  tin.setAttribute("aria-label","Event time, optional");
+  tin.oninput = ()=>{ d.time = tin.value; };
+  trow.appendChild(tin);
+  trow.appendChild(el("span","retro-unit","optional"));
+  df.appendChild(trow);
+  s.appendChild(df);
+
+  s.appendChild(chipRow("Type", true, CAL_TYPES, d.type, v=>{ d.type=v; }, false, false, null, null));
+
+  const lf = el("div","field");
+  lf.appendChild(el("div","qlab","Location"));
+  const li = document.createElement("input");
+  li.type = "text"; li.value = d.location||""; li.maxLength = 80; li.placeholder = "optional";
+  li.setAttribute("aria-label","Location, optional");
+  li.oninput = ()=>{ d.location = li.value; };
+  lf.appendChild(li);
+  s.appendChild(lf);
+
+  const nf = el("div","field");
+  const nl = el("div","qlab"); nl.id = "calNoteLab";
+  nl.appendChild(el("span",null,"Note"));
+  nf.appendChild(nl);
+  nf.appendChild(el("p","sub","Both parents can see this."));
+  const ta = document.createElement("textarea");
+  ta.value = d.note||""; ta.setAttribute("aria-labelledby","calNoteLab");
+  ta.oninput = ()=>{ d.note = ta.value; };
+  nf.appendChild(ta);
+  s.appendChild(nf);
+
+  const err = el("div","err"); err.hidden = true; err.setAttribute("role","alert");
+
+  const save = el("button","bigbtn", isEdit ? "Save revision" : "Save event");
+  save.onclick = ()=>{
+    if(!d.title || !d.title.trim() || !d.date || !d.type){
+      err.textContent = "A title, a date and a type are needed to save.";
+      err.hidden = false;
+      return;
+    }
+    if(isEdit) calCommitEventRevision(existing); else calCommitNewEvent();
+  };
+  s.appendChild(save);
+  s.appendChild(err);
+
+  const cancel = el("button","linkbtn","Cancel");
+  cancel.onclick = ()=>{ State.calAdding = null; State.calEditingEvent = null; calDrawDaySheet(); };
+  s.appendChild(cancel);
+
+  if(isEdit && existing.who === State.me){
+    const delWrap = el("div","delwrap");
+    if(existing.voided){
+      delWrap.appendChild(el("p","sub","This event was already withdrawn."));
+    } else {
+      const del = el("button","danger-btn","Withdraw this event");
+      del.onclick = ()=>{
+        delWrap.innerHTML = "";
+        const box = el("div","confirmbox");
+        box.setAttribute("role","group");
+        box.appendChild(el("p",null,"Withdraw this event? It stays visible on the calendar, struck through. Nothing is erased."));
+        const act = el("div","confirmact");
+        const no = el("button","cno","Keep it");
+        no.onclick = ()=>{ delWrap.innerHTML = ""; delWrap.appendChild(del); };
+        const yes = el("button","cyes","Withdraw");
+        yes.onclick = ()=>calCommitEventRevision(existing, true);
+        act.appendChild(no); act.appendChild(yes);
+        box.appendChild(act);
+        delWrap.appendChild(box);
+        yes.focus();
+      };
+      delWrap.appendChild(del);
+    }
+    s.appendChild(delWrap);
+  }
+  return s;
+}
+
+function calCommitNewEvent(){
+  const d = State.calAdding;
+  const ev = {
+    id: "ev_" + Date.now() + "_" + Math.random().toString(36).slice(2,7),
+    who: State.me, date: d.date, time: d.time || null, type: d.type,
+    title: d.title.trim(), location: (d.location||"").trim(), note: (d.note||"").trim(),
+    created: Date.now(), revs: []
+  };
+  Store.putEvent(State.me, ev);
+  State.calAdding = null;
+  calDrawDaySheet();
+}
+
+/* Editing/withdrawing is gated to the creator at the point this function can
+   even be reached (calEventCard only renders the Edit control when
+   e.who === State.me), and re-checked here as a second guard — the same
+   "identity is a guardrail, not a lock" posture as the rest of this app,
+   just asserted twice instead of once, because the write-isolation rule
+   ("each parent writes only their own document") is load-bearing and cheap
+   to double up on. */
+function calCommitEventRevision(base, isVoid){
+  if(base.who !== State.me) return;
+  const d = State.calEditingEvent;
+  const patch = {};
+  if(!isVoid){
+    if(d.title !== base.title) patch.title = d.title.trim();
+    if((d.time||null) !== (base.time||null)) patch.time = d.time||null;
+    if(d.type !== base.type) patch.type = d.type;
+    if((d.location||"") !== (base.location||"")) patch.location = (d.location||"").trim();
+    if((d.note||"") !== (base.note||"")) patch.note = (d.note||"").trim();
+    if(d.date !== base.date) patch.date = d.date;
+    if(!Object.keys(patch).length){ State.calEditingEvent = null; calDrawDaySheet(); return; }
+  }
+  const docId = base.date.slice(0,7) + "__" + base.who;
+  const doc = Store.calEvents[docId];
+  if(!doc || !doc.items || !doc.items[base.id]){ State.calEditingEvent = null; calDrawDaySheet(); return; }
+  const raw = doc.items[base.id];
+  const next = Object.assign({}, raw);
+  next.revs = (raw.revs||[]).concat([ isVoid ? {at:Date.now(), by:State.me, void:true} : {at:Date.now(), by:State.me, patch:patch} ]);
+  Store.putEvent(State.me, next);
+  State.calEditingEvent = null;
+  calDrawDaySheet();
+}
+
+/* U2: one entry per TABS name, each doing exactly what renderAll used to do
+   unconditionally for that tab (same guards, same comments moved inline).
+   renderTab() is the only thing allowed to clear State.staleTabs[name] —
+   that's what makes "rendered" and "not stale" the same fact. */
+const TAB_RENDER = {
+  log(){
+    renderDaily();
+    /* A draft owns its subtree. Store.onChange -> renderAll fires when the OTHER
+       parent logs, or when the db echoes our own write, and that rebuilt the open
+       form mid-entry, dropping the caret, the iOS keyboard and any fade in
+       flight. renderLog's store-dependent half only renders when there is no
+       draft anyway, and all five draft lifecycle functions call it themselves. */
+    if(!State.draft) renderLog();
+  },
+  history(){ renderHistory(); },
+  /* U3: Insights = Trends (time series) then Patterns (lifetime cards), in that
+     reading order, both still their own functions/slots — only the tab they
+     live under merged. */
+  insights(){ renderTrends(); renderPatterns(); },
+  money(){
+    /* same guard, same reason: a claim or settlement form mid-entry must not be
+       blown away by the OTHER parent logging something, or by this device's own
+       write echoing back through Store.onChange. */
+    if(!State.moneyDraft && !State.settleDraft) renderMoney();
+  },
+  calendar(){
+    /* Same rule as the draft form above: a day sheet open mid-edit (adding or
+       revising an event, mid-typed private note) must not be rebuilt out from
+       under the finger by an unrelated store echo. Every action inside the
+       sheet re-draws it explicitly when it actually changes something, so
+       skipping the automatic rebuild here loses nothing. */
+    if(!State.calDay) renderCalendar();
+  }
+};
+function renderTab(name){
+  const fn = TAB_RENDER[name];
+  if(fn) fn();
+  State.staleTabs[name] = false;
+}
+function updateTabCounts(){
   const all = Store.allEntries().filter(e=>!e.voided);
   const today = dayOf(Date.now());
   $("cnt-log").textContent = String(all.filter(e=>dayOf(e.start)===today).length);
   $("cnt-history").textContent = String(all.length);
-  const days = new Set(all.map(e=>dayOf(e.start))).size;
-  $("cnt-patterns").textContent = days + (days===1?" day":" days");
+  /* U3: one badge for the merged Insights tab — the more complete of the two
+     old counts (entries AND daily cards, matching what Trends' own coverage
+     card counts as "recorded"). */
   const recDays = new Set(all.map(e=>dayOf(e.start)).concat(Store.allDayCards().map(c=>c.date))).size;
-  $("cnt-trends").textContent = recDays + "d";
+  $("cnt-insights").textContent = recDays + "d";
+  const liveMoney = Store.allExpenses().filter(e=>!e.voided).length + Store.allSettlements().filter(e=>!e.voided).length;
+  $("cnt-money").textContent = String(liveMoney);
+  const evAll = Store.allEvents().filter(e=>!e.voided);
+  const thisMonthEvs = evAll.filter(e=>e.date.slice(0,7) === dayOf(Date.now()).slice(0,7)).length;
+  $("cnt-calendar").textContent = thisMonthEvs + " this mo";
+}
+function renderAll(){
+  if(!State.me) return;
+  renderSync();
+  /* U2: a store echo — this device's own write landing, or the OTHER parent's
+     completely unrelated write — used to rebuild all six tabs unconditionally
+     every time (98-113ms measured at two years of history, nearly all of it
+     spent on tabs nobody is looking at). Render only the ACTIVE tab; every
+     other tab is marked stale and gets its one rebuild the moment it's next
+     opened (setTab), so a backgrounded tab is never shown out of date — it's
+     simply not redrawn while nobody can see it. The tab-bar count badges stay
+     unconditional: they're visible regardless of which tab is open. */
+  renderTab(State.tab);
+  TABS.forEach(t=>{ if(t !== State.tab) State.staleTabs[t] = true; });
+  updateTabCounts();
 }
 
 $("pickDad").onclick = ()=>chooseMe("dad");
@@ -2359,8 +4460,15 @@ TABS.forEach(t=>{
   $("t-"+t).onkeydown = tabKey;
 });
 $("printBtn").onclick = ()=>window.print();
+$("moneyPrintBtn").onclick = ()=>{ document.body.classList.add("print-money"); window.print(); };
+window.addEventListener("afterprint", ()=>document.body.classList.remove("print-money"));
 $("scrim").onclick = (ev)=>{ if(ev.target === $("scrim")) closeSheet(); };
-document.addEventListener("keydown", e=>{ if(e.key === "Escape" && !$("scrim").hidden) closeSheet(); });
+$("calScrim").onclick = (ev)=>{ if(ev.target === $("calScrim")) calCloseDay(); };
+document.addEventListener("keydown", e=>{
+  if(e.key !== "Escape") return;
+  if(!$("scrim").hidden) closeSheet();
+  else if(!$("calScrim").hidden) calCloseDay();
+});
 window.addEventListener("online", ()=>Store.flushOutbox());
 
 Store.onChange(()=>{ if(State.me) renderAll(); });
@@ -2445,27 +4553,299 @@ Store.init();
      labelOf("c:bath time") === "bath time");
   ck("labelOf still resolves built-ins", labelOf("no") === LABEL["no"] && labelOf(null) === "");
   (function(){
-    /* a real add, through the store, then read back by the resolver */
+    /* a real add, through the store, then read back by the resolver.
+       addOption's only side effects run through `this.saveLocal()` (writes
+       localStorage["bbl.mirror"]) and `this.push()` (writes bbl.outbox and/or
+       sends to the server) — everything else it does is exercising the real
+       cap/normalise/dedupe logic on `this.options`, which the checks below need
+       untouched. Isolating the probe means neutralising exactly those two
+       methods on the real singleton for the duration of this block, so the
+       SAME addOption/optionsFor/labelOf code path used by the app runs for
+       real, but nothing it does leaves this closure: not the in-memory
+       options (reset below, as before) and not the disk mirror or the
+       outbox/server (blocked here, which is the actual bug fix — restoring
+       Store.options afterward already undid the memory side, but a page load
+       before this fix called saveLocal()/push() on every probe step first). */
+    const mirrorBefore = (function(){ try{ return localStorage.getItem("bbl.mirror"); }catch(e){ return "unreadable"; } })();
     const before = JSON.stringify(Store.options);
-    const k = Store.addOption("dad","trig","Bath  Time");
-    ck("addOption returns the normalised key", k === "c:bath time");
-    ck("the added option is resolvable by label", labelOf(k) === "Bath  Time".trim().slice(0,CUSTOM_LEN));
-    ck("the added option is offered in that field",
-       optionsFor("trig").some(o=>o[0] === k));
-    ck("the added option does NOT leak into another field",
-       !optionsFor("place").some(o=>o[0] === k));
-    ck("re-adding the same text does not duplicate",
-       Store.addOption("dad","trig","bath time") === k &&
-       optionsFor("trig").filter(o=>o[0] === k).length === 1);
-    /* the per-field cap must actually refuse */
-    let last = "seed";
-    for(let i=0; i<CUSTOM_MAX + 2; i++) last = Store.addOption("dad","trig","capprobe " + i);
-    ck("the per-field cap refuses past CUSTOM_MAX", last === null);
-    ck("the cap counts per field, not per parent",
-       Store.addOption("dad","place","capprobe place") !== null);
-    Store.options = JSON.parse(before);   /* leave no test data in the record */
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){};
+    Store.push = function(){};
+    let k;
+    try {
+      k = Store.addOption("dad","trig","Bath  Time");
+      ck("addOption returns the normalised key", k === "c:bath time");
+      ck("the added option is resolvable by label", labelOf(k) === "Bath  Time".trim().slice(0,CUSTOM_LEN));
+      ck("the added option is offered in that field",
+         optionsFor("trig").some(o=>o[0] === k));
+      ck("the added option does NOT leak into another field",
+         !optionsFor("place").some(o=>o[0] === k));
+      ck("re-adding the same text does not duplicate",
+         Store.addOption("dad","trig","bath time") === k &&
+         optionsFor("trig").filter(o=>o[0] === k).length === 1);
+      /* the per-field cap must actually refuse */
+      let last = "seed";
+      for(let i=0; i<CUSTOM_MAX + 2; i++) last = Store.addOption("dad","trig","capprobe " + i);
+      ck("the per-field cap refuses past CUSTOM_MAX", last === null);
+      ck("the cap counts per field, not per parent",
+         Store.addOption("dad","place","capprobe place") !== null);
+    } finally {
+      Store.saveLocal = realSaveLocal;
+      Store.push = realPush;
+    }
+    Store.options = JSON.parse(before);   /* leave no test data in memory */
     ck("the self-check left no option behind",
        !optionsFor("trig").some(o=>o[0] === k) && optionsFor("trig").every(o=>o[1].indexOf("capprobe") !== 0));
+    /* the check above is blind by construction: it inspects the in-memory
+       object this block just reset, never the disk it might have dirtied.
+       Read the PERSISTED MIRROR back and compare it byte-for-byte. */
+    const mirrorAfter = (function(){ try{ return localStorage.getItem("bbl.mirror"); }catch(e){ return "unreadable"; } })();
+    ck("the self-check left the persisted mirror byte-identical",
+       mirrorAfter === mirrorBefore);
+  })();
+
+  // ---- one-time junk cleanup. A now-fixed self-check used to run
+  // Store.addOption(...) unguarded on every page load, permanently minting
+  // "capprobe N" (trig + place) and one "Bath  Time" trigger into
+  // bbl.mirror.options on any device that ever loaded that build.
+  ck("isJunkOption catches the capprobe family by key alone",
+     Store.isJunkOption("c:capprobe 3", {field:"trig", label:"capprobe 3"}) === true &&
+     Store.isJunkOption("c:capprobe place", {field:"place", label:"capprobe place"}) === true);
+  ck("isJunkOption catches the exact double-space artifact the probe minted",
+     Store.isJunkOption("c:bath time", {field:"trig", label:"Bath  Time"}) === true);
+  ck("isJunkOption SPARES a real parent's normally-typed \"bath time\" — same key, different label",
+     Store.isJunkOption("c:bath time", {field:"trig", label:"bath time"}) === false &&
+     Store.isJunkOption("c:bath time", {field:"trig", label:"Bath time"}) === false);
+  ck("isJunkOption does not flag an unrelated option",
+     Store.isJunkOption("c:daycare drop-off", {field:"place", label:"Daycare drop-off"}) === false);
+  (function(){
+    const optionsBefore = JSON.stringify(Store.options);
+    const entriesBefore = JSON.stringify(Store.entries);
+    const daysBefore = JSON.stringify(Store.days);
+    const markerBefore = (function(){ try{ return localStorage.getItem(Store.CLEANUP_KEY); }catch(e){ return null; } })();
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    let pushed = [];
+    Store.saveLocal = function(){};
+    Store.push = function(kind, docId){ pushed.push(kind + "/" + docId); };
+    try {
+      try{ localStorage.removeItem(Store.CLEANUP_KEY); }catch(e){}
+      /* seed a dirty "dad" doc: the probe's junk sitting beside a genuine
+         custom option, the way a real polluted device's mirror looked */
+      Store.options = {dad: {who:"dad", items:{
+        "c:capprobe 0":     {field:"trig",  label:"capprobe 0",     at:1},
+        "c:capprobe place": {field:"place", label:"capprobe place", at:1},
+        "c:bath time":      {field:"trig",  label:"Bath  Time",     at:1},
+        "c:told no again":  {field:"trig",  label:"Told no again",  at:1}
+      }}};
+      Store.cleanupJunkOptions();
+      ck("cleanup removes the capprobe family + the exact bath-time artifact",
+         !Store.options.dad.items["c:capprobe 0"] &&
+         !Store.options.dad.items["c:capprobe place"] &&
+         !Store.options.dad.items["c:bath time"]);
+      ck("cleanup leaves a genuine custom option in the same doc untouched",
+         !!Store.options.dad.items["c:told no again"]);
+      ck("cleanup pushes the cleaned doc upstream (the db-mode path, so a stale server copy cannot mergeDoc() the junk back)",
+         pushed.indexOf("options/dad") !== -1);
+      // run again with fresh junk re-seeded: the marker must refuse a second pass
+      pushed = [];
+      Store.options.dad.items["c:capprobe 9"] = {field:"trig", label:"capprobe 9", at:2};
+      Store.cleanupJunkOptions();
+      ck("cleanup runs ONCE per device — a second call is a no-op even with fresh junk present",
+         !!Store.options.dad.items["c:capprobe 9"] && pushed.length === 0);
+    } finally {
+      Store.saveLocal = realSaveLocal;
+      Store.push = realPush;
+      Store.options = JSON.parse(optionsBefore);
+      try {
+        if(markerBefore === null) localStorage.removeItem(Store.CLEANUP_KEY);
+        else localStorage.setItem(Store.CLEANUP_KEY, markerBefore);
+      } catch(e){}
+    }
+    ck("cleanup never touches entries", JSON.stringify(Store.entries) === entriesBefore);
+    ck("cleanup never touches day cards", JSON.stringify(Store.days) === daysBefore);
+  })();
+
+  // ---- option management: a parent can rename/remove ONLY what they added.
+  // Removing is picker-only — never the append-only record — so labelOf()
+  // must still resolve a past reference to a removed key.
+  // ⛔ FINDING: removal used to hard-delete the option document entry. That
+  // opened the SAME evidence gap as rename, through a second door: remove an
+  // option, then re-add the same text under different capitalisation, and
+  // every past entry using that key would silently display the NEW casing
+  // with no trail at all — a rename in every way that matters, without ever
+  // calling renameOption(). Fixed the same way: removal is now a SOFT delete
+  // (`removed:true`, item and its trail kept, not deleted), and reviving a
+  // removed key through a label CHANGE routes through the identical `revs`
+  // trail a rename does. Reviving with the SAME text is not a rename and
+  // leaves no trail entry — the no-false-positive case.
+  (function(){
+    const before = JSON.stringify(Store.options);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      /* baseline BEFORE the add — this device may already carry real trig
+         options (or, under the dirty-mirror probe, pre-cleanup junk), so the
+         cap-frees-up check below must assert a DELTA back to this baseline,
+         never an absolute zero. */
+      const trigCountBefore = Store.myCustomOptions("dad","trig").length;
+      const key = Store.addOption("dad","trig","Ballet class");
+      ck("setup: the fresh option is offered in the picker",
+         optionsFor("trig").some(o=>o[0]===key));
+      ck("setup: labelOf resolves it before removal", labelOf(key) === "Ballet class");
+      ck("an option that was never renamed carries no marker", wasRenamed(key) === false);
+      const removed = Store.removeOption("dad", key);
+      ck("removeOption reports success for the owner", removed === true);
+      ck("remove drops the option from the picker",
+         !optionsFor("trig").some(o=>o[0]===key));
+      ck("remove drops it from myCustomOptions too",
+         !Store.myCustomOptions("dad","trig").some(o=>o[0]===key));
+      ck("labelOf STILL resolves the option's real (properly-cased) label after " +
+         "removal — the item is kept, soft-deleted, not blanked to raw key text",
+         labelOf(key) === "Ballet class");
+      ck("removing an already-removed option is a no-op, not a second event",
+         Store.removeOption("dad", key) === false);
+      ck("the per-field cap frees up once removed — a removed slot doesn't " +
+         "permanently count against the 24-per-field limit",
+         Store.myCustomOptions("dad","trig").length === trigCountBefore);
+      /* revive #1: re-add the exact same text. Same category, same spelling —
+         must NOT read as a rename. */
+      const revivedSame = Store.addOption("dad","trig","Ballet class");
+      ck("reviving with identical text returns the same key",
+         revivedSame === key);
+      ck("reviving with identical text leaves no rename trail (no false positive)",
+         wasRenamed(key) === false && Store.renameTrail(key).length === 0);
+      ck("reviving puts it back in the picker",
+         optionsFor("trig").some(o=>o[0]===key));
+      const removed2 = Store.removeOption("dad", key);
+      ck("setup: removed again for the next revive", removed2 === true);
+      /* revive #2: re-add the SAME category under different CASING only —
+         customKey() lowercases, so "BALLET CLASS" produces the identical key
+         as "Ballet class" and lands on the SAME removed item, not a new one.
+         This is the actual closed gap: a different wording produces a
+         genuinely different key (a different category, nothing to fix —
+         verified separately below), but a casing-only retype is the SAME
+         category reappearing under new text, which is indistinguishable
+         from calling renameOption() and must be trailed the same way. */
+      const revivedDiff = Store.addOption("dad","trig","BALLET CLASS");
+      ck("reviving under different casing returns the SAME key (still one category)",
+         revivedDiff === key);
+      ck("reviving under different casing IS recorded as a rename",
+         wasRenamed(key) === true && Store.renameTrail(key).length === 1);
+      ck("the revive-as-rename trail entry names the label that was actually live before it",
+         Store.renameTrail(key)[0].from === "Ballet class" &&
+         Store.renameTrail(key)[0].to === "BALLET CLASS");
+      ck("labelOf shows the revived label, not the pre-removal one",
+         labelOf(key) === "BALLET CLASS");
+      /* control: a genuinely different wording is a genuinely different
+         category. customKey() gives it a different key, so it can never
+         collide with the removed item — no trail expected, nothing lost:
+         the old item's label is still frozen and resolvable under its own
+         key, exactly as an ordinary removal already guarantees. */
+      const removed3 = Store.removeOption("dad", key);
+      const newKey = Store.addOption("dad","trig","Completely different thing");
+      ck("a genuinely different wording after removal creates a DIFFERENT key, not a revive",
+         removed3 === true && newKey !== key);
+      ck("the old (removed) option's label is still exactly what it was, untouched by the new one",
+         labelOf(key) === "BALLET CLASS" && Store.renameTrail(key).length === 1);
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+      Store.options = JSON.parse(before);
+    }
+  })();
+  (function(){
+    const before = JSON.stringify(Store.options);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      const key = Store.addOption("mom","place","Grandma's house");
+      ck("setup: mom's own option exists", optionsFor("place").some(o=>o[0]===key));
+      const removedByDad = Store.removeOption("dad", key);
+      ck("a parent cannot remove the OTHER parent's option",
+         removedByDad === false && optionsFor("place").some(o=>o[0]===key));
+      const renamedByDad = Store.renameOption("dad", key, "Grandma house");
+      ck("a parent cannot rename the OTHER parent's option either",
+         renamedByDad === false && labelOf(key) === "Grandma's house");
+      ck("a rename attempt by the wrong parent leaves NO trail entry in mom's document — " +
+         "dad's blocked write never reaches mom's own document at all",
+         Store.renameTrail(key).length === 0);
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+      Store.options = JSON.parse(before);
+    }
+  })();
+  (function(){
+    const before = JSON.stringify(Store.options);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      const key = Store.addOption("dad","resp","Sang a song");
+      ck("setup: labelOf resolves the original label", labelOf(key) === "Sang a song");
+      ck("setup: a freshly-added option has an empty (present, not missing) revs array",
+         Store.renameTrail(key).length === 0);
+      const ok = Store.renameOption("dad", key, "Sang a song together");
+      ck("renameOption reports success", ok === true);
+      ck("rename keeps the SAME key — a past entry's stored value (the key) is untouched",
+         optionsFor("resp").some(o=>o[0]===key));
+      /* RULING: rename is a LIVE relabel, not a revision to the ENTRY — an
+         entry stores WHICH option, never a copy of its text, so labelOf()
+         still shows the CURRENT label on every reference to this key, past
+         and future alike, exactly as a built-in's fixed label already does.
+         ⛔ THE FIX: what changed is that the OPTION's own document now keeps
+         a `revs` trail of every past label, the same append-only shape
+         entries/days already use — so "what it used to say" is answered
+         from the record, not lost the moment renameOption() returns. */
+      ck("rename shows the NEW label immediately, including for past references to this key",
+         labelOf(key) === "Sang a song together");
+      ck("rename APPENDS a trail entry — never overwrites the prior one",
+         Store.renameTrail(key).length === 1 &&
+         Store.renameTrail(key)[0].from === "Sang a song" &&
+         Store.renameTrail(key)[0].to === "Sang a song together");
+      ck("the trail entry carries at/by, the same shape an entry revision carries",
+         typeof Store.renameTrail(key)[0].at === "number" && Store.renameTrail(key)[0].by === "dad");
+      ck("a renamed option is now discoverable via the app-level marker",
+         wasRenamed(key) === true);
+      const ok2 = Store.renameOption("dad", key, "Sang a song together, loudly");
+      ck("a SECOND rename reports success", ok2 === true);
+      ck("two successive renames keep BOTH previous names, in order — " +
+         "the first entry is untouched by the second rename, not replaced by it",
+         Store.renameTrail(key).length === 2 &&
+         Store.renameTrail(key)[0].from === "Sang a song" &&
+         Store.renameTrail(key)[0].to === "Sang a song together" &&
+         Store.renameTrail(key)[1].from === "Sang a song together" &&
+         Store.renameTrail(key)[1].to === "Sang a song together, loudly");
+      ck("labelOf shows the LATEST label after two renames",
+         labelOf(key) === "Sang a song together, loudly");
+      const bad = Store.renameOption("dad", key, "   ");
+      ck("renameOption rejects a blank name, leaves the label unchanged, and appends nothing",
+         bad === false && labelOf(key) === "Sang a song together, loudly" &&
+         Store.renameTrail(key).length === 2);
+      const noop = Store.renameOption("dad", key, "Sang a song together, loudly");
+      ck("renaming to the SAME text is not a rename — reports failure and appends nothing " +
+         "(a real accidental double-submit must not mint a fake history entry)",
+         noop === false && Store.renameTrail(key).length === 2);
+      /* the print exhibit: renameFootnote() must surface exactly this trail,
+         in order, for any entry that actually references the key — and stay
+         silent (return null) for a record with no renamed option in use. */
+      const entryUsingIt = {trig:null, place:null, resp:key};
+      const foot = renameFootnote([entryUsingIt]);
+      /* Read each child paragraph's OWN textContent and join, rather than the
+         container's — every row here is a leaf `el("p",null,fullString)`
+         with nothing nested inside it, so this reads identically in a real
+         browser (where a container's textContent would also aggregate) and
+         in the headless self-check (whose minimal DOM stub does not). */
+      const footText = Array.from(foot ? foot.children : []).map(c=>c.textContent||"").join(" | ");
+      ck("the trail is visible in the print path: renameFootnote() renders " +
+         "an entry that used a renamed option",
+         !!foot && footText.indexOf("Sang a song") !== -1 &&
+         footText.indexOf("Sang a song together, loudly") !== -1);
+      const footNone = renameFootnote([{trig:"no", place:"home", resp:null}]);
+      ck("renameFootnote stays silent (null) when nothing in use was ever renamed " +
+         "— no false positive, no clutter on an ordinary record",
+         footNone === null);
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+      Store.options = JSON.parse(before);
+    }
   })();
 
   // ---- tap acknowledgement. A selection-only tap deliberately does NOT re-render,
@@ -2618,6 +4998,580 @@ Store.init();
     const f = inferHandoffs(ents);
     ck("one flip infers exactly one changeover", f.points.length === 1);
     ck("no entry-count stands in for the changeover count", f.usable === undefined);
+  })();
+
+  // ---- MONEY: cents arithmetic must never drift. dollarsToCents parses with
+  // string/integer math only, never a float sum — this is the classic
+  // 0.1 + 0.2 !== 0.3 case made structurally impossible, not merely avoided.
+  (function(){
+    ck("dollarsToCents parses whole dollars", dollarsToCents("12") === 1200);
+    ck("dollarsToCents parses cents", dollarsToCents("19.99") === 1999);
+    ck("dollarsToCents pads a single fraction digit", dollarsToCents("4.5") === 450);
+    ck("dollarsToCents rejects garbage", dollarsToCents("abc") === null && dollarsToCents("") === null
+       && dollarsToCents("-5") === null && dollarsToCents("1.999") === null);
+    // B4: a 15-digit dollar string parses past Number.MAX_SAFE_INTEGER, the
+    // exact failure mode this file's cents-only design exists to prevent.
+    // The fix REFUSES it (returns null, same as any other invalid amount)
+    // rather than silently accepting/clamping an unrepresentable value.
+    ck("dollarsToCents refuses an amount past the sane ceiling, never silently clamps it",
+       dollarsToCents("123456789012345") === null);
+    ck("dollarsToCents still accepts an ordinary large-but-real amount at the ceiling",
+       dollarsToCents("1000000.00") === 100000000 && dollarsToCents("1000000.01") === null);
+    // the exact classic float trap, proven impossible here: 10 + 20 must be
+    // exactly 30, never 30.000000000000004 or any other drifted value.
+    ck("no float drift on the classic 0.1 + 0.2 case",
+       dollarsToCents("0.10") + dollarsToCents("0.20") === 30);
+    ck("centsToDollars round-trips", centsToDollars(1999) === "$19.99" && centsToDollars(0) === "$0.00");
+
+    // 100 random cent amounts, summed two ways, must agree EXACTLY — proves
+    // integer-cents accumulation carries no drift across many operations,
+    // not just one conversion.
+    let seed = 7;
+    const rand = ()=>{ seed = (seed*48271) % 2147483647; return seed / 2147483647; };
+    const amounts = [];
+    for(let i=0;i<100;i++) amounts.push(Math.floor(rand()*999999)+1);
+    let running = 0;
+    amounts.forEach(a=>{ running += a; });
+    const total = amounts.reduce((s,a)=>s+a,0);
+    ck("100 summed cent amounts never drift", running === total);
+  })();
+
+  // ---- MONEY: the split. otherCents is amount MINUS payerCents (a
+  // subtraction), never a second independent rounding — that is what
+  // guarantees the two shares always sum to exactly the total, including on
+  // an odd cent. The payer absorbs the leftover cent by construction.
+  (function(){
+    const s1 = splitCents(10000, 50);
+    ck("even 50/50 split has no remainder", s1.payerCents === 5000 && s1.otherCents === 5000);
+    const s2 = splitCents(101, 50);
+    ck("odd-cent 50/50 split is deterministic", s2.payerCents === 51 && s2.otherCents === 50);
+    ck("odd-cent split still sums exactly to the total", s2.payerCents + s2.otherCents === 101);
+
+    // 100 random amounts at a mix of percentages: the two shares must sum to
+    // the total EVERY time, not just in the hand-picked cases above.
+    let seed2 = 13;
+    const rand2 = ()=>{ seed2 = (seed2*48271) % 2147483647; return seed2 / 2147483647; };
+    let allSum = true;
+    for(let i=0;i<100;i++){
+      const amt = Math.floor(rand2()*999999)+1;
+      const pct = Math.floor(rand2()*101);
+      const s = splitCents(amt, pct);
+      if(s.payerCents + s.otherCents !== amt) allSum = false;
+    }
+    ck("100 random splits (random amount, random pct) all sum exactly", allSum);
+
+    ck("assignSplit: payer=dad routes payer's cents to dad",
+       JSON.stringify(assignSplit(101, "dad", 50)) === JSON.stringify({dadCents:51, momCents:50}));
+    ck("assignSplit: payer=mom routes payer's cents to mom",
+       JSON.stringify(assignSplit(101, "mom", 50)) === JSON.stringify({dadCents:50, momCents:51}));
+    ck("split override: payer covers all (100/0)",
+       JSON.stringify(assignSplit(5000, "dad", 100)) === JSON.stringify({dadCents:5000, momCents:0}));
+    ck("split override: payer covers none (0/100)",
+       JSON.stringify(assignSplit(5000, "dad", 0)) === JSON.stringify({dadCents:0, momCents:5000}));
+    ck("split override: an arbitrary custom percentage still sums to the total",
+       (()=>{ const r = assignSplit(7777, "mom", 30); return r.dadCents + r.momCents === 7777; })());
+  })();
+
+  // ---- MONEY: the balance. Positive = Dad is owed, negative = Mom is owed.
+  // The sharpest test for a sign inversion is not "the balance changed by
+  // the right amount" alone — it is "a debt settled IN FULL returns to
+  // EXACTLY ZERO", in both directions, which a flipped sign fails loudly.
+  (function(){
+    const claimDadPays = {payer:"dad", amount:10000, dadCents:5000, momCents:5000, voided:false};
+    ck("a single 50/50 claim paid by dad: mom owes dad her share",
+       ledgerBalance([claimDadPays], []) === 5000);
+
+    const claimMomPays = {payer:"mom", amount:20000, dadCents:10000, momCents:10000, voided:false};
+    ck("a single 50/50 claim paid by mom: dad owes mom his share",
+       ledgerBalance([claimMomPays], []) === -10000);
+
+    // mixed sequence from BOTH parents, hand-computed expectation:
+    // dad pays $100 (mom owes dad $50) + mom pays $40 split 25/75 to dad
+    // (dad's share at 75% payer-pct... use assignSplit to build it exactly
+    // as the app would, then check the independently hand-derived total).
+    const c1 = {payer:"dad", amount:10000, dadCents:5000, momCents:5000, voided:false};       // mom owes dad 5000
+    const c2 = Object.assign({payer:"mom", amount:4000}, assignSplit(4000,"mom",75), {voided:false}); // dad owes mom (other=dadCents)
+    const expected = 5000 - c2.dadCents;
+    ck("balance after a mixed sequence from both parents matches a hand total",
+       ledgerBalance([c1,c2], []) === expected);
+
+    // a settlement moves the balance by EXACTLY its amount, no more, no less
+    const before = ledgerBalance([c1], []);
+    const afterSettleMom = ledgerBalance([c1], [{payer:"mom", amount:2000, voided:false}]);
+    ck("a settlement moves the balance by exactly its amount",
+       before - afterSettleMom === 2000);
+
+    // THE sign-inversion trap: settle a debt IN FULL, in both directions —
+    // must land on EXACTLY ZERO, never double it and never leave it at
+    // twice the original debt.
+    const dadOwedFull = ledgerBalance([claimDadPays], [{payer:"mom", amount:5000, voided:false}]);
+    ck("a debt settled in full (mom owed dad) returns to EXACTLY ZERO", dadOwedFull === 0);
+    const momOwedFull = ledgerBalance([claimMomPays], [{payer:"dad", amount:10000, voided:false}]);
+    ck("a debt settled in full (dad owed mom) returns to EXACTLY ZERO", momOwedFull === 0);
+
+    // a withdrawn claim must leave the balance untouched AND stay in the
+    // array — append-only, checked at both levels at once.
+    const withdrawn = Object.assign({}, claimDadPays, {voided:true});
+    ck("a withdrawn claim does not affect the balance",
+       ledgerBalance([withdrawn], []) === 0);
+    ck("a withdrawn claim still appears in the record (not deleted)",
+       [withdrawn].length === 1 && withdrawn.voided === true);
+
+    ck("the empty ledger reports the balance as zero", ledgerBalance([], []) === 0);
+  })();
+
+  // ---- MONEY: balance copy. The empty state must never claim "settled" —
+  // that is a claim about the world the app cannot make when nothing was
+  // ever logged. Distinguishable from a REAL zero balance after real claims.
+  (function(){
+    ck("empty ledger: honest zero, not a false settled claim",
+       balanceSentence(0, false).indexOf("Nothing has been logged") === 0);
+    ck("empty ledger copy never says 'settled'",
+       balanceSentence(0, false).toLowerCase().indexOf("settled") === -1);
+    ck("a real zero balance after real claims says Settled",
+       balanceSentence(0, true) === "Settled — nothing outstanding.");
+    ck("a nonzero balance names the parent who is owed, never a spend comparison",
+       balanceSentence(5050, true) === "Dad is owed $50.50." &&
+       balanceSentence(-150, true) === "Mom is owed $1.50.");
+  })();
+
+  // ---- MONEY: category labels resolve; an unrecognised key falls back to
+  // itself rather than rendering blank in a record a mediator reads.
+  (function(){
+    ck("moneyCatLabel resolves every built-in category",
+       MONEY_CATEGORIES.every(([k,v])=>moneyCatLabel(k)===v));
+    ck("moneyCatLabel falls back to the raw key for an unknown category",
+       moneyCatLabel("zzz") === "zzz" && moneyCatLabel(null) === "");
+  })();
+
+  // ---- MONEY: resolve() is REUSED as-is for claims and settlements (same
+  // append-only fold, only the field names differ) — proves it works on a
+  // money-shaped raw record exactly as it does on a behaviour entry.
+  (function(){
+    const rawClaim = {id:"x1", payer:"dad", amount:5000, cat:"medical", dadCents:2500, momCents:2500,
+      revs:[{at:1, by:"dad", patch:{desc:"corrected description"}}]};
+    const rClaim = resolve(rawClaim);
+    ck("resolve() folds a patch on a money-shaped record", rClaim.desc === "corrected description");
+    ck("resolve() marks a money-shaped record edited, not voided", rClaim.edited === true && rClaim.voided === false);
+    const rawVoidClaim = {id:"x2", payer:"mom", amount:1000, revs:[{at:1, by:"mom", void:true}]};
+    const rVoid = resolve(rawVoidClaim);
+    ck("resolve() marks a withdrawn claim voided and NOT edited",
+       rVoid.voided === true && rVoid.edited === false);
+  })();
+
+  // ============================================================
+  // CALENDAR — events, private notes, episode overlay, custody, swaps
+  // ============================================================
+
+  // ---- an event round-trips through resolve(), exactly like an entry: the
+  // original survives, a patch applies, a void does not delete.
+  (function(){
+    const raw = {id:"ev1", who:"dad", date:"2026-09-20", time:"14:00", type:"medical",
+      title:"Checkup", location:"Clinic", note:"bring insurance card", created:0, revs:[]};
+    const r0 = resolve(raw);
+    ck("a clean event round-trips with no revisions",
+       r0.title === "Checkup" && r0.type === "medical" && r0.voided === false && r0.edited === false);
+    const edited = resolve(Object.assign({}, raw, {revs:[{at:1, by:"dad", patch:{title:"Checkup — moved", time:"15:30"}}]}));
+    ck("an event edit applies as a revision, original preserved",
+       edited.title === "Checkup — moved" && edited.time === "15:30" &&
+       edited.orig.title === "Checkup" && edited.edited === true);
+    const voided = resolve(Object.assign({}, raw, {revs:[{at:1, by:"dad", void:true}]}));
+    ck("a withdrawn event is struck (voided) but still carries its fields",
+       voided.voided === true && voided.title === "Checkup" && voided.edited === false);
+  })();
+
+  // ---- a real add/read through Store.putEvent + Store.allEvents, isolated
+  // the same way the addOption probe above is: saveLocal/push neutralised
+  // for the duration, the in-memory bag snapshotted and restored after, so
+  // the self-check leaves no event behind on disk or in memory.
+  (function(){
+    const before = JSON.stringify(Store.calEvents);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      const ev = {id:"selfcheck_ev", who:"dad", date:"2026-09-20", time:null, type:"school",
+        title:"Picture day", location:"", note:"", created:Date.now(), revs:[]};
+      Store.putEvent("dad", ev);
+      const back = Store.allEvents().find(e=>e.id==="selfcheck_ev");
+      ck("putEvent/allEvents round-trip through the real Store", !!back && back.title === "Picture day");
+      ck("eventsForDay finds it on its own date and no other",
+         Store.eventsForDay("2026-09-20").some(e=>e.id==="selfcheck_ev") &&
+         !Store.eventsForDay("2026-09-21").some(e=>e.id==="selfcheck_ev"));
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+    }
+    Store.calEvents = JSON.parse(before);
+    ck("the self-check left no event behind", !Store.allEvents().some(e=>e.id==="selfcheck_ev"));
+  })();
+
+  // ---- PRIVATE NOTES: a parent must never be able to guess wrong about who
+  // can see a field. Store.myNote(who, id) is the ONLY reader anywhere in
+  // the app, and it is scoped to the caller's own `who` — this proves the
+  // plumbing, not just the UI's restraint, actually withholds the note.
+  (function(){
+    const beforeNotes = JSON.stringify(Store.calNotes);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      Store.putCalNote("dad", "selfcheck_ev", "Dad's private thought about this checkup");
+      ck("the writer can read their own private note",
+         Store.myNote("dad","selfcheck_ev") && Store.myNote("dad","selfcheck_ev").text.indexOf("Dad's private") === 0);
+      ck("a private note is NOT visible to the other parent",
+         Store.myNote("mom","selfcheck_ev") === null);
+      Store.putCalNote("mom", "selfcheck_ev", "Mom's separate note");
+      ck("both parents can hold a note on the SAME event without seeing each other's",
+         Store.myNote("dad","selfcheck_ev").text.indexOf("Dad's private") === 0 &&
+         Store.myNote("mom","selfcheck_ev").text === "Mom's separate note");
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+    }
+    Store.calNotes = JSON.parse(beforeNotes);
+    ck("the self-check left no private note behind",
+       !Store.myNote("dad","selfcheck_ev") && !Store.myNote("mom","selfcheck_ev"));
+  })();
+
+  // ---- EPISODE OVERLAY: a behaviour entry lands on exactly its own day and
+  // nowhere else; a withdrawn one is excluded (still on the Record tab,
+  // just not surfaced here as something that "happened").
+  (function(){
+    const before = JSON.stringify(Store.entries);
+    Store.entries = {"2026-09__dad": {who:"dad", month:"2026-09", items:{
+      e1: {id:"e1", who:"dad", start:new Date(2026,8,20,16,0).getTime(), sev:3, trig:"no", place:"home", created:0, revs:[]},
+      e2: {id:"e2", who:"dad", start:new Date(2026,8,21,9,0).getTime(), sev:2, trig:"tired", place:"home", created:0, revs:[{at:1,void:true}]}
+    }}};
+    ck("an episode overlays exactly its own day",
+       episodesForDay("2026-09-20").length === 1 && episodesForDay("2026-09-20")[0].id === "e1");
+    ck("a day with no entries overlays nothing", episodesForDay("2026-09-22").length === 0);
+    ck("a withdrawn entry is excluded from the overlay", episodesForDay("2026-09-21").length === 0);
+    Store.entries = JSON.parse(before);
+  })();
+
+  // ---- CUSTODY PATTERNS: date arithmetic. Every date here goes through
+  // Date.UTC, which has no DST, rather than a local ms-diff — measured (in
+  // Node, under America/New_York) to matter: Feb 23 2026 (a Monday) to
+  // Mar 9 2026 (a Monday, two 14-day cycles later) is 14 real days, but a
+  // plain `(new Date(y,m,d)-new Date(y,m,d))/864e5` on LOCAL Date objects
+  // across that spring-forward boundary yields 13.9583... and a bare
+  // Math.floor() of that lands one whole day short — 13, not 14 — which
+  // would resolve cycle index 13 instead of 0 and hand that custody day to
+  // the wrong parent. daysBetween/weekdayOf below are Date.UTC-only and give
+  // the exact integer regardless of the host machine's timezone.
+  ck("daysBetween crosses the US 2026 spring-forward boundary exactly (14, not 13)",
+     daysBetween("2026-02-23","2026-03-09") === 14);
+  ck("weekdayOf agrees both Feb 23 2026 and Mar 9 2026 are Mondays",
+     weekdayOf("2026-02-23") === 1 && weekdayOf("2026-03-09") === 1);
+  ck("2-2-3 lands back on parentA (dad) exactly two 14-day cycles across the DST boundary",
+     resolvePatternParent({patternType:"223", anchorDate:"2026-02-23", definition:{parentA:"dad", parentB:"mom"}}, "2026-03-09") === "dad");
+
+  ck("week on/off: the first 7 cycle days are parentA, the next 7 are parentB",
+     buildSequence("week","dad","mom")[0]==="dad" && buildSequence("week","dad","mom")[6]==="dad" &&
+     buildSequence("week","dad","mom")[7]==="mom" && buildSequence("week","dad","mom")[13]==="mom");
+  ck("a custom sequence is used verbatim, not reinterpreted",
+     buildSequence("custom",null,null,["dad","mom","dad"])[1] === "mom");
+  ck("alternating weekends keeps the primary parent on weekdays",
+     weekendAltParent("2026-08-31","dad","mom","2026-09-02") === "dad");  // a Wednesday
+
+  // ---- 2-2-3 resolves the right parent for a whole cycle across a MONTH
+  // boundary (Aug 31 -> Sep 14 2026), hand-verified below, and a one-off
+  // exception OUTRANKS the pattern for its single date without leaking to
+  // the day beside it.
+  (function(){
+    const beforePat = JSON.stringify(Store.custodyPatterns);
+    const beforeExc = JSON.stringify(Store.custodyExceptions);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      ck("the 2-2-3 anchor date is independently verified a Monday", weekdayOf("2026-08-31") === 1);
+      Store.putCustodyPattern("dad", "223", "2026-08-31", "2026-08-01", {parentA:"dad", parentB:"mom"});
+      /* hand-verified: Mon,Tue=dad · Wed,Thu=mom · Fri,Sat,Sun=dad ‖
+         Mon,Tue=mom · Wed,Thu=dad · Fri,Sat,Sun=mom — then the cycle repeats */
+      const expect = {
+        "2026-08-31":"dad", "2026-09-01":"dad", "2026-09-02":"mom", "2026-09-03":"mom",
+        "2026-09-04":"dad", "2026-09-05":"dad", "2026-09-06":"dad",
+        "2026-09-07":"mom", "2026-09-08":"mom", "2026-09-09":"dad", "2026-09-10":"dad",
+        "2026-09-11":"mom", "2026-09-12":"mom", "2026-09-13":"mom",
+        "2026-09-14":"dad"   // the cycle repeats — this date crosses the Aug/Sep MONTH boundary
+      };
+      let allRight = true;
+      Object.keys(expect).forEach(d=>{ if(custodyForDate(d).parent !== expect[d]) allRight = false; });
+      ck("2-2-3 resolves the right parent for all 15 hand-verified dates across the month boundary", allRight);
+      ck("the pattern alone (no exception) reports source \"pattern\"", custodyForDate("2026-09-02").source === "pattern");
+
+      Store.putCustodyException("mom", "2026-09-02", "dad", "Doctor ran long, Dad kept her");
+      ck("an exception overrides the pattern on its date",
+         custodyForDate("2026-09-02").parent === "dad" && custodyForDate("2026-09-02").source === "exception");
+      ck("the exception does not leak to the neighbouring day", custodyForDate("2026-09-03").parent === "mom");
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+    }
+    Store.custodyPatterns = JSON.parse(beforePat);
+    Store.custodyExceptions = JSON.parse(beforeExc);
+    ck("the self-check left no custody pattern behind",
+       !Store.allCustodyPatterns().some(p=>p.anchorDate==="2026-08-31"));
+    ck("the self-check left no custody exception behind",
+       !Store.allCustodyExceptions().some(x=>x.date==="2026-09-02" && x.by==="mom"));
+  })();
+
+  // ---- B3: putCustodyException used to OVERWRITE in place — the one
+  // collection in the file that wasn't append-only. A second accepted swap
+  // landing on a date the same parent's doc already has an exception for
+  // used to destroy the first exception with no trace. Every other
+  // collection layers a correction as a revision instead; this now does too.
+  (function(){
+    const beforeExc = JSON.stringify(Store.custodyExceptions);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      Store.putCustodyException("dad", "2026-05-01", "dad", "First accepted swap");
+      Store.putCustodyException("dad", "2026-05-01", "mom", "Second accepted swap");
+      const cur = Store.custodyExceptions["dad"].items["2026-05-01"];
+      ck("the CURRENT exception reflects the second, later write",
+         cur.parent === "mom" && cur.note === "Second accepted swap");
+      ck("the FIRST exception's value is preserved in revs, not destroyed",
+         (cur.revs||[]).length === 1 && cur.revs[0].parent === "dad" && cur.revs[0].note === "First accepted swap");
+      ck("custodyForDate still resolves the current (second) value",
+         custodyForDate("2026-05-01").parent === "mom");
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+    }
+    Store.custodyExceptions = JSON.parse(beforeExc);
+    ck("the self-check left no B3 custody exception behind",
+       !Store.allCustodyExceptions().some(x=>x.date==="2026-05-01" && x.by==="dad"));
+  })();
+
+  // ---- B2: saveLocal()'s catch used to be empty, so a storage-quota failure
+  // was completely silent — the write disappeared, State kept rendering as
+  // saved, and nothing anywhere told the user. It now records a
+  // Store.storageError, which renderSync() puts ahead of every other sync
+  // message. Proven here by making localStorage.setItem throw exactly as a
+  // real browser does past quota.
+  (function(){
+    const realSetItem = localStorage.setItem, realStorageError = Store.storageError;
+    try {
+      Store.storageError = null;
+      localStorage.setItem = function(){ throw new Error("QuotaExceededError"); };
+      Store.saveLocal();
+      ck("a storage-quota failure sets Store.storageError instead of failing silently",
+         !!Store.storageError && typeof Store.storageError.at === "number");
+      localStorage.setItem = function(){};  // simulates a write that now succeeds, without
+                                             // touching the REAL mirror during a self-check
+      Store.saveLocal();
+      ck("a save that succeeds afterward clears storageError", Store.storageError === null);
+    } finally {
+      localStorage.setItem = realSetItem;
+      Store.storageError = realStorageError;
+    }
+  })();
+
+  // ---- SWAP REQUESTS: an accept AND a decline are both recorded
+  // PERMANENTLY — neither is ever deleted — and an accept also opens the
+  // matching custody exception in the same write; a decline does not.
+  // B1: a swap used to have NO direction field, and accepting always handed
+  // the day to whoever clicked Accept regardless of what was actually asked.
+  // The old self-check here only ever exercised the "responder takes it"
+  // phrasing, which happens to match that hardcoded behaviour, so a
+  // backwards assignment could never turn this check red. The two
+  // "ACCEPT of a ... request" checks below are the fix for that gap: BOTH
+  // directions are now exercised, and the second one is exactly the case
+  // that was silently wrong before.
+  (function(){
+    const beforeReq = JSON.stringify(Store.swapRequests);
+    const beforeResp = JSON.stringify(Store.swapResponses);
+    const beforeExc = JSON.stringify(Store.custodyExceptions);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    let id1=null, id2=null, id3=null, id4=null, id5=null;
+    try {
+      // direction "responder": "Can you take this Thursday?" — dad is
+      // giving the day away, mom is meant to end up with it.
+      id1 = Store.putSwapRequest("dad", "2026-10-01", "Can you take this Thursday?", "responder");
+      ck("a swap request is recorded with requester, date, message and direction",
+         Store.allSwapRequests().some(r=>r.id===id1 && r.by==="dad" && r.date==="2026-10-01" && r.wantsCustody==="responder"));
+      Store.respondToSwap(id1, "mom", "accept");
+      ck("an ACCEPT is recorded permanently on the request",
+         Store.swapWithResponse().find(r=>r.id===id1).response.decision === "accept");
+      ck("ACCEPT of a \"can you take this day\" request assigns the day to the RESPONDER (mom) — matches what was asked",
+         custodyForDate("2026-10-01").parent === "mom" && custodyForDate("2026-10-01").source === "exception");
+
+      // direction "requester": dad is asking to RECEIVE the day. This is the
+      // opposite phrasing, and the exact case B1 got backwards: the old code
+      // handed the day to whoever accepted (mom) instead of whoever asked to
+      // take it (dad).
+      id3 = Store.putSwapRequest("dad", "2026-11-05", "Can I take this one instead?", "requester");
+      Store.respondToSwap(id3, "mom", "accept");
+      ck("ACCEPT of an \"I'll take this day\" request assigns the day to the REQUESTER (dad), NOT the acceptor — the bug B1 fixes",
+         custodyForDate("2026-11-05").parent === "dad" && custodyForDate("2026-11-05").source === "exception");
+
+      id2 = Store.putSwapRequest("mom", "2026-10-08", "", "responder");
+      Store.respondToSwap(id2, "dad", "decline", "Already have plans");
+      ck("a DECLINE is recorded permanently, never deleted",
+         Store.swapWithResponse().find(r=>r.id===id2).response.decision === "decline");
+      ck("a decline does NOT open a custody exception",
+         custodyForDate("2026-10-08").source !== "exception");
+      ck("the declined request is still in the record, not removed",
+         Store.allSwapRequests().some(r=>r.id===id2));
+
+      // Legacy requests: made before direction tracking existed, so they
+      // carry no wantsCustody at all (putSwapRequest's 4th arg omitted, the
+      // real shape of a request already on disk from before this fix).
+      id4 = Store.putSwapRequest("dad", "2026-12-01", "old-style request");
+      ck("a legacy request has no direction recorded", Store.allSwapRequests().find(r=>r.id===id4).wantsCustody == null);
+      Store.respondToSwap(id4, "mom", "accept");
+      ck("accepting a direction-less legacy request with NO direction supplied opens no custody exception — never guessed",
+         custodyForDate("2026-12-01").source !== "exception");
+
+      id5 = Store.putSwapRequest("mom", "2026-12-08", "old-style request 2");
+      Store.respondToSwap(id5, "dad", "accept", "", "requester");
+      ck("accepting a direction-less legacy request WITH a direction chosen at accept time assigns the day correctly",
+         custodyForDate("2026-12-08").parent === "mom" && custodyForDate("2026-12-08").source === "exception");
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+    }
+    Store.swapRequests = JSON.parse(beforeReq);
+    Store.swapResponses = JSON.parse(beforeResp);
+    Store.custodyExceptions = JSON.parse(beforeExc);
+    ck("the self-check left no swap request or exception behind",
+       !Store.allSwapRequests().some(r=>[id1,id2,id3,id4,id5].indexOf(r.id) !== -1) &&
+       !Store.allCustodyExceptions().some(x=>x.date==="2026-10-01"||x.date==="2026-11-05"||x.date==="2026-12-08"));
+  })();
+
+  // ---- a voided event goes through the SAME Store.putEvent path the UI's
+  // withdraw confirmation uses, and remains readable afterward — struck
+  // through by the resolver, never physically removed.
+  (function(){
+    const before = JSON.stringify(Store.calEvents);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      const ev = {id:"selfcheck_void", who:"dad", date:"2026-11-05", time:null, type:"activity",
+        title:"Soccer practice", location:"", note:"", created:Date.now(), revs:[]};
+      Store.putEvent("dad", ev);
+      const raw = Store.calEvents["2026-11__dad"].items["selfcheck_void"];
+      const voidedRaw = Object.assign({}, raw, {revs:(raw.revs||[]).concat([{at:Date.now(), by:"dad", void:true}])});
+      Store.putEvent("dad", voidedRaw);
+      const back = Store.allEvents().find(e=>e.id==="selfcheck_void");
+      ck("a withdrawn event is still returned by allEvents — never deleted", !!back);
+      ck("a withdrawn event resolves voided:true and keeps its title, for strike-through display",
+         back.voided === true && back.title === "Soccer practice");
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+    }
+    Store.calEvents = JSON.parse(before);
+    ck("the self-check left no voided-event probe behind", !Store.allEvents().some(e=>e.id==="selfcheck_void"));
+  })();
+
+  // ---- U1: drives the REAL renderCalendar() (not a hand-rebuilt copy of its
+  // index-building code) and reads the actual grid it produces — a cell must
+  // show exactly the events/episodes it did before the once-per-render index
+  // replaced the per-cell full-history scan. Mutation: break renderCalendar's
+  // evsByDay/episByDay grouping (wrong key, wrong collection) and this goes
+  // red, because it inspects the grid renderCalendar() itself built.
+  (function(){
+    if(typeof renderCalendar === "undefined" || typeof $ === "undefined") return;
+    const beforeEv = JSON.stringify(Store.calEvents), beforeEn = JSON.stringify(Store.entries);
+    const beforeMonth = State.calMonth, beforeDay = State.calDay;
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      Store.calEvents["2026-07__dad"] = {who:"dad", month:"2026-07", items:{
+        selfcheck_u1_ev:{id:"selfcheck_u1_ev", who:"dad", date:"2026-07-10", time:"09:00", type:"activity",
+          title:"Probe event", location:"", note:"", created:Date.now(), revs:[]}}};
+      const t = new Date(2026,6,10,9,0).getTime();  // LOCAL time — dayOf()/ymOf() are local-time, not UTC
+      Store.entries["2026-07__mom"] = {who:"mom", month:"2026-07", items:{
+        selfcheck_u1_en:{id:"selfcheck_u1_en", who:"mom", start:t, end:t+6e5, sev:2, trig:"no", place:"home",
+          resp:"held", note:"", measured:true, created:t, revs:[]}}};
+      State.calDay = null; State.calMonth = "2026-07";
+      renderCalendar();
+      const cells = $("calSlot").querySelectorAll(".dcell");
+      const seeded = cells.find(c => (c.getAttribute("aria-label")||"").indexOf("Jul 10") >= 0);
+      const others = cells.filter(c => c !== seeded);
+      ck("U1: the seeded day's cell (built from renderCalendar's own index) shows both the event and the episode",
+         !!seeded && /1 event/.test(seeded.getAttribute("aria-label")) && /1 entry/.test(seeded.getAttribute("aria-label")));
+      ck("U1: every OTHER day in the same render shows neither — the index is keyed per day, not shared across the grid",
+         others.length > 25 && others.every(c => !/event|entry/.test(c.getAttribute("aria-label")||"")));
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+    }
+    Store.calEvents = JSON.parse(beforeEv); Store.entries = JSON.parse(beforeEn);
+    State.calMonth = beforeMonth; State.calDay = beforeDay;
+  })();
+
+  // ---- U2: a tab in the background when a write lands must not show it until
+  // it's actually opened, and must show it THE MOMENT it is — mutation: make
+  // renderTab() skip clearing State.staleTabs[name], or make renderAll() render
+  // every tab again, and one of these two assertions goes red.
+  (function(){
+    if(typeof TAB_RENDER === "undefined" || typeof $ === "undefined") return;
+    const beforeExp = JSON.stringify(Store.expenses);
+    const beforeTab = State.tab, beforeStale = Object.assign({}, State.staleTabs);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      State.me = "dad"; State.tab = "log"; State.moneyDraft = null; State.settleDraft = null;
+      renderTab("money");   // baseline render, clears the stale flag
+      const exp = {id:"selfcheck_u2_exp", who:"dad", payer:"dad", amount:100, dadCents:50, momCents:50,
+        cat:"other", desc:"selfcheck-u2-marker", date:Date.now(), created:Date.now(), revs:[]};
+      Store.putExpense("dad", exp);   // emits -> renderAll() renders "log" only (State.tab)
+      const leafBefore = ($("moneySlot").querySelectorAll ? $("moneySlot").querySelectorAll(".enote") : [])
+        .some(n=>n.textContent === "selfcheck-u2-marker");
+      ck("U2: a write while a tab is backgrounded marks it stale instead of redrawing it blind",
+         State.staleTabs.money === true && leafBefore === false);
+      setTab("money");   // stale -> renderTab() must run now
+      const leafAfter = $("moneySlot").querySelectorAll(".enote").some(n=>n.textContent === "selfcheck-u2-marker");
+      ck("U2: activating a stale tab rebuilds it with the CURRENT store data, and clears the flag",
+         leafAfter === true && State.staleTabs.money === false);
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+    }
+    Store.expenses = JSON.parse(beforeExp);
+    State.tab = beforeTab; State.staleTabs = beforeStale;
+    renderTab(State.tab);
+    ck("the self-check left no background-tab probe expense behind", !Store.allExpenses().some(e=>e.id==="selfcheck_u2_exp"));
+  })();
+
+  // ---- U3: the merge is a shape fact about TABS, not just "does it render" —
+  // mutation: leave "trends"/"patterns" in TABS, or spell the tab bar out of
+  // order, and this goes red without needing a DOM at all.
+  ck("U3: six tabs merged to five", TABS.length === 5);
+  ck("U3: no stale 'trends'/'patterns' tab name survived the merge",
+     TABS.indexOf("trends") === -1 && TABS.indexOf("patterns") === -1);
+  ck("U3: Insights exists exactly once, in the ruled order",
+     TABS.join(",") === "log,calendar,money,history,insights");
+
+  // ---- U4: raw "n=" notation must never reach a rendered label again —
+  // drives the REAL renderPatterns() (not a hand-built row) past its 24-entry/
+  // 8-per-response gate so the "Length by what ended it" card actually renders,
+  // then reads the real DOM label. Mutation: revert the label in renderPatterns
+  // back to "n=" concatenation and this goes red on the exact string it used
+  // to print — a hand-built label passed straight to barChart() would not.
+  (function(){
+    if(typeof renderPatterns === "undefined" || typeof $ === "undefined") return;
+    const beforeEn = JSON.stringify(Store.entries);
+    try {
+      const items = {};
+      for(let i=0;i<8;i++){
+        const start = new Date(2026,5,1+i,9,0).getTime();  // local time, matches dayOf/ymOf
+        items["selfcheck_u4_"+i] = {id:"selfcheck_u4_"+i, who:"dad", start, end:start+18e5,
+          sev:2, trig:"no", place:"home", resp:"held", note:"", measured:true, timeSource:"timed",
+          created:start, revs:[]};
+      }
+      for(let i=0;i<16;i++){
+        const start = new Date(2026,5,10+i,9,0).getTime();  // spills into July too; fine, same seeded month key
+        items["selfcheck_u4_other_"+i] = {id:"selfcheck_u4_other_"+i, who:"dad", start, end:start+3e5,
+          sev:1, trig:"no", place:"home", resp:"redirected", note:"", measured:true, timeSource:"timed",
+          created:start, revs:[]};
+      }
+      // 8 "held" + 16 "redirected" = 24 measured entries total, clearing the
+      // card's need:24 gate, with both response groups clearing MIN_PER_RESP:8
+      // so "Length by what ended it" actually renders its bar chart.
+      Store.entries["2026-06__dad"] = {who:"dad", month:"2026-06", items};
+      renderPatterns();
+      const labels = Array.from($("patSlot").querySelectorAll(".val")).map(n=>n.textContent);
+      ck("U4: the real Patterns card reads in plain language, not stats notation",
+         labels.some(t=>/from 8 timed episodes/.test(t)) && !labels.some(t=>t.indexOf("n=") >= 0));
+    } finally {
+      Store.entries = JSON.parse(beforeEn);
+    }
   })();
 
   if(fail.length) console.error("BBL SELF-CHECK FAILED " + fail.length + "/" + ran + ":", fail);
