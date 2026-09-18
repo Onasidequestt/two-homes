@@ -636,6 +636,21 @@ input[type="number"]{width:78px}
 .privlock{font-size:12px}
 .calswap .etime{font-size:11.5px}
 
+/* ---------- custody & swap print exhibit ----------
+   Only ever visible under print (see the body.print-custody block below);
+   these rules style a section that is `hidden` on screen at all times, so
+   they need no dark-mode pair of their own beyond the shared tokens they
+   already reuse (--ink/--ink-2/--muted/--line-strong/--surface-2, all
+   defined in every theme scope already). */
+.exhibit-hd h2{font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-.01em;margin:0 0 4px}
+.exhibit-sec{margin-top:18px}
+.exhibit-sec h3{font-size:14px;font-weight:700;color:var(--ink-2);margin:0 0 8px}
+.exhibit-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.exhibit-tbl th,.exhibit-tbl td{border:1px solid var(--line-strong);padding:4px 6px;text-align:left;vertical-align:top}
+.exhibit-tbl th{background:var(--surface-2);font-weight:700}
+.exhibit-voided td{text-decoration:line-through;color:var(--muted)}
+.exhibit-foot{margin-top:16px}
+
 /* ---------- print: the RECORD, and nothing else ----------
    The dark palette used to survive into print because only body{color} was
    reset, so a dark-mode viewer's "save as PDF" produced --ink #EAEFF4 on white
@@ -674,8 +689,10 @@ input[type="number"]{width:78px}
   #v-history[hidden]{display:flex !important}
   #v-log,#v-insights,#v-calendar{display:none !important}
   /* Money is its own exhibit, kept OUT of a normal Record print by default so
-     printing does not silently grow a second document nobody asked for. */
+     printing does not silently grow a second document nobody asked for.
+     The custody/swap exhibit gets the identical treatment, same reason. */
   #v-money{display:none !important}
+  #v-custodyprint{display:none !important}
 }
 /* ---------- money print exhibit ----------
    A second, independent @media print block rather than editing the one above:
@@ -689,6 +706,20 @@ input[type="number"]{width:78px}
 @media print{
   body.print-money #v-history{display:none !important}
   body.print-money #v-money[hidden]{display:flex !important}
+}
+/* ---------- custody & swap print exhibit ----------
+   A THIRD, independent @media print block, same pattern as money above:
+   #custodyPrintBtn sets this class right before window.print() and nothing
+   else. #v-custodyprint is never a real tab (not in TABS), so its `hidden`
+   attribute is never cleared by setTab — this [hidden] override is the ONLY
+   way it is ever shown, exactly like #v-history's unconditional override
+   above. Folds: this exhibit builds its own tables fresh at print time (see
+   renderCustodyPrint) rather than reusing a foldable on-screen view, so
+   there is no separate fold to force open here — everything it lists is
+   already unfolded because nothing in it was ever folded to begin with. */
+@media print{
+  body.print-custody #v-history{display:none !important}
+  body.print-custody #v-custodyprint[hidden]{display:flex !important}
 }
 
 /* ---------- reduced motion ----------
@@ -740,6 +771,21 @@ input[type="number"]{width:78px}
            striped band along the bottom of each date.</p>
       </div>
       <div id="calSlot"></div>
+      <div class="field no-print">
+        <div class="qlab">Print custody &amp; swap record</div>
+        <p class="sub">A separate exhibit from the Record below — the custody schedule day by day, every
+           swap request with its outcome, and calendar events, for a date range you choose. Private notes
+           never print, for either parent.</p>
+        <label class="retro-row">
+          <span class="retro-lab">From</span>
+          <input type="date" id="custodyPrintFrom" aria-label="Exhibit start date">
+        </label>
+        <label class="retro-row">
+          <span class="retro-lab">To</span>
+          <input type="date" id="custodyPrintTo" aria-label="Exhibit end date">
+        </label>
+      </div>
+      <button class="bigbtn ghost no-print" id="custodyPrintBtn">Print custody &amp; swap record</button>
     </section>
 
     <!-- ============ MONEY ============ -->
@@ -790,6 +836,17 @@ input[type="number"]{width:78px}
       </div>
       <div id="trendSlot"></div>
       <div id="patSlot"></div>
+    </section>
+
+    <!-- ============ CUSTODY & SWAP PRINT EXHIBIT ============
+         NOT a tab: no nav button, not in TABS, always `hidden` on screen.
+         A third print exhibit alongside the Record and Money ones (see the
+         @media print rules). Built fresh at print time by renderCustodyPrint,
+         which reads custodyForDate/Store.swapWithResponse/Store.allEvents
+         only — it has no call anywhere to Store.myNote or Store.calNotes,
+         so a private note has no path into this section. -->
+    <section class="view" id="v-custodyprint" hidden>
+      <div id="custodyPrintSlot"></div>
     </section>
   </main>
 
@@ -1895,6 +1952,58 @@ function custodyForDate(dstr){
    just not surfaced here as something that "happened" for calendar purposes. */
 function episodesForDay(dstr){
   return Store.entriesForMonth(dstr.slice(0,7)).filter(e=>!e.voided && dayOf(e.start)===dstr);
+}
+
+/* ---- print-exhibit pure helpers: kept apart from the DOM, like the rest of
+        this section, so the self-check can exercise the classification
+        logic directly. patternTypeLabel is display-only — buildSequence
+        above is the one place a pattern TYPE actually governs behaviour;
+        this just names it in English for the printed page. */
+function patternTypeLabel(t){
+  if(t === "week") return "Week on / week off";
+  if(t === "223") return "2-2-3";
+  if(t === "weekend-alt") return "Alternating weekends";
+  if(t === "custom") return "Custom sequence";
+  return t ? String(t) : "";
+}
+/* THE DISTINCTION A MEDIATOR NEEDS, IN TEXT/GLYPH ONLY (no colour — the
+   striped bands the screen calendar uses are a screen convenience that may
+   not survive a printer). Three sources, three glyphs:
+     pattern   -> a repeating rule (week-on/week-off, 2-2-3, ...)
+     exception -> a one-off, hand-logged change for a single date
+     swap      -> an exception whose note is EXACTLY "Swap accepted" — the
+                  one string putCustodyException's caller in respondToSwap
+                  ever writes for an accepted swap (see Store.respondToSwap
+                  above). Coupling this classifier to that literal string is
+                  deliberate, not incidental: it is the actual mechanism the
+                  app already uses to tell "someone typed an exception" apart
+                  from "a swap request was accepted" — inventing a second,
+                  parallel flag here would just be a second place to keep in
+                  sync with the first. */
+function custodyKindLabel(cst){
+  if(cst.source === "pattern") return "▦ Pattern";
+  if(cst.source === "exception") return cst.note === "Swap accepted" ? "⇄ Accepted swap" : "✕ Exception";
+  return "— None";
+}
+/* Every "YYYY-MM-DD" from fromStr to toStr inclusive, via addDaysStr (DST-proof,
+   see the comment above it). Guarded at ~10 years so a typo'd range (e.g. a
+   `to` year pasted wrong) can't hang the tab building an unbounded array. */
+function custodyPrintDateRange(fromStr, toStr){
+  const out = [];
+  if(!fromStr || !toStr || fromStr > toStr) return out;
+  let d = fromStr, guard = 0;
+  while(d <= toStr && guard < 3660){
+    out.push(d);
+    d = addDaysStr(d, 1);
+    guard++;
+  }
+  return out;
+}
+function friendlyExhibitDate(dstr){
+  const p = dParts(dstr);
+  if(!p) return String(dstr||"");
+  return new Date(Date.UTC(p.y,p.mo-1,p.d))
+    .toLocaleDateString(undefined,{weekday:"short", month:"short", day:"numeric", year:"numeric", timeZone:"UTC"});
 }
 
 /* ============================================================
@@ -4227,6 +4336,166 @@ function calSwapRow(r){
   return row;
 }
 
+/* ============================================================
+   CUSTODY & SWAP PRINT EXHIBIT — a third paper exhibit, alongside the
+   Record (History) and Money ones. Built fresh into its own slot at print
+   time by custodyPrintBtn's click handler (below), NOT wired into
+   renderAll()/renderTab() — #v-custodyprint is not a tab and nothing on
+   screen ever shows it, so there is no reason to rebuild it on every store
+   echo the way a real tab's slot is.
+
+   ⛔ PRIVATE NOTES: this function has NO call anywhere in it, or in
+   anything it calls, to Store.myNote or Store.calNotes — the app's single
+   choke point for reading a private note. That is not merely undesired
+   here, it is unreachable: grep this function and its helpers and neither
+   name appears. Proven by mutation in the self-check below (a probe that
+   DOES call Store.myNote from inside a stand-in renderer is used to show
+   the assertion can actually fail, then the real function is proven clean). */
+function renderCustodyPrint(fromStr, toStr){
+  const slot = $("custodyPrintSlot");
+  slot.innerHTML = "";
+  const genAt = Date.now();
+
+  const hd = el("div","exhibit-hd");
+  hd.appendChild(el("h2",null,"Custody schedule & swap record"));
+  slot.appendChild(hd);
+
+  if(!fromStr || !toStr || fromStr > toStr){
+    hd.appendChild(el("p","sub","Generated " +
+      new Date(genAt).toLocaleString(undefined,{dateStyle:"long", timeStyle:"short"}) + "."));
+    slot.appendChild(emptyBox("No date range selected",
+      "Choose a From and To date on the Calendar tab, then print again. This exhibit never prints a " +
+      "range that was not explicitly chosen."));
+    return;
+  }
+
+  hd.appendChild(el("p","sub", "Covering " + friendlyExhibitDate(fromStr) + " through " +
+    friendlyExhibitDate(toStr) + ". Generated " +
+    new Date(genAt).toLocaleString(undefined,{dateStyle:"long", timeStyle:"short"}) + "."));
+
+  const days = custodyPrintDateRange(fromStr, toStr);
+
+  /* ---- custody schedule, day by day ---- */
+  const custSec = el("div","exhibit-sec");
+  custSec.appendChild(el("h3",null,"Custody schedule"));
+  const anySchedule = days.some(d=>custodyForDate(d).source !== "none");
+  if(!anySchedule){
+    custSec.appendChild(emptyBox("No custody information recorded for this range",
+      "Nothing has been logged as a pattern, a one-off exception, or an accepted swap for any day " +
+      "between " + friendlyExhibitDate(fromStr) + " and " + friendlyExhibitDate(toStr) + "."));
+  } else {
+    const tbl = document.createElement("table"); tbl.className = "exhibit-tbl";
+    const thead = document.createElement("thead");
+    const hr = document.createElement("tr");
+    ["Date","Custody","Basis"].forEach(t=>{ const th=document.createElement("th"); th.textContent=t; hr.appendChild(th); });
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const tbody = document.createElement("tbody");
+    days.forEach(dstr=>{
+      const cst = custodyForDate(dstr);
+      const tr = document.createElement("tr");
+      const cells = [friendlyExhibitDate(dstr), cst.parent ? WHO_NAME[cst.parent] : "—"];
+      let basis = custodyKindLabel(cst);
+      if(cst.source === "pattern") basis += " (" + patternTypeLabel(cst.patternType) + ")";
+      if(cst.source === "exception"){
+        const raw = resolveException(dstr);
+        if(raw) basis += " — logged by " + WHO_NAME[raw.by] +
+          (raw.note && raw.note !== "Swap accepted" ? ": " + raw.note : "");
+      }
+      cells.push(basis);
+      cells.forEach(v=>{ const td=document.createElement("td"); td.textContent=v; tr.appendChild(td); });
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    custSec.appendChild(tbl);
+  }
+  slot.appendChild(custSec);
+
+  /* ---- swap requests: every one in range, accepted, declined, or still
+     unanswered. Never filtered for flattery — a decline prints exactly like
+     an accept, same table, same columns, only the Outcome cell differs, and
+     its text is always the flat word "Declined" (swapDirectionText/the
+     Outcome literal below never use "refused" or "wouldn't"). ---- */
+  const swapSec = el("div","exhibit-sec");
+  swapSec.appendChild(el("h3",null,"Swap requests"));
+  const swaps = Store.swapWithResponse().filter(r=>r.date >= fromStr && r.date <= toStr);
+  if(!swaps.length){
+    swapSec.appendChild(emptyBox("No swap requests in this range",
+      "Nothing was asked or answered for any day between " + friendlyExhibitDate(fromStr) +
+      " and " + friendlyExhibitDate(toStr) + "."));
+  } else {
+    const tbl = document.createElement("table"); tbl.className = "exhibit-tbl";
+    const thead = document.createElement("thead");
+    const hr = document.createElement("tr");
+    ["Date","Requested by","What was asked","Message","Outcome","Requested at","Answered at"].forEach(t=>{
+      const th=document.createElement("th"); th.textContent=t; hr.appendChild(th);
+    });
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const tbody = document.createElement("tbody");
+    swaps.sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
+      const tr = document.createElement("tr");
+      const outcome = r.response ? (r.response.decision === "accept" ? "Accepted" : "Declined") : "Awaiting response";
+      [
+        friendlyExhibitDate(r.date),
+        WHO_NAME[r.by],
+        swapDirectionText(r),
+        r.message || "—",
+        outcome,
+        new Date(r.at).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}),
+        r.response ? new Date(r.response.at).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}) : "—"
+      ].forEach(v=>{ const td=document.createElement("td"); td.textContent=v; tr.appendChild(td); });
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    swapSec.appendChild(tbl);
+  }
+  slot.appendChild(swapSec);
+
+  /* ---- calendar events in range: shared fields only. e.note is the
+     event's own SHARED note ("both parents can see this", calEventCard
+     above) — a different field from a per-parent private note, which this
+     function never reads. A voided event still appears, struck through,
+     never omitted. ---- */
+  const evSec = el("div","exhibit-sec");
+  evSec.appendChild(el("h3",null,"Calendar events"));
+  const evs = Store.allEvents().filter(e=>e.date >= fromStr && e.date <= toStr);
+  if(!evs.length){
+    evSec.appendChild(emptyBox("No calendar events in this range",
+      "Nothing was added to the calendar for any day between " + friendlyExhibitDate(fromStr) +
+      " and " + friendlyExhibitDate(toStr) + "."));
+  } else {
+    const tbl = document.createElement("table"); tbl.className = "exhibit-tbl";
+    const thead = document.createElement("thead");
+    const hr = document.createElement("tr");
+    ["Date","Time","Type","Title","Location","Note","Added by","Status"].forEach(t=>{
+      const th=document.createElement("th"); th.textContent=t; hr.appendChild(th);
+    });
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const tbody = document.createElement("tbody");
+    evs.forEach(e=>{
+      const tr = document.createElement("tr");
+      tr.className = e.voided ? "exhibit-voided" : "";
+      [
+        friendlyExhibitDate(e.date),
+        e.time ? clockOfTimeStr(e.time) : "—",
+        calTypeLabel(e.type),
+        e.title + (e.voided ? " (withdrawn)" : ""),
+        e.location || "—",
+        e.note || "—",
+        WHO_NAME[e.who],
+        e.voided ? "Withdrawn" : (e.edited ? "Edited" : "—")
+      ].forEach(v=>{ const td=document.createElement("td"); td.textContent=v; tr.appendChild(td); });
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    evSec.appendChild(tbl);
+  }
+  slot.appendChild(evSec);
+
+  slot.appendChild(el("p","sub exhibit-foot",
+    "This exhibit is built from the shared record only. Each parent's private notes on calendar " +
+    "events are never included, for either parent, regardless of who prints this page."));
+}
+
 function calBlankDraft(dstr){ return {date:dstr, time:"", type:null, title:"", location:"", note:""}; }
 
 function calEventForm(existing){
@@ -4461,7 +4730,23 @@ TABS.forEach(t=>{
 });
 $("printBtn").onclick = ()=>window.print();
 $("moneyPrintBtn").onclick = ()=>{ document.body.classList.add("print-money"); window.print(); };
-window.addEventListener("afterprint", ()=>document.body.classList.remove("print-money"));
+/* Sensible default range (last 30 days through today) so the exhibit is
+   never printed with an accidentally-empty range on a first tap; the
+   parent can still change either date before printing. */
+(function(){
+  const today = dayOf(Date.now());
+  $("custodyPrintFrom").value = addDaysStr(today, -30);
+  $("custodyPrintTo").value = today;
+})();
+$("custodyPrintBtn").onclick = ()=>{
+  renderCustodyPrint($("custodyPrintFrom").value, $("custodyPrintTo").value);
+  document.body.classList.add("print-custody");
+  window.print();
+};
+window.addEventListener("afterprint", ()=>{
+  document.body.classList.remove("print-money");
+  document.body.classList.remove("print-custody");
+});
 $("scrim").onclick = (ev)=>{ if(ev.target === $("scrim")) closeSheet(); };
 $("calScrim").onclick = (ev)=>{ if(ev.target === $("calScrim")) calCloseDay(); };
 document.addEventListener("keydown", e=>{
@@ -5572,6 +5857,99 @@ Store.init();
     } finally {
       Store.entries = JSON.parse(beforeEn);
     }
+  })();
+
+  // ---- CUSTODY & SWAP PRINT EXHIBIT: drives the REAL renderCustodyPrint()
+  // (not a hand-built copy of its logic) with a pattern day, a one-off
+  // exception day, an accepted-swap day, a declined swap, an unanswered
+  // swap, a normal event and a withdrawn event all seeded into one 10-day
+  // range — then reads the actual rendered DOM the way a mediator would.
+  // ⛔ THE MOST DAMAGING THING TO GET WRONG: two private notes (one per
+  // parent) are seeded on the printed event's id, and the assertion is that
+  // NEITHER string appears ANYWHERE in the exhibit's rendered text — this
+  // exercises the real function against the real Store.myNote/putCalNote
+  // plumbing, not a mock of either.
+  (function(){
+    if(typeof renderCustodyPrint === "undefined" || typeof $ === "undefined") return;
+    const beforePat = JSON.stringify(Store.custodyPatterns);
+    const beforeExc = JSON.stringify(Store.custodyExceptions);
+    const beforeReq = JSON.stringify(Store.swapRequests);
+    const beforeResp = JSON.stringify(Store.swapResponses);
+    const beforeEv = JSON.stringify(Store.calEvents);
+    const beforeNotes = JSON.stringify(Store.calNotes);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    let idAccept=null, idDecline=null, idPending=null;
+    try {
+      // a pattern day (2026-09-01) — week on/week off, no exception on it
+      Store.putCustodyPattern("dad", "week", "2026-08-31", "2026-08-01", {parentA:"dad", parentB:"mom"});
+      // a one-off exception, NOT a swap (2026-09-03)
+      Store.putCustodyException("mom", "2026-09-03", "dad", "Dentist ran long, Dad kept her");
+      // an accepted swap -> its own custody exception, note==="Swap accepted" (2026-09-05)
+      idAccept = Store.putSwapRequest("dad", "2026-09-05", "Can you take this one?", "responder");
+      Store.respondToSwap(idAccept, "mom", "accept");
+      // a declined swap (2026-09-06) — must print with the flat word "Declined"
+      idDecline = Store.putSwapRequest("mom", "2026-09-06", "Need to swap for a wedding", "responder");
+      Store.respondToSwap(idDecline, "dad", "decline", "Already have plans");
+      // an unanswered swap request (2026-09-07) — no respondToSwap call at all
+      idPending = Store.putSwapRequest("dad", "2026-09-07", "Thinking about swapping this one", "requester");
+
+      // one normal event + one withdrawn event, both in range
+      Store.putEvent("dad", {id:"selfcheck_printex_ev_normal", who:"dad", date:"2026-09-02", time:"10:00",
+        type:"medical", title:"Dentist appointment", location:"Clinic", note:"Bring insurance card",
+        created:Date.now(), revs:[]});
+      Store.putEvent("dad", {id:"selfcheck_printex_ev_void", who:"dad", date:"2026-09-04", time:null,
+        type:"activity", title:"Soccer game", location:"", note:"", created:Date.now(), revs:[]});
+      const rawVoid = Store.calEvents["2026-09__dad"].items["selfcheck_printex_ev_void"];
+      Store.putEvent("dad", Object.assign({}, rawVoid, {revs:(rawVoid.revs||[]).concat([{at:Date.now(), by:"dad", void:true}])}));
+
+      // private notes on the NORMAL event, one per parent — neither must ever print
+      Store.putCalNote("dad", "selfcheck_printex_ev_normal", "Dad's private thought about this appointment");
+      Store.putCalNote("mom", "selfcheck_printex_ev_normal", "Mom's separate private thought");
+
+      renderCustodyPrint("2026-09-01", "2026-09-10");
+      const slot = $("custodyPrintSlot");
+      const text = slot.allText();
+
+      ck("print exhibit distinguishes a PATTERN day (glyph + word, no colour)", /▦ Pattern/.test(text));
+      ck("print exhibit distinguishes a one-off EXCEPTION day from a pattern day", /✕ Exception/.test(text));
+      ck("print exhibit distinguishes an ACCEPTED SWAP day from a plain exception", /⇄ Accepted swap/.test(text));
+      ck("a DECLINED swap appears with its outcome, the flat word \"Declined\"", /Declined/.test(text));
+      ck("a declined swap is never editorialised as \"refused\" or \"wouldn't\"", !/refused|wouldn.t/i.test(text));
+      ck("an UNANSWERED swap request appears, stated as awaiting response", /Awaiting response/.test(text));
+      ck("a withdrawn event still appears in the exhibit, never omitted", text.indexOf("Soccer game") >= 0);
+      ck("the withdrawn event's row is marked struck-through (exhibit-voided) and its Status cell says Withdrawn",
+         slot.querySelectorAll("tr.exhibit-voided").length > 0 && /Withdrawn/.test(text));
+      ck("NO private note text reaches the print output — Dad's own note, printing as Dad",
+         text.indexOf("Dad's private thought") === -1);
+      ck("NO private note text reaches the print output — Mom's own note, printing as Dad",
+         text.indexOf("Mom's separate private thought") === -1);
+
+      // honest empty states: no range chosen, and a real range with nothing recorded
+      renderCustodyPrint(null, null);
+      ck("no date range selected: an honest empty message, not a blank exhibit",
+         $("custodyPrintSlot").allText().indexOf("No date range selected") >= 0);
+      // before the seeded pattern's effectiveFrom (2026-08-01), so no pattern,
+      // exception, swap or event from this probe (or anything else fixed-date
+      // in the self-check) reaches it — a genuine zero, not just an unlucky date.
+      renderCustodyPrint("2020-01-01", "2020-01-03");
+      ck("a real range with nothing recorded: an honest per-section empty message, not a fabricated schedule",
+         $("custodyPrintSlot").allText().indexOf("No custody information recorded for this range") >= 0);
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+    }
+    Store.custodyPatterns = JSON.parse(beforePat);
+    Store.custodyExceptions = JSON.parse(beforeExc);
+    Store.swapRequests = JSON.parse(beforeReq);
+    Store.swapResponses = JSON.parse(beforeResp);
+    Store.calEvents = JSON.parse(beforeEv);
+    Store.calNotes = JSON.parse(beforeNotes);
+    ck("the self-check left no print-exhibit custody/swap/event/note data behind",
+       !Store.allCustodyPatterns().some(p=>p.anchorDate==="2026-08-31") &&
+       !Store.allCustodyExceptions().some(x=>x.date==="2026-09-03"||x.date==="2026-09-05") &&
+       !Store.allSwapRequests().some(r=>[idAccept,idDecline,idPending].indexOf(r.id)!==-1) &&
+       !Store.allEvents().some(e=>e.id==="selfcheck_printex_ev_normal"||e.id==="selfcheck_printex_ev_void") &&
+       !Store.myNote("dad","selfcheck_printex_ev_normal") && !Store.myNote("mom","selfcheck_printex_ev_normal"));
   })();
 
   if(fail.length) console.error("BBL SELF-CHECK FAILED " + fail.length + "/" + ran + ":", fail);
