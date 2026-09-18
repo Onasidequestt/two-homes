@@ -184,6 +184,7 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 .chips{display:flex;flex-wrap:wrap;gap:7px}
 .chip{padding:12px 14px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);
       font-size:13px;font-weight:500;color:var(--ink-2);line-height:1.25;
+      white-space:normal;text-align:left;max-width:100%;   /* a 40-char custom option wraps, never clips */
       transition:background-color var(--t-sel) var(--ease-settle),
                  border-color     var(--t-sel) var(--ease-settle),
                  color            var(--t-sel) var(--ease-settle)}
@@ -338,9 +339,14 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 
 textarea{width:100%;padding:11px;border:1px solid var(--line-strong);border-radius:8px;
          background:var(--surface);color:var(--ink);font:inherit;font-size:14px;resize:vertical;min-height:62px}
-input[type="number"],input[type="time"]{padding:11px 12px;border:1px solid var(--line-strong);border-radius:10px;
-         background:var(--surface);color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:17px}
+input[type="number"],input[type="time"],input[type="date"],input[type="text"]{
+         padding:11px 12px;border:1px solid var(--line-strong);border-radius:10px;min-height:44px;
+         background:var(--surface);color:var(--ink);font:inherit;font-size:16px;-webkit-appearance:none;appearance:none}
+input[type="number"],input[type="time"],input[type="date"]{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:17px}
 input[type="number"]{width:78px}
+input[type="text"]{width:100%}
+input[inputmode="decimal"]{width:150px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:20px;font-weight:600}
+textarea{border-radius:10px}
 
 /* ---------- history: a list, not a stack of cards ----------
    Every row used to be its own bordered, filled card. Fifty of those is a wall
@@ -556,6 +562,7 @@ input[type="number"]{width:78px}
                    transition:filter var(--t-tap) var(--ease-out),
                               background-color var(--t-tap) var(--ease-out)}
 .cyes{background:var(--danger);color:#FFFFFF}
+.cyes.affirm{background:var(--accent);color:var(--accent-ink)}   /* accepting a swap is not a withdrawal */
 .cyes:active{filter:brightness(.92)}
 .cno{background:var(--surface-2);color:var(--ink);border:1px solid var(--line-strong)}
 .cno:active{background:var(--sunk)}
@@ -582,7 +589,9 @@ input[type="number"]{width:78px}
 
 /* ---------- identity gate ---------- */
 .gate{max-width:420px;margin:0 auto;padding:40px 20px;display:flex;flex-direction:column;gap:14px}
-.gate h1{font-size:20px;margin:0;font-weight:700}
+.gate .brand{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--ink);margin:0}
+.gate .lede{font-size:15px;color:var(--ink-2);line-height:1.5}
+.gate h1{font-size:20px;margin:10px 0 0;font-weight:700}
 .gate p{font-size:13.5px;color:var(--muted);margin:0;line-height:1.55}
 .pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
 .pick button{padding:22px 10px;border-radius:12px;border:1.5px solid var(--line-strong);background:var(--surface);
@@ -594,6 +603,7 @@ input[type="number"]{width:78px}
 .cal-hd{display:flex;align-items:center;justify-content:space-between;padding:0 2px}
 .cal-mo{font-size:16px;font-weight:700;letter-spacing:-.015em}
 .cal-nav{display:flex;gap:6px}
+.cal-nav button.cal-today{width:auto;padding:0 12px;font-size:13px;font-weight:600}
 .cal-nav button{width:34px;height:34px;border-radius:9px;background:var(--surface);
                 border:1px solid var(--line-strong);font-size:15px;font-weight:700;
                 display:flex;align-items:center;justify-content:center;
@@ -658,7 +668,10 @@ input[type="number"]{width:78px}
    Re-declaring the light values here is not a theme-only definition: every
    token's primary value still lives in the bare :root above. */
 @media print{
-  :root{
+  /* listed three ways on purpose: the two dark selectors below are (0,2,0)
+     and a bare :root (0,1,0) loses to them — a dark-mode phone printed a
+     dark page until this matched their specificity. */
+  :root,:root:not([data-theme="light"]),:root[data-theme="dark"]{
     --paper:#fff; --surface:#fff; --surface-2:#fff; --sunk:#fff;
     --ink:#151A21; --ink-2:#3C4753; --muted:#5D6874; --faint:#636F7D;
     --line:#B0B0B0; --line-strong:#767676;
@@ -705,7 +718,10 @@ input[type="number"]{width:78px}
    nothing money-specific needed for that half of the guarantee. */
 @media print{
   body.print-money #v-history{display:none !important}
-  body.print-money #v-money[hidden]{display:flex !important}
+  /* not [hidden]-qualified: the print button sits on the Money tab itself,
+     so at print time #v-money is the VISIBLE view and the blanket
+     #v-money{display:none} above won — the exhibit printed as a blank page. */
+  body.print-money #v-money{display:flex !important}
 }
 /* ---------- custody & swap print exhibit ----------
    A THIRD, independent @media print block, same pattern as money above:
@@ -719,7 +735,7 @@ input[type="number"]{width:78px}
    already unfolded because nothing in it was ever folded to begin with. */
 @media print{
   body.print-custody #v-history{display:none !important}
-  body.print-custody #v-custodyprint[hidden]{display:flex !important}
+  body.print-custody #v-custodyprint{display:flex !important}
 }
 
 /* ---------- reduced motion ----------
@@ -860,9 +876,12 @@ input[type="number"]{width:78px}
 </div>
 
 <div class="gate" id="gate" hidden>
-  <h1>Who is logging?</h1>
+  <p class="brand">Two Homes</p>
+  <p class="lede">A shared record for a child with two homes — episodes, calendar, custody and expenses.
+     Both parents write to it. Nothing is deleted or edited in place, so what it shows is what was logged.</p>
+  <h1>Who is logging on this phone?</h1>
   <p>Pick the name your entries are stamped with. This is a label, not a sign-in — the app cannot tell who
-     is holding the phone. Saved on this device; each parent has their own link, so it is asked once.</p>
+     is holding the phone. It is saved on this device, so it is asked once.</p>
   <div class="pick">
     <button id="pickDad"><span class="dot dad"></span>Dad</button>
     <button id="pickMom"><span class="dot mom"></span>Mom</button>
@@ -1030,7 +1049,8 @@ function dollarsToCents(str){
 function centsToDollars(cents){
   const c = Math.round(Math.abs(cents));
   const whole = Math.floor(c/100), frac = c%100;
-  return (cents < 0 ? "-" : "") + "$" + whole + "." + String(frac).padStart(2,"0");
+  const grouped = String(whole).replace(/\B(?=(\d{3})+(?!\d))/g, ",");   /* $6172839.45 is unreadable */
+  return (cents < 0 ? "-" : "") + "$" + grouped + "." + String(frac).padStart(2,"0");
 }
 
 /* ---------- the split ----------
@@ -2035,7 +2055,8 @@ const State = {
   calAdding:null,   // draft object while the "add event" form is open
   calEditingEvent:null, // draft object while an existing event's form is open
   calSwapOpen:null,  // date whose "request a swap" mini-form is expanded
-  calSwapDraft:null  // {wantsCustody,message,missing} while that mini-form is open
+  calSwapDraft:null, // {wantsCustody,message,missing} while that mini-form is open
+  calNoteOpen:{}     // eventId -> the private-note box was opened this session (sheet redraws must not close it)
 };
 
 /* ============================================================
@@ -3351,11 +3372,7 @@ function renderMoney(){
     .concat(voidedSettles.map(s=>Object.assign({kind:"settlement"},s)))
     .sort((a,b)=>b.date-a.date);
 
-  if(!live.length && !voided.length){
-    slot.appendChild(emptyBox("Nothing logged yet",
-      "The first claim or settlement you save will appear here, with the running balance above."));
-    return;
-  }
+  if(!live.length && !voided.length) return;   /* the balance card above already states the empty record */
 
   const list = el("div","daylist");
   if(live.length){
@@ -3989,7 +4006,7 @@ function renderCalendar(){
   const nav = el("div","cal-nav");
   const prevB = el("button",null,"‹"); prevB.setAttribute("aria-label","Previous month");
   prevB.onclick = ()=>{ State.calMonth = shiftYm(ym,-1); renderCalendar(); };
-  const todayB = el("button",null,"•"); todayB.setAttribute("aria-label","Jump to this month");
+  const todayB = el("button","cal-today","Today"); todayB.setAttribute("aria-label","Jump to this month");
   todayB.onclick = ()=>{ State.calMonth = dayOf(Date.now()).slice(0,7); renderCalendar(); };
   const nextB = el("button",null,"›"); nextB.setAttribute("aria-label","Next month");
   nextB.onclick = ()=>{ State.calMonth = shiftYm(ym,1); renderCalendar(); };
@@ -4029,10 +4046,12 @@ function renderCalendar(){
   slot.appendChild(grid);
 
   const legend = el("div","note-strip");
-  legend.appendChild(el("b",null,"Reading the band: "));
+  legend.appendChild(el("b",null,"Reading a date: "));
   legend.appendChild(document.createTextNode(
-    "a right-leaning stripe is Dad's custody day, a left-leaning stripe is Mom's, a crosshatch is " +
-    "a logged exception (including an accepted swap). No band means nothing is scheduled yet."));
+    "a small tag is an event (Med = medical, Sch = school, Act = activity, Bir = birthday, Oth = other); " +
+    "a dot means something is in the Record for that day. The stripe along the bottom is custody — " +
+    "right-leaning is Dad's day, left-leaning is Mom's, a crosshatch is a logged exception (including an accepted swap). " +
+    "No stripe means no schedule covers that day."));
   slot.appendChild(legend);
 
   if(State.calDay) calDrawDaySheet();
@@ -4193,6 +4212,14 @@ function calEventCard(e){
    with the shared note above (see .privnote / .enote in the CSS), so the two
    cannot be confused for one another even glancing past them. */
 function calNoteBox(e){
+  const has = Store.myNote(State.me, e.id);
+  if(!has && !State.calNoteOpen[e.id]){
+    /* an empty dashed box under EVERY event made the sheet a wall of forms;
+       the box appears when asked for, and stays once a note exists */
+    const open = el("button","linkbtn","Add a private note — only you can see it");
+    open.onclick = ()=>{ State.calNoteOpen[e.id] = true; calDrawDaySheet(); };
+    return open;
+  }
   const box = el("div","privnote");
   const lab = el("div","privlab");
   const lock = el("span","privlock","🔒"); lock.setAttribute("aria-hidden","true");
@@ -4287,7 +4314,7 @@ function calSwapSection(dstr){
 function calSwapRow(r){
   const row = el("div","panel calswap");
   const top = el("div","etop");
-  top.appendChild(el("span","badge "+r.by, WHO_NAME[r.by] + " asked"));
+  top.appendChild(el("span","badge "+r.by, WHO_NAME[r.by]));
   /* time portion through clockOf(), same as every other timestamp in the app —
      toLocaleString's hour:"numeric" is locale-dependent (24h, or a differently
      cased "AM/PM", depending on the device) rather than the app's own format. */
@@ -4299,7 +4326,7 @@ function calSwapRow(r){
     if(r.by !== State.me){
       if(r.wantsCustody){
         const act = el("div","confirmact");
-        const yes = el("button","cyes","Accept");
+        const yes = el("button","cyes affirm","Accept");
         yes.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "accept"); calDrawDaySheet(); };
         /* copy rule: "Declined" — never "refused", never "wouldn't". The record
            states an outcome, not a character judgement, because both parents
@@ -4768,6 +4795,7 @@ Store.init();
   const fail = [];
   let ran = 0;
   const ck = (name, cond) => { ran++; if(!cond) fail.push(name); };
+  const bootMe = State.me, bootTab = State.tab;   /* restored and ASSERTED at the very end */
 
   // resolve() must layer revisions without destroying the original
   const raw = {id:"x", who:"dad", start:0, sev:2, trig:"no", place:"home", note:"first", created:0,
@@ -5307,6 +5335,7 @@ Store.init();
     ck("no float drift on the classic 0.1 + 0.2 case",
        dollarsToCents("0.10") + dollarsToCents("0.20") === 30);
     ck("centsToDollars round-trips", centsToDollars(1999) === "$19.99" && centsToDollars(0) === "$0.00");
+    ck("centsToDollars groups thousands", centsToDollars(1234567890) === "$12,345,678.90" && centsToDollars(-100000) === "-$1,000.00" && centsToDollars(99999) === "$999.99");
 
     // 100 random cent amounts, summed two ways, must agree EXACTLY — proves
     // integer-cents accumulation carries no drift across many operations,
@@ -5788,7 +5817,7 @@ Store.init();
   (function(){
     if(typeof TAB_RENDER === "undefined" || typeof $ === "undefined") return;
     const beforeExp = JSON.stringify(Store.expenses);
-    const beforeTab = State.tab, beforeStale = Object.assign({}, State.staleTabs);
+    const beforeTab = State.tab, beforeStale = Object.assign({}, State.staleTabs), beforeMe = State.me;
     const realSaveLocal = Store.saveLocal, realPush = Store.push;
     Store.saveLocal = function(){}; Store.push = function(){};
     try {
@@ -5809,6 +5838,7 @@ Store.init();
       Store.saveLocal = realSaveLocal; Store.push = realPush;
     }
     Store.expenses = JSON.parse(beforeExp);
+    State.me = beforeMe;
     State.tab = beforeTab; State.staleTabs = beforeStale;
     renderTab(State.tab);
     ck("the self-check left no background-tab probe expense behind", !Store.allExpenses().some(e=>e.id==="selfcheck_u2_exp"));
@@ -5950,6 +5980,43 @@ Store.init();
        !Store.allSwapRequests().some(r=>[idAccept,idDecline,idPending].indexOf(r.id)!==-1) &&
        !Store.allEvents().some(e=>e.id==="selfcheck_printex_ev_normal"||e.id==="selfcheck_printex_ev_void") &&
        !Store.myNote("dad","selfcheck_printex_ev_normal") && !Store.myNote("mom","selfcheck_printex_ev_normal"));
+  })();
+
+  // ---- LEAVE THE APP EXACTLY AS BOOTED. Every probe above borrows the live
+  // singletons (State, Store, the DOM) and restores its own patch; this is the
+  // belt to those braces, and it is ASSERTED. The first time this self-check
+  // ran to completion in a real browser, the parent's first screen was the
+  // MONEY tab showing a fixture claim ("selfcheck-u2-marker", Dad is owed
+  // $0.50), and State.me had been left as "dad" — so on Mom's phone the next
+  // entry would have been stamped Dad's. Restoring Store alone was not enough:
+  // the DOM and State are part of what a parent sees and writes with.
+  (function(){
+    State.me = bootMe;
+    State.draft = null; State.moneyDraft = null; State.settleDraft = null;
+    State.calDay = null; State.calAdding = null; State.calEditingEvent = null;
+    if(bootMe){
+      TABS.forEach(t=>{ renderTab(t); });          /* rebuild every slot from the REAL store */
+      setTab(bootTab);
+      TABS.forEach(t=>{ State.staleTabs[t] = (t !== bootTab); });
+      updateTabCounts();
+      $("meName").textContent = WHO_NAME[bootMe];
+      $("meDot").className = "dot " + bootMe;
+    } else {
+      /* nobody is chosen yet (the chooser is up): nothing may be rendered from a
+         real store without an identity, so empty every slot a probe drew into and
+         mark each tab stale — the first real render happens after the pick. */
+      State.tab = bootTab;
+      ["logSlot","dailySlot","calSlot","moneySlot","histSlot","patSlot","trendSlot","custodyPrintSlot"]
+        .forEach(id=>{ $(id).innerHTML = ""; });
+      TABS.forEach(t=>{ State.staleTabs[t] = true; });
+    }
+    ck("the self-check leaves the identity it booted with", State.me === bootMe);
+    ck("the self-check leaves the booted tab selected and on screen",
+       State.tab === bootTab && (!bootMe || ($("v-"+bootTab).hidden === false &&
+         TABS.every(t=> t === bootTab || $("v-"+t).hidden === true))));
+    const slots = ["logSlot","dailySlot","calSlot","moneySlot","histSlot","patSlot","trendSlot","app"];
+    ck("no self-check fixture text is left anywhere a parent can see",
+       !slots.some(id=>/selfcheck|capprobe|probe event/i.test($(id).textContent || "")));
   })();
 
   if(fail.length) console.error("BBL SELF-CHECK FAILED " + fail.length + "/" + ran + ":", fail);
