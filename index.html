@@ -337,11 +337,22 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 .bigbtn{width:100%;padding:16px;border-radius:12px;font-size:17px;font-weight:700;
         background:var(--accent);color:var(--accent-ink);margin-top:18px;   /* ONE primary colour app-wide: the same teal as Start timing */
         transition:filter var(--t-tap) var(--ease-out), border-color var(--t-amb) var(--ease-soft)}
+/* Save stays in reach on a long form. ponytail: 80px is the measured tab-bar height at
+   390px; ceiling = a taller bar (larger text setting) overlaps by the difference;
+   upgrade = set --tabs-h from the bar's offsetHeight on resize. */
+.savedock{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));z-index:5;display:flex;flex-direction:column;gap:8px;
+          margin:4px -15px 0;padding:8px 15px;background:var(--surface);border-top:.5px solid var(--line)}
+@media print{ .savedock{position:static} }
 .bigbtn.ghost{background:var(--surface);color:var(--ink);border:1.5px solid var(--line-strong);font-size:15px;padding:14px}
 .bigbtn:active{filter:brightness(.96)}
 .bigbtn:disabled{background:var(--surface-2);color:var(--muted)}
 .printonly{display:none}
 @media print{ .printonly{display:block !important;margin-top:14px;font-size:11px;color:#333} }
+/* ONE print template: every exhibit opens with .pkey (how to read it) and closes
+   with .plimits (what it cannot prove), same box, same size, same place. */
+.pkey,.plimits{margin-top:14px;padding:8px 10px;border:1px solid var(--line-strong);border-radius:6px;
+               font-size:11px;line-height:1.5;color:var(--ink-2);background:transparent}
+.pkey b,.plimits b{color:var(--ink)}
 .err{margin-top:12px;font-size:12.5px;color:var(--danger);font-weight:600}
 /* Saving used to be silent: the form simply vanished. This is a real confirmation
    of a real write — it names what was stored, never a generic "done!". */
@@ -427,7 +438,14 @@ textarea{border-radius:10px}
 .enote{font-size:12.5px;color:var(--ink-2);margin-top:6px;padding-left:9px;border-left:2px solid var(--line-strong)}
 .badge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;
        border-radius:4px;background:var(--surface-2);color:var(--muted)}
-.badge.dad{color:var(--dad)} .badge.mom{color:var(--mom)}
+.badge.dad,.badge.mom{display:inline-flex;align-items:center;gap:4px;color:var(--ink)}
+.badge.dad{background:color-mix(in srgb, var(--dad) 18%, var(--surface))} .badge.mom{background:color-mix(in srgb, var(--mom) 18%, var(--surface))}
+.badge.dad::before,.badge.mom::before{content:"";width:6px;height:6px;border-radius:50%;flex:none}
+.badge.dad::before{background:var(--dad)} .badge.mom::before{background:var(--mom)}
+.whoami{padding:2px 8px 2px 7px;border-radius:4px;font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink)}
+.whoami:has(.dot.dad){background:color-mix(in srgb, var(--dad) 18%, var(--surface))}
+.whoami:has(.dot.mom){background:color-mix(in srgb, var(--mom) 18%, var(--surface))}
+.whoami .dot{width:6px;height:6px}
 .badge.edited{color:var(--warn)}
 .badge.renamed{color:var(--warn)}
 .renamefoot{margin-top:12px}
@@ -476,7 +494,12 @@ textarea{border-radius:10px}
 .lockbar i{display:block;height:100%;background:var(--accent);border-radius:2px}
 
 .bars{display:flex;flex-direction:column;gap:8px}
-.bar{display:grid;grid-template-columns:84px 1fr auto;gap:10px;align-items:center;min-height:17px}
+.bar{display:grid;grid-template-columns:104px 1fr auto;gap:4px 10px;align-items:center;min-height:17px}
+/* a long value ("6m 25s, from 23 timed episodes") gets its own line under the
+   track instead of crushing the track to a stub */
+.bar .val.long{grid-column:2 / -1;text-align:left;min-width:0}
+.takeaway{font-size:15px;font-weight:650;line-height:1.35;color:var(--ink);margin:2px 0 12px;letter-spacing:-.01em}
+.pcsub.pchow{margin:12px 0 0;font-size:11.5px}
 /* labels WRAP instead of truncating. The old fixed 78px track with an ellipsis
    silently clipped 8 of the chart labels ("Transition / stop playing" rendered
    as "Transition / s…"), which is a chart quietly withholding what it is
@@ -505,7 +528,7 @@ textarea{border-radius:10px}
 .view.entering .bar .fill{animation:fillGrow var(--t-grow) var(--ease-out)}
 
 /* ---------- trends ---------- */
-.tcard{background:var(--surface);border-radius:14px;padding:16px 15px;box-shadow:var(--shadow)}
+.tcard{background:var(--surface);border-radius:var(--r);padding:15px 14px;box-shadow:var(--shadow)}
 .tbig{font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.05}
 .tbig .unit{font-size:15px;font-weight:600;color:var(--muted);letter-spacing:-.01em;margin-left:5px}
 .tdelta{font-size:13px;font-weight:600;margin-top:3px}
@@ -571,11 +594,14 @@ textarea{border-radius:10px}
    own elements, which no sandbox can refuse. */
 .confirmbox{margin-top:12px;padding:12px 13px;border-radius:10px;
             border:1.5px solid var(--danger);background:var(--surface)}
+.confirmbox:has(.cyes.affirm){border-color:var(--accent)}   /* friction matches consequence: red only when something is withdrawn */
 .confirmbox p{margin:0 0 11px;font-size:12.5px;color:var(--ink-2);line-height:1.5}
 .confirmact{display:flex;gap:8px}
 .confirmact button{flex:1;padding:12px 10px;border-radius:9px;font-weight:700;font-size:14px;
                    transition:filter var(--t-tap) var(--ease-out),
                               background-color var(--t-tap) var(--ease-out)}
+/* red is for a withdrawal only; an assignment or a schedule is a decision, not a danger */
+.confirmbox.affirm{border-color:var(--accent)}
 .cyes{background:var(--danger);color:#FFFFFF}
 .cyes.affirm{background:var(--accent);color:var(--accent-ink)}   /* accepting a swap is not a withdrawal */
 .cyes:active{filter:brightness(.92)}
@@ -593,7 +619,7 @@ textarea{border-radius:10px}
 .eamt{font-size:15px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .mtitle{font-size:15px;font-weight:600;color:var(--ink);margin-top:1px}
 .splitrow{margin-top:8px}
-.splitrow .chip{flex:1;text-align:center}
+.splitrow .chip{text-align:center}
 .receipt-thumb{margin-top:10px;display:flex;align-items:center;gap:10px}
 .receipt-thumb img{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--line-strong)}
 .receipt-rm{font-size:12px;font-weight:700;color:var(--danger);padding:6px 2px;
@@ -649,21 +675,26 @@ textarea{border-radius:10px}
    tint is only the secondary hint (state is carried by a glyph, never a fill).
    A day changed from the schedule adds "*" and a dashed edge. */
 .dband{position:absolute;left:0;right:0;bottom:0;height:15px;display:flex;align-items:center;justify-content:center;
-       font-size:9.5px;font-weight:800;letter-spacing:.05em;line-height:1}
-.dband.dad{background:color-mix(in srgb, var(--dad) 17%, var(--surface));color:var(--dad)}
-.dband.mom{background:color-mix(in srgb, var(--mom) 17%, var(--surface));color:var(--mom)}
+       font-size:10.5px;font-weight:800;letter-spacing:.05em;line-height:1}
+/* the LETTER is ink, not the identity hue: hue-on-own-tint measured ~3.9:1 in dark.
+   The tint still says whose; the letter now reads at full text contrast in both themes. */
+.dband.dad{background:color-mix(in srgb, var(--dad) 26%, var(--surface));color:var(--ink)}
+.dband.mom{background:color-mix(in srgb, var(--mom) 26%, var(--surface));color:var(--ink)}
 .dband.exception{border-top:1.5px dashed currentColor}
 .dband.none{height:0}
 .dcell.painted{border-color:var(--ink);border-width:2px}
 .dcell.today .dnum{background:var(--accent);color:var(--accent-ink);border-radius:999px;min-width:18px;text-align:center;padding:1px 4px}
-.cal-sum{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;margin-top:10px;padding:0 2px;font-size:13px;color:var(--ink-2)}
-.cal-sum b{font-weight:700;font-variant-numeric:tabular-nums}
-.cal-sum .d{color:var(--dad)} .cal-sum .m{color:var(--mom)}
+.cal-sum{display:flex;flex-wrap:wrap;gap:4px 18px;align-items:baseline;margin-top:12px;padding:12px 14px;font-size:14px;color:var(--ink-2);
+         border-radius:var(--r);background:var(--surface);box-shadow:var(--shadow)}
+.cal-sum b{font-weight:800;font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-right:3px}
+.cal-sum .sumnote{flex-basis:100%}
+.cal-sum .d b{color:var(--dad)} .cal-sum .m b{color:var(--mom)}
 .cal-sum .sumnote{color:var(--muted);font-size:12px}
-.calkey{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px;padding:0 2px;font-size:11.5px;color:var(--muted);align-items:center}
-.calkey span.k{display:inline-flex;align-items:center;gap:5px}
-.calkey .dband{position:static;width:22px;height:15px;border-radius:4px}
-.calkey .epi{font-size:10px}
+.calkey{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;margin-top:10px;padding:2px;font-size:13px;color:var(--ink-2);align-items:center}
+.calkey span.k{display:inline-flex;align-items:center;gap:8px}
+.calkey .dband{position:static;flex:none;width:30px;height:20px;border-radius:5px;font-size:11.5px}
+.calkey .evtag{flex:none;font-size:10px;padding:2px 5px}
+.calkey .epi{flex:none;font-size:13px;width:30px;text-align:center}
 .paintbar{margin-top:12px;padding:12px 13px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
 .paintbar .prow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .paintbar .phelp{font-size:12.5px;color:var(--muted);line-height:1.45}
@@ -679,6 +710,12 @@ textarea{border-radius:10px}
 .seqday:active{background:var(--surface-2);transition-duration:0s}
 .splitin{width:100%;font-size:18px;letter-spacing:.04em}
 .calev,.calepi,.calswap{margin-top:10px}
+/* ONE card grammar: inside a .daylist these are rows of one grouped surface with
+   hairlines between, exactly like .entry in Record and Money — not floating cards. */
+.sheet .daylist{margin-top:8px}
+.daylist > .calev,.daylist > .calepi{margin-top:0;border-radius:0;box-shadow:none;background:transparent;padding:13px 14px}
+.daylist > .calev + .calev,.daylist > .calepi + .calepi{border-top:.5px solid var(--line)}
+.sheet .daylist{border:1px solid var(--line)}
 .evtitle{font-size:15.5px;font-weight:700;color:var(--ink);letter-spacing:-.015em;margin-top:2px}
 .calev.voided .evtitle{text-decoration:line-through}
 .calev.voided{opacity:.85}
@@ -860,6 +897,7 @@ textarea{border-radius:10px}
         splits on each claim. It is never a comparison of how much either parent has spent — the two
         homes log at different rates for reasons that have nothing to do with the money.
       </div>
+      <p class="sub printonly pkey" data-k="money"></p>
       <div id="moneySlot"></div>
       <p class="sub printonly plimits"></p>
       <button class="bigbtn ghost no-print" id="moneyPrintBtn">Print or save as PDF</button>
@@ -876,6 +914,7 @@ textarea{border-radius:10px}
         <p class="sub"><b>est</b> beside a length means it was entered afterwards from memory, not timed. A lock marks an entry the other parent wrote — only they can revise it.</p>
       </div>
       <p class="sub printonly" id="recordCover"></p>
+      <p class="sub printonly pkey" data-k="record"></p>
       <div id="histSlot"></div>
       <p class="sub printonly plimits"></p>
       <button class="bigbtn ghost no-print" id="printBtn">Print or save as PDF</button>
@@ -1337,6 +1376,7 @@ const Store = {
   calNotes:{},           // who -> {who, items:{eventId:{text,at,revs}}}  — never merged/read cross-parent
   custodyPatterns:{},    // who -> {who, items:{id:pattern}}   pure inserts, never edited
   custodyExceptions:{},  // who -> {who, items:{date:exception}}
+  handovers:{},          // <ym>__<who> -> {who, month, items:{id:note}}   each parent writes only their own
   swapRequests:{},       // who -> {who, items:{id:request}}
   swapResponses:{},      // who -> {who, items:{requestId:response}}
   storageError:null,     // {at,message} set by saveLocal() when the local write
@@ -1439,7 +1479,7 @@ const Store = {
         err  => { this.mode = "local"; this.loadLocal(); this.emit(); }
       );
       /* calendar collections — same mergeDoc/saveLocal/emit wiring as above */
-      ["calEvents","calNotes","custodyPatterns","custodyExceptions","swapRequests","swapResponses"].forEach(kind=>{
+      ["calEvents","calNotes","custodyPatterns","custodyExceptions","swapRequests","swapResponses","handovers"].forEach(kind=>{
         db.collection(kind).onSnapshot(
           snap => { snap.docs.forEach(d=>{ this.mergeDoc(this[kind], d.id, d.data()||{}); });
                     this.saveLocal(); this.emit(); },
@@ -1460,7 +1500,8 @@ const Store = {
         this.expenses = m.expenses||{}; this.settlements = m.settlements||{};
         this.calEvents = m.calEvents||{}; this.calNotes = m.calNotes||{};
         this.custodyPatterns = m.custodyPatterns||{}; this.custodyExceptions = m.custodyExceptions||{};
-        this.swapRequests = m.swapRequests||{}; this.swapResponses = m.swapResponses||{}; }
+        this.swapRequests = m.swapRequests||{}; this.swapResponses = m.swapResponses||{};
+        this.handovers = m.handovers||{}; }
     } catch(e){}
   },
   /* Once localStorage is full, THIS call throws — and used to be swallowed by
@@ -1476,7 +1517,8 @@ const Store = {
       localStorage.setItem("bbl.mirror", JSON.stringify({entries:this.entries, days:this.days, options:this.options,
         expenses:this.expenses, settlements:this.settlements,
         calEvents:this.calEvents, calNotes:this.calNotes, custodyPatterns:this.custodyPatterns,
-        custodyExceptions:this.custodyExceptions, swapRequests:this.swapRequests, swapResponses:this.swapResponses}));
+        custodyExceptions:this.custodyExceptions, swapRequests:this.swapRequests, swapResponses:this.swapResponses,
+        handovers:this.handovers}));
       this.storageError = null;
     } catch(e){
       this.storageError = {at:Date.now(), message:(e && e.message) || "Storage is full"};
@@ -1916,6 +1958,26 @@ const Store = {
     this.saveLocal(); this.emit();
     this.push("custodyExceptions", who);
   },
+  /* HANDOVER NOTES — what the next home should know. Same isolation rule as every
+     other collection: a parent writes only their own month document. A note is
+     never edited; a correction is another note.
+     ponytail: no withdraw path; ceiling = a mistaken note stays readable;
+     upgrade = the same revs/void shape entries use. */
+  putHandover(who, h){
+    const id = this.entryDoc(who, h.date.slice(0,7));
+    const doc = this.handovers[id] || {who, month:h.date.slice(0,7), items:{}};
+    doc.items = Object.assign({}, doc.items);
+    if(doc.items[h.id]) return;                      /* append-only: an id is written once */
+    doc.items[h.id] = h;
+    this.handovers[id] = doc;
+    this.saveLocal(); this.emit();
+    this.push("handovers", id);
+  },
+  allHandovers(){
+    const out = [];
+    Object.values(this.handovers).forEach(doc=>Object.values(doc.items||{}).forEach(x=>out.push(x)));
+    return out.sort((a,b)=>b.at-a.at);
+  },
   allCustodyExceptions(){
     const out = [];
     Object.values(this.custodyExceptions).forEach(doc=>Object.values(doc.items||{}).forEach(x=>out.push(x)));
@@ -2165,7 +2227,7 @@ function patternTypeLabel(t){
                   sync with the first. */
 function custodyKindLabel(cst){
   if(cst.source === "pattern") return "▦ Pattern";
-  if(cst.source === "exception") return cst.note === "Swap accepted" ? "⇄ Accepted swap" : "✕ Exception";
+  if(cst.source === "exception") return cst.note === "Swap accepted" ? "⇄ Accepted swap" : "✎ Changed for this day";
   return "— None";
 }
 /* Every "YYYY-MM-DD" from fromStr to toStr inclusive, via addDaysStr (DST-proof,
@@ -2199,6 +2261,7 @@ const State = {
   flash:null,      // transient "what was just saved" confirmation
   tick:null,
   editing:null,
+  handoverDraft:null, handoverFlash:null,
   showVoided:{},   /* day -> is its withdrawn group open. Outside the DOM, because
                       renderHistory rebuilds its whole subtree on every echo. */
   staleTabs:{},    /* U2: tabname -> "a store echo landed while this tab was in the
@@ -2277,8 +2340,23 @@ function printLimitsText(){
   return "Dad and Mom are labels chosen on each phone; the app does not verify who typed an entry. " +
          "Nothing is deleted: edits are kept as revisions and withdrawn items stay visible. " + limitsText();
 }
+/* The key each exhibit opens with. A reader who was never shown the app has to
+   be able to decode every mark on the page from the page itself. */
+function printKeyText(kind){
+  if(kind === "record") return "The numbered square is how hard the episode was: " +
+    SEV.map(s=>s.n + " " + s.anchor).join(" · ") + ". est = the length was entered afterwards from memory, not timed. " +
+    "🔒 = written by the other parent, who is the only one who can revise it. DAD / MOM = whose phone logged it.";
+  if(kind === "money") return "DAD PAID / MOM PAID = who paid the bill. The line under each amount is each parent’s share of it. " +
+    "SETTLEMENT = money one parent paid the other. A struck-through item was withdrawn and is not counted.";
+  return "▦ Pattern = the day follows the set schedule. ✎ Changed for this day = one parent recorded a different arrangement for that date only. " +
+    "⇄ Accepted swap = one parent asked, the other agreed.";
+}
+function fillPrintBlock(n, head, text){
+  n.innerHTML = ""; n.appendChild(el("b", null, head + " ")); n.appendChild(el("span", null, text));
+}
 function renderSync(){
-  Array.from(document.querySelectorAll ? document.querySelectorAll(".plimits") : []).forEach(n=>{ n.textContent = printLimitsText(); });
+  Array.from(document.querySelectorAll ? document.querySelectorAll(".plimits") : []).forEach(n=>fillPrintBlock(n, "Limits of this record.", printLimitsText()));
+  Array.from(document.querySelectorAll ? document.querySelectorAll(".pkey") : []).forEach(n=>fillPrintBlock(n, "How to read this.", printKeyText(n.getAttribute("data-k"))));
   const rc = $("recordCover");
   if(rc){
     const all = Store.allEntries();
@@ -2454,9 +2532,97 @@ function renderLog(){
     slot.appendChild(alt);
 
     slot.appendChild(todayStrip());
+    slot.appendChild(State.handoverDraft ? handoverForm() : handoverCard());
     return;
   }
   slot.appendChild(draftForm());
+}
+
+/* ============================================================
+   HANDOVER NOTES — the one forward-looking surface. Everything else here
+   records what went wrong; this passes on what the next home needs and what
+   went well. Never a place to answer the other parent: there is no reply.
+   ============================================================ */
+const EATING = [["well","Ate well"],["some","Ate some"],["little","Ate little"]];
+function nextChangeover(){
+  const t = dayOf(Date.now());
+  for(let i=0;i<=7;i++){
+    const d = addDaysStr(t,i), a = custodyForDate(addDaysStr(d,-1)).parent, b = custodyForDate(d).parent;
+    if(a && b && a !== b) return {date:d, to:b, inDays:i};
+  }
+  return null;
+}
+function handoverLines(h){
+  const out = [];
+  const sl = (SLEEP.find(x=>x[0]===h.sleep)||[])[1], ea = (EATING.find(x=>x[0]===h.eat)||[])[1];
+  if(sl || ea) out.push(["Sleep and food", [sl, ea].filter(Boolean).join(" · ")]);
+  if(h.good) out.push(["Went well", h.good]);
+  if(h.next) out.push(["Coming up", h.next]);
+  return out;
+}
+function handoverNote(h){
+  const row = el("div","entry");
+  const body = el("div","ebody");
+  const top = el("div","etop");
+  top.appendChild(el("span","etime", friendlyDay(h.date)));
+  body.appendChild(top);
+  handoverLines(h).forEach(([k,v])=>{ const n = el("div","enote"); n.appendChild(el("b",null,k + ": ")); n.appendChild(el("span",null,v)); body.appendChild(n); });
+  const meta = el("div","emeta"); meta.appendChild(el("span","badge "+h.who, WHO_NAME[h.who])); body.appendChild(meta);
+  row.appendChild(body);
+  return row;
+}
+function handoverCard(){
+  const box = el("div","panel"); box.id = "handoverCard";
+  box.appendChild(el("p","eyebrow","Handover notes"));
+  const co = nextChangeover();
+  if(co) box.appendChild(el("p","sub", (co.inDays===0 ? "Changeover today" : co.inDays===1 ? "Changeover tomorrow" : "Next changeover " + friendlyDay(co.date)) +
+    ": " + WHO_NAME[co.to] + " has her from then."));
+  const recent = Store.allHandovers().filter(h=>daysBetween(h.date, dayOf(Date.now())) <= 14).slice(0,3);
+  if(recent.length){
+    const L = el("div","daylist"); recent.forEach(h=>L.appendChild(handoverNote(h))); box.appendChild(L);
+  } else {
+    box.appendChild(el("p","sub","No notes yet. A note tells the other home what she needs next and what went well: how she slept, what is coming up, something good worth passing on."));
+  }
+  if(State.handoverFlash){ const fl = el("div","flash"); fl.setAttribute("role","status"); fl.appendChild(el("span","tick","✓")); fl.appendChild(el("span",null,State.handoverFlash)); box.appendChild(fl); }
+  const b = el("button","bigbtn ghost","Write a handover note");
+  b.onclick = ()=>{ State.handoverDraft = {sleep:null, eat:null, good:"", next:""}; State.handoverFlash = null; renderLog(); };
+  box.appendChild(b);
+  return box;
+}
+function handoverForm(){
+  const d = State.handoverDraft;
+  const wrap = el("div","panel");
+  wrap.appendChild(el("p","eyebrow","Handover note · both parents read this"));
+  wrap.appendChild(chipRow("How she has been sleeping", false, SLEEP, d.sleep, v=>{ d.sleep = v; }, false, true, null, null));
+  wrap.appendChild(chipRow("Eating", false, EATING, d.eat, v=>{ d.eat = v; }, false, true, null, null));
+  const field = (label, key, ph)=>{
+    const f = el("div","field"); const lab = el("div","qlab"); lab.appendChild(el("span",null,label)); f.appendChild(lab);
+    const ta = document.createElement("textarea"); ta.rows = 2; ta.maxLength = 280; ta.placeholder = ph; ta.value = d[key];
+    ta.setAttribute("aria-label", label); ta.oninput = ()=>{ d[key] = ta.value; };
+    f.appendChild(ta); wrap.appendChild(f);
+  };
+  field("Something that went well", "good", "A good moment, or something that is helping right now.");
+  field("Coming up, or what she needs", "next", "Medicine, homework, a comfort item, an appointment.");
+  if(d.missing){ const e = el("div","err","Add at least one thing before saving."); e.setAttribute("role","alert"); wrap.appendChild(e); }
+  wrap.appendChild(el("p","sub","A note cannot be edited after it is saved, and there is no reply. To correct one, write another."));
+  const save = el("button","bigbtn","Save note");
+  save.onclick = saveHandover;
+  wrap.appendChild(save);
+  const c = el("button","linkbtn danger-link","Discard");
+  c.onclick = ()=>{ State.handoverDraft = null; renderLog(); };
+  wrap.appendChild(c);
+  return wrap;
+}
+function saveHandover(){
+  const d = State.handoverDraft;
+  const good = (d.good||"").trim(), next = (d.next||"").trim();
+  if(!d.sleep && !d.eat && !good && !next){ d.missing = true; renderLog(); return; }
+  Store.putHandover(State.me, {id:"h" + Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+    who:State.me, date:dayOf(Date.now()), sleep:d.sleep, eat:d.eat, good:good, next:next, at:Date.now(), revs:[]});
+  State.handoverDraft = null;
+  /* device mode shares nothing: never promise the other parent will see it */
+  State.handoverFlash = Store.mode === "device" ? "Saved on this phone" : "Saved · " + WHO_NAME[otherWho()] + " will see it on their Log tab";
+  renderAll();
 }
 
 function todayStrip(){
@@ -2909,10 +3075,13 @@ function draftForm(){
     v=>{ d.place=v; if(d.missing) renderLog(); }, d.missing && !d.place, false, "place", renderLog));
 
   if(!running){
+    /* the hint belongs to the question it informs, so it sits ABOVE those chips —
+       it used to float between the last chip and Save, where it read as a warning */
+    wrap.appendChild(respHint(d.trig));
     wrap.appendChild(chipRow("What ended it", false, optionsFor("resp"), d.resp,
       v=>{ d.resp = v; }, false, true, "resp", renderLog));
-    wrap.appendChild(respHint(d.trig));
   }
+  const dock = el("div","savedock");
 
   /* the error goes BEFORE the button: it was appended after it, so the text
      explaining the blocked save sat below the control being tapped */
@@ -2924,18 +3093,19 @@ function draftForm(){
     if(still.length){
       const e = el("div","err","Still needed: " + still.join(", ") + ".");
       e.setAttribute("role","alert");
-      wrap.appendChild(e);
+      dock.appendChild(e);
     }
   }
+  wrap.appendChild(dock);
   if(running){
     const b = el("button","bigbtn","Ended");
     b.setAttribute("aria-label","Ended — stop the timer at " + durText(Math.floor((Date.now()-d.start)/1000)));
     b.onclick = endDraft;
-    wrap.appendChild(b);
+    dock.appendChild(b);
   } else {
     const b = el("button","bigbtn","Save");
     b.onclick = saveDraft;
-    wrap.appendChild(b);
+    dock.appendChild(b);
   }
 
   const c = el("button","linkbtn danger-link","Discard");
@@ -3334,7 +3504,17 @@ function commitRevision(e, isVoid){
    this tab; a locked card has one fact to convey and gets one line for it.
    `unit` matters because n means a different thing in five of the seven cards —
    a parent with 12 entries could not tell why a card was still locked. */
+/* the one card header, shared by every Insights card */
+function cardHead(title, n){
+  const hd = el("div","pchdr");
+  hd.appendChild(el("h3",null,title));
+  if(n != null) hd.appendChild(el("span","n mono", String(n)));
+  return hd;
+}
 function card(title, sub, n, need, unit, bodyFn){
+  /* nothing at all behind it: no row, not even a locked one. An empty progress
+     bar for a thing nobody has logged is noise; renderPatterns counts these. */
+  if(need && !n){ const z = el("div","lockrow"); z.setAttribute("data-empty","1"); z.setAttribute("data-locked","1"); z.hidden = true; return z; }
   if(need && n < need){
     const r = el("div","lockrow");
     const top = el("div","lockrow-top");
@@ -3355,8 +3535,12 @@ function card(title, sub, n, need, unit, bodyFn){
   hd.appendChild(el("h3",null,title));
   hd.appendChild(el("span","n mono", String(n)));
   c.appendChild(hd);
-  c.appendChild(el("p","pcsub",sub));
+  /* ONE line that says what the chart shows, above it. The method and its
+     caveats follow the chart: they qualify the reading, they are not the reading. */
+  const take = el("p","takeaway"); c.appendChild(take);
   bodyFn(c);
+  if(c.takeaway) take.textContent = c.takeaway; else take.hidden = true;   /* hidden, not removed: the gate stub has no removeChild */
+  const how = el("p","pcsub pchow", sub); c.appendChild(how);
   return c;
 }
 
@@ -3376,7 +3560,7 @@ function barChart(rows, unit){
     t.appendChild(f);
     b.appendChild(t);
     const valTxt = r.label != null ? r.label : (r.v + (unit||""));
-    b.appendChild(el("span","val mono", valTxt));
+    b.appendChild(el("span","val mono" + (String(valTxt).length > 9 ? " long" : ""), valTxt));
     /* the value lives in text, not a title= tooltip: tooltips never open on
        touch, which is the only input this app has */
     b.setAttribute("aria-label", r.k + ": " + valTxt);
@@ -3391,9 +3575,10 @@ function renderPatterns(){
   const all = Store.allEntries().filter(e=>!e.voided);
   const n = all.length;
 
-  const open = [], locked = [];
+  const open = [], locked = []; let emptyCards = 0;
   const add = (title, sub, have, need, unit, body) => {
     const node = card(title, sub, have, need, unit, body);
+    if(node.getAttribute("data-empty")){ emptyCards++; return; }
     (node.getAttribute("data-locked") ? locked : open).push(node);
   };
   const weeks = new Set(all.map(e=>{
@@ -3447,9 +3632,11 @@ function renderPatterns(){
         let win = 0;
         for(let h=14; h<19; h++) win += buckets[h];
         const pct = Math.round(100*win/n), flat = Math.round(100*5/24);
+        c.takeaway = pct + "% of entries fall between 2pm and 7pm.";
         c.appendChild(el("p","pcsub","Between 2pm and 7pm: " + win + " of " + n +
           " entries (" + pct + "%). An even spread across the day would put about " + flat + "% here."));
       } else {
+        c.takeaway = "Too early to name a time of day: " + n + " of 40 entries.";
         c.appendChild(el("p","pcsub","A figure for the late-afternoon window appears at 40 entries — " +
           n + " so far. Below that, the tallest bar in 24 is usually chance."));
       }
@@ -3464,6 +3651,11 @@ function renderPatterns(){
       const cnt = new Array(7).fill(0);
       all.forEach(e=>cnt[new Date(e.start).getDay()]++);
       c.appendChild(barChart(names.map((k,i)=>({k:k, v:cnt[i]})), ""));
+      const hi = Math.max.apply(null,cnt), lo = Math.min.apply(null,cnt);
+      const FULL = ["Sundays","Mondays","Tuesdays","Wednesdays","Thursdays","Fridays","Saturdays"];
+      c.takeaway = weeks < 8 ? "Too few weeks to read a weekday pattern yet."
+        : (hi - lo <= Math.max(2, 0.2*n/7) || cnt.filter(v=>v===hi).length > 1) ? "Spread fairly evenly across the week."
+        : "Most on " + FULL[cnt.indexOf(hi)] + " (" + hi + "), fewest " + lo + ".";
       c.appendChild(el("p","pcsub", weeks < 8
         ? "Only " + weeks + (weeks===1?" week":" weeks") + " recorded so far. With fewer than 8, one unusual week can set the tallest bar."
         : weeks + " weeks recorded, so each weekday has about " + Math.round(n/7) + " entries behind it."));
@@ -3478,6 +3670,9 @@ function renderPatterns(){
       all.forEach(e=>cnt[e.trig] = (cnt[e.trig]||0)+1);
       const rows = Object.entries(cnt).map(([k,v])=>({k:labelOf(k), v:v})).sort((a,b)=>b.v-a.v);
       c.appendChild(barChart(rows, ""));
+      c.takeaway = rows.length > 1 && rows[0].v > rows[1].v
+        ? "Selected most often: " + rows[0].k + " (" + rows[0].v + " of " + n + ")."
+        : "No one trigger stands out from the rest.";
     });
 
   /* ---------------- length by what ended it ----------------
@@ -3503,6 +3698,8 @@ function renderPatterns(){
           " timed entries yet, so nothing here would separate from chance."));
       } else {
         c.appendChild(barChart(rows));
+        c.takeaway = rows.length > 1 ? "Medians run from " + durText(rows[0].v) + " to " + durText(rows[rows.length-1].v) + " across " + rows.length + " responses. Not a ranking."
+                                     : "Only one response has enough timed entries to show.";
         c.appendChild(el("p","pcsub","This is not a ranking of what works. The responses used on the hardest episodes will show the longest medians."));
       }
       const hidden = Object.entries(by).filter(([k,v])=>v.length < MIN_PER_RESP);
@@ -3519,6 +3716,7 @@ function renderPatterns(){
     c=>{
       const gaveCount = withResp.filter(e=>e.resp==="gavein").length;
       const pct = Math.round(100*gaveCount/Math.max(1,withResp.length));
+      c.takeaway = "Selected in " + gaveCount + " of " + withResp.length + " entries with a response (" + pct + "%).";
       c.appendChild(barChart([
         {k:"Given", v:gaveCount, label:gaveCount + " of " + withResp.length + " (" + pct + "%)"},
         {k:"Not given", v:withResp.length-gaveCount, label:(withResp.length-gaveCount) + " of " + withResp.length}
@@ -3587,6 +3785,9 @@ function renderPatterns(){
         return {k:lab, v:Number(avg.toFixed(2)), label:avg.toFixed(1)+"/day, from "+g.length+(g.length===1?" day":" days")};
       });
       c.appendChild(barChart(rows));
+      const drawn = rows.filter(r=>!/too few|no days/.test(r.label));
+      c.takeaway = drawn.length >= 2 ? drawn.map(r=>r.k + ": " + r.label.split(",")[0]).join(" · ") + "."
+                                     : "Not enough days in each sleep group to compare yet.";
       const thin = rows.filter(r=>/too few|no days/.test(r.label)).length;
       if(thin) c.appendChild(el("p","pcsub","A group needs " + MIN_DAYS + " days before its average is drawn."));
       const nap = dayCards.filter(d=>d.nap==="no").length;
@@ -3601,6 +3802,8 @@ function renderPatterns(){
     locked.forEach(r=>grp.appendChild(r));
     slot.appendChild(grp);
   }
+  if(emptyCards && n) slot.appendChild(el("p","sub", emptyCards + (emptyCards===1 ? " more card appears" : " more cards appear") +
+    " once there is something to draw from — timed entries, a recorded response, or a sleep rating on the daily card."));
 }
 
 /* Handoffs, inferred purely from who is logging — no schedule, no taps. */
@@ -3981,15 +4184,41 @@ function claimForm(){
     }
   }
 
+  if(d.tooBig){ const e = el("div","err","That amount is over " + centsToDollars(MONEY_MAX_CENTS) + ". Check the decimal point."); e.setAttribute("role","alert"); wrap.appendChild(e); }
+  if(d.bigAsk){ wrap.appendChild(bigAmountBox(d, d.bigAsk, renderMoney, saveClaim)); }
+  else {
   const save = el("button","bigbtn","Save claim");
   save.onclick = saveClaim;
   wrap.appendChild(save);
+  }
   const disc = el("button","linkbtn danger-link","Discard");
   disc.onclick = cancelClaim;
   wrap.appendChild(disc);
   return wrap;
 }
 
+/* A slipped decimal is the likeliest money mistake and the record is append-only,
+   so a large amount costs one extra tap, and an absurd one is refused outright.
+   ponytail: fixed thresholds ($5,000 asks, $1,000,000 refuses); ceiling = a family
+   whose routine bills exceed $5k taps twice each time; upgrade = scale the ask
+   threshold from the ledger's own largest confirmed claim. */
+const MONEY_ASK_CENTS = 500000, MONEY_MAX_CENTS = 100000000;
+function bigAmountBox(d, cents, redraw, commit){
+  const box = el("div","confirmbox affirm"); box.setAttribute("role","group");
+  box.appendChild(el("p",null,"That is " + centsToDollars(cents) + ". Is the amount right? Once saved it stays on the record, even if withdrawn."));
+  const act = el("div","confirmact");
+  const no = el("button","cno","Fix the amount"); no.onclick = ()=>{ d.bigAsk = null; redraw(); };
+  const yes = el("button","cyes affirm","Yes, save " + centsToDollars(cents)); yes.onclick = ()=>{ d.bigOk = cents; commit(); };
+  act.appendChild(no); act.appendChild(yes); box.appendChild(act);
+  return box;
+}
+/* true = stop the save (asked, or refused) */
+function bigAmountStops(d, cents){
+  if(cents > MONEY_MAX_CENTS){ d.missing = ["an amount under " + centsToDollars(MONEY_MAX_CENTS)]; d.tooBig = true; return true; }
+  d.tooBig = false;
+  if(cents >= MONEY_ASK_CENTS && d.bigOk !== cents){ d.bigAsk = cents; return true; }
+  d.bigAsk = null; return false;
+}
 function saveClaim(){
   const d = State.moneyDraft;
   const cents = dollarsToCents(d.amount);
@@ -3999,6 +4228,7 @@ function saveClaim(){
   if(!d.payer) missing.push("who paid");
   if(missing.length){ d.missing = missing; renderMoney(); return; }
   d.missing = null;
+  if(bigAmountStops(d, cents)){ renderMoney(); return; }
 
   const parts = d.dateStr.split("-").map(Number);
   const date = new Date(parts[0], parts[1]-1, parts[2]).getTime();
@@ -4077,9 +4307,13 @@ function settleForm(){
       wrap.appendChild(e);
     }
   }
+  if(d.tooBig){ const e = el("div","err","That amount is over " + centsToDollars(MONEY_MAX_CENTS) + ". Check the decimal point."); e.setAttribute("role","alert"); wrap.appendChild(e); }
+  if(d.bigAsk){ wrap.appendChild(bigAmountBox(d, d.bigAsk, renderMoney, saveSettle)); }
+  else {
   const save = el("button","bigbtn","Save settlement");
   save.onclick = saveSettle;
   wrap.appendChild(save);
+  }
   const disc = el("button","linkbtn danger-link","Discard");
   disc.onclick = cancelSettle;
   wrap.appendChild(disc);
@@ -4094,6 +4328,7 @@ function saveSettle(){
   if(cents == null || cents <= 0) missing.push("a valid amount");
   if(missing.length){ d.missing = missing; renderMoney(); return; }
   d.missing = null;
+  if(bigAmountStops(d, cents)){ renderMoney(); return; }
 
   const parts = d.dateStr.split("-").map(Number);
   const date = new Date(parts[0], parts[1]-1, parts[2]).getTime();
@@ -4212,7 +4447,9 @@ function renderTrends(){
 
   /* --- the series --- */
   const c1 = el("div","tcard");
-  c1.appendChild(el("p","eyebrow","Entries per day"));
+  c1.appendChild(cardHead("Entries per day"));
+  { const tot = window.reduce((a,d)=>a+(cnt[d]||0),0), dys = window.filter(d=>cnt[d]).length;
+    c1.appendChild(el("p","takeaway", tot + (tot===1?" entry":" entries") + " on " + dys + " of the last " + window.length + " days.")); }
   const series = el("div","series");
   window.forEach(d=>{
     const n = cnt[d]||0;
@@ -4250,7 +4487,7 @@ function renderTrends(){
   const recd = ds => ds.filter(d=>rec[d]).length;
   const cur = lastN(7,0), prev = lastN(7,7);
   const c2 = el("div","tcard");
-  c2.appendChild(el("p","eyebrow","Last 7 days"));
+  c2.appendChild(cardHead("Last 7 days"));
   const big = el("div","tbig", String(sum(cur)));
   big.appendChild(el("span","unit", sum(cur)===1 ? "entry" : "entries"));
   c2.appendChild(big);
@@ -4269,7 +4506,7 @@ function renderTrends(){
 
   /* --- how complete the record is --- */
   const c3 = el("div","tcard");
-  c3.appendChild(el("p","eyebrow","Coverage"));
+  c3.appendChild(cardHead("Coverage"));
   const covered = span.filter(d=>rec[d]).length;
   const pct = Math.round(100*covered/span.length);
   const big3 = el("div","tbig", pct + "%");
@@ -4365,7 +4602,7 @@ function renderCalendar(){
   const kb = (cls, t)=>{ const n = el("span","dband " + cls, t); n.setAttribute("aria-hidden","true"); return n; };
   kitem(kb("dad","D"), "Dad’s day");
   kitem(kb("mom","M"), "Mom’s day");
-  kitem(kb("dad exception","D*"), "changed for that date");
+  kitem(kb("dad exception","D*"), "* changed that day");
   kitem(el("span","evtag","Med"), "an event");
   const kd = el("span","epi","●"); kd.setAttribute("aria-hidden","true");
   kitem(kd, "an entry in the Record");
@@ -4488,7 +4725,7 @@ function calDrawPaintBar(){
       (same ? " · " + same + " already " + (same===1 ? "matches" : "match") + " the schedule" : "")));
   }
   if(P.confirming && w.length){
-    const box = el("div","confirmbox"); box.setAttribute("role","group");
+    const box = el("div","confirmbox affirm"); box.setAttribute("role","group");
     const nd = w.filter(x=>x.parent==="dad").length, nm = w.length - nd;
     box.appendChild(el("p",null,"Assign " + [nd ? nd + (nd===1?" day":" days") + " to Dad" : "", nm ? nm + (nm===1?" day":" days") + " to Mom" : ""].filter(Boolean).join(" and ") +
       "? Each is recorded as a change for that date only, made by " + WHO_NAME[State.me] + ". Both parents see it, and it stays on the record."));
@@ -4618,7 +4855,7 @@ function customSequenceField(d){
     strip.innerHTML = "";
     tag.className = "req" + (d.sequence ? " ok" : ""); tag.textContent = d.sequence ? "✓ ANSWERED" : "REQUIRED";
     if(!d.parentPick){ help.textContent = "Choose who has her first, above, and the days appear here."; return; }
-    if(!d.sequence){ help.textContent = d.splitText ? "Use numbers from 1 to 31, up to " + CUSTOM_MAX_CYCLE + " days in all." : "Type the numbers, like 5-2 or 2-2-5-5. Or pick one below."; return; }
+    if(!d.sequence){ help.textContent = d.splitText ? "Use numbers from 1 to 31, up to " + CUSTOM_MAX_CYCLE + " days in all." : (d.splitOther ? "Type the numbers, like 6-1 or 3-3-4-4." : "Pick a split. The numbers are days in a row, starting with whoever has her first."); return; }
     d.sequence.forEach((w,i)=>{
       const b = el("button","seqday " + w); b.type = "button";
       const ds = addDaysStr(d.startDate, i);
@@ -4634,14 +4871,26 @@ function customSequenceField(d){
       ". That is Dad " + tot.dad + ", Mom " + tot.mom + ". Tap any day to switch it.";
   };
   inp.oninput = ()=>{ d.splitText = inp.value; d.sequence = d.parentPick ? parseSplit(d.splitText, d.parentPick) : null; d.confirming = false; draw(); };
-  f.appendChild(inp);
-  const quick = el("div","chips"); quick.style.marginTop = "8px";
-  ["5-2","4-3","2-2-5-5","3-4-4-3"].forEach(q=>{
-    const b = el("button","chip sm",q); b.type = "button"; b.setAttribute("aria-pressed","false");
-    b.onclick = ()=>{ inp.value = q; inp.oninput(); };
+  /* CHIPS are the way in; typing is the fallback behind "Other". One mechanism
+     on screen at a time — the typed box used to sit above the chips as an equal. */
+  const QUICK = ["5-2","4-3","2-2-5-5","3-4-4-3"];
+  const typed = !!d.splitOther || (!!d.splitText && QUICK.indexOf(d.splitText) < 0);
+  const quick = el("div","chips"); quick.setAttribute("role","group"); quick.setAttribute("aria-labelledby","splitLab");
+  QUICK.concat(["Other…"]).forEach(q=>{
+    const other = q === "Other…";
+    const b = el("button","chip",q); b.type = "button";
+    b.setAttribute("aria-pressed", String(other ? typed : (!typed && d.splitText === q)));
+    b.onclick = ()=>{
+      press(quick, b);
+      d.splitOther = other; inp.hidden = !other;
+      if(other){ inp.value = ""; inp.oninput(); inp.focus(); }
+      else { inp.value = q; inp.oninput(); }
+    };
     quick.appendChild(b);
   });
   f.appendChild(quick);
+  inp.hidden = !typed; inp.style.marginTop = "8px";
+  f.appendChild(inp);
   f.appendChild(strip);
   f.appendChild(help);
   draw();
@@ -4724,7 +4973,7 @@ function attemptCustodySave(){
 
 function custodyConfirmBox(){
   const d = State.custodyDraft;
-  const box = el("div","confirmbox");
+  const box = el("div","confirmbox affirm");
   box.setAttribute("role","group");
   box.appendChild(el("p",null,"Set this schedule from " + friendlyExhibitDate(d.startDate) +
     "? Both parents will see it on every date from then on. It can be replaced later, and this one stays on the record."));
@@ -4827,7 +5076,7 @@ function commitCalException(draft){
 
 function calExceptionConfirmBox(){
   const d = State.calExceptionDraft;
-  const box = el("div","confirmbox");
+  const box = el("div","confirmbox affirm");
   box.setAttribute("role","group");
   box.appendChild(el("p",null,"Record that " + WHO_NAME[d.parent] + " had her on " + friendlyDay(d.date) +
     "? This is added to the record as a logged exception. If it is changed later, this version is kept."));
@@ -4957,7 +5206,7 @@ function calDrawDaySheet(){
   evWrap.appendChild(el("div","qlab","Events"));
   const evs = Store.eventsForDay(dstr);
   if(!evs.length) evWrap.appendChild(el("p","sub","Nothing on the calendar for this day."));
-  else evs.forEach(e=>evWrap.appendChild(calEventCard(e)));
+  else { const L = el("div","daylist"); evs.forEach(e=>L.appendChild(calEventCard(e))); evWrap.appendChild(L); }
   s.appendChild(evWrap);
   const addBtn = el("button","bigbtn ghost","+ Add an event");
   addBtn.onclick = ()=>{ State.calAdding = calBlankDraft(dstr); calDrawDaySheet(); };
@@ -4968,7 +5217,7 @@ function calDrawDaySheet(){
     const epWrap = el("div","field");
     epWrap.appendChild(el("div","qlab","Recorded that day"));
     epWrap.appendChild(el("p","sub","From the Record tab. Read-only here — open Record to revise or withdraw one."));
-    epis.forEach(e=>epWrap.appendChild(calEpisodeRow(e)));
+    { const L = el("div","daylist"); epis.forEach(e=>L.appendChild(calEpisodeRow(e))); epWrap.appendChild(L); }
     s.appendChild(epWrap);
   }
 
@@ -5203,6 +5452,9 @@ function renderCustodyPrint(fromStr, toStr){
     friendlyExhibitDate(toStr) + ". Generated " +
     new Date(genAt).toLocaleString(undefined,{dateStyle:"long", timeStyle:"short"}) + "."));
 
+  const key = el("p","sub pkey"); key.setAttribute("data-k","custody"); fillPrintBlock(key, "How to read this.", printKeyText("custody"));
+  slot.appendChild(key);
+
   const days = custodyPrintDateRange(fromStr, toStr);
 
   /* ---- custody schedule, day by day ---- */
@@ -5324,7 +5576,8 @@ function renderCustodyPrint(fromStr, toStr){
   slot.appendChild(el("p","sub exhibit-foot",
     "This exhibit is built from the shared record only. Each parent's private notes on calendar " +
     "events are never included, for either parent, regardless of who prints this page."));
-  slot.appendChild(el("p","sub exhibit-foot plimits", printLimitsText()));
+  const lim = el("p","sub plimits"); fillPrintBlock(lim, "Limits of this record.", printLimitsText());
+  slot.appendChild(lim);
 }
 
 function calBlankDraft(dstr){ return {date:dstr, time:"", type:null, title:"", location:"", note:""}; }
@@ -6256,6 +6509,29 @@ Store.init();
   // ---- MONEY: category labels resolve; an unrecognised key falls back to
   // itself rather than rendering blank in a record a mediator reads.
   (function(){
+    (function(){
+      const before = JSON.stringify(Store.handovers), bd = State.handoverDraft, bf = State.handoverFlash;
+      const n1 = {id:"selfcheck_h1", who:"mom", date:"2026-09-10", sleep:"good", eat:null, good:"Rode her bike", next:"", at:5, revs:[]};
+      Store.putHandover("mom", n1);
+      Store.putHandover("mom", Object.assign({}, n1, {good:"OVERWRITTEN"}));
+      const docs = Object.keys(Store.handovers).filter(k=>Store.handovers[k].items && Store.handovers[k].items.selfcheck_h1);
+      ck("a handover note lands only in its writer's own month document", docs.length === 1 && docs[0] === "2026-09__mom");
+      ck("a handover note is append-only: the same id is never overwritten", (((Store.handovers[docs[0]]||{}).items||{}).selfcheck_h1||{}).good === "Rode her bike");
+      ck("a handover note reads back as labelled lines, and an empty field adds no line",
+         JSON.stringify(handoverLines(n1)) === JSON.stringify([["Sleep and food","Slept through"],["Went well","Rode her bike"]]));
+      State.handoverDraft = {sleep:null, eat:null, good:"   ", next:""};
+      const cnt = Store.allHandovers().length; saveHandover();
+      ck("an empty handover note is refused, not saved", Store.allHandovers().length === cnt && State.handoverDraft && State.handoverDraft.missing === true);
+      Store.handovers = JSON.parse(before); State.handoverDraft = bd; State.handoverFlash = bf; Store.saveLocal();
+      ck("the handover self-check leaves no note behind", !Store.allHandovers().some(h=>h.id === "selfcheck_h1"));
+    })();
+    ck("an ordinary amount saves without a second question", (function(){ const d={}; return bigAmountStops(d, 36000) === false && !d.bigAsk && !d.tooBig; })());
+    ck("a large amount is asked about once, and saves after the SAME amount is confirmed", (function(){
+       const d={}; const asked = bigAmountStops(d, 1234500) === true && d.bigAsk === 1234500;
+       d.bigOk = 1234500; const through = bigAmountStops(d, 1234500) === false;
+       const reasked = bigAmountStops(d, 9999900) === true;      /* confirming one number is not consent to another */
+       return asked && through && reasked; })());
+    ck("an absurd amount is refused, never merely asked about", (function(){ const d={bigOk:1234567890}; return bigAmountStops(d, 1234567890) === true && d.tooBig === true; })());
     ck("moneyCatLabel resolves every built-in category",
        MONEY_CATEGORIES.every(([k,v])=>moneyCatLabel(k)===v));
     ck("moneyCatLabel falls back to the raw key for an unknown category",
@@ -6746,7 +7022,7 @@ Store.init();
       const text = slot.textContent;   /* allText() was a gate-stub helper; a browser has no such method */
 
       ck("print exhibit distinguishes a PATTERN day (glyph + word, no colour)", /▦ Pattern/.test(text));
-      ck("print exhibit distinguishes a one-off EXCEPTION day from a pattern day", /✕ Exception/.test(text));
+      ck("print exhibit distinguishes a one-off EXCEPTION day from a pattern day", /✎ Changed for this day/.test(text) && !/[✕✗✘]/.test(text));
       ck("print exhibit distinguishes an ACCEPTED SWAP day from a plain exception", /⇄ Accepted swap/.test(text));
       ck("a DECLINED swap appears with its outcome, the flat word \"Declined\"", /Declined/.test(text));
       ck("a declined swap is never editorialised as \"refused\" or \"wouldn't\"", !/refused|wouldn.t/i.test(text));
@@ -7033,10 +7309,17 @@ Store.init();
     /* the static print lines live in the page's own HTML, which only a real DOM holds */
     if(document.querySelectorAll){
       renderSync();
-      ["v-history","v-money"].forEach(id=>{
-        const n = $(id).querySelector(".plimits");
+      renderCustodyPrint("2026-09-01", "2026-09-02");
+      ["v-history","v-money","v-custodyprint"].forEach(id=>{
+        const n = $(id).querySelector(".plimits"), k = $(id).querySelector(".pkey"), v = $(id);
         ck("the " + id + " exhibit carries the disclosure line", !!n && /does not verify/.test(n.textContent));
+        ck("the " + id + " exhibit closes with the SAME limits block, word for word, as its last text",
+           !!n && n.textContent === "Limits of this record. " + printLimitsText() &&
+           Array.from(v.querySelectorAll("p")).pop() === n);
+        ck("the " + id + " exhibit opens with a key to its own marks", !!k && !!n && k.textContent.length > 60 && (k.compareDocumentPosition(n) & 4) === 4);
       });
+      ck("the Record key decodes all five severity numbers and the padlock",
+         SEV.every(s=>printKeyText("record").indexOf(s.n + " " + s.anchor) >= 0) && /🔒/.test(printKeyText("record")));
       ck("one primary colour: Save and Start timing share a background", (function(){
          const a = document.createElement("button"); a.className = "bigbtn"; const b = document.createElement("button"); b.className = "start";
          document.body.appendChild(a); document.body.appendChild(b);
