@@ -5214,7 +5214,7 @@ Store.init();
     const c = barChart([{k:"zero",v:0,label:"no days"},{k:"some",v:4}]);
     const w = [];
     (function walk(nd){ if(nd.className === "fill") w.push(nd.style.width);
-      (nd.children||[]).forEach(walk); })(c);
+      Array.from(nd.children).forEach(walk); })(c);   /* children is an HTMLCollection in a browser: no .forEach */
     ck("a zero bar has no width", w[0] === "0%");
     ck("a non-zero bar has width", w[1] === "100%");
   })();
@@ -5767,7 +5767,7 @@ Store.init();
           resp:"held", note:"", measured:true, created:t, revs:[]}}};
       State.calDay = null; State.calMonth = "2026-07";
       renderCalendar();
-      const cells = $("calSlot").querySelectorAll(".dcell");
+      const cells = Array.from($("calSlot").querySelectorAll(".dcell"));   /* a NodeList has forEach but no find/filter/some */
       const seeded = cells.find(c => (c.getAttribute("aria-label")||"").indexOf("Jul 10") >= 0);
       const others = cells.filter(c => c !== seeded);
       ck("U1: the seeded day's cell (built from renderCalendar's own index) shows both the event and the episode",
@@ -5797,12 +5797,12 @@ Store.init();
       const exp = {id:"selfcheck_u2_exp", who:"dad", payer:"dad", amount:100, dadCents:50, momCents:50,
         cat:"other", desc:"selfcheck-u2-marker", date:Date.now(), created:Date.now(), revs:[]};
       Store.putExpense("dad", exp);   // emits -> renderAll() renders "log" only (State.tab)
-      const leafBefore = ($("moneySlot").querySelectorAll ? $("moneySlot").querySelectorAll(".enote") : [])
+      const leafBefore = Array.from($("moneySlot").querySelectorAll(".enote"))
         .some(n=>n.textContent === "selfcheck-u2-marker");
       ck("U2: a write while a tab is backgrounded marks it stale instead of redrawing it blind",
          State.staleTabs.money === true && leafBefore === false);
       setTab("money");   // stale -> renderTab() must run now
-      const leafAfter = $("moneySlot").querySelectorAll(".enote").some(n=>n.textContent === "selfcheck-u2-marker");
+      const leafAfter = Array.from($("moneySlot").querySelectorAll(".enote")).some(n=>n.textContent === "selfcheck-u2-marker");
       ck("U2: activating a stale tab rebuilds it with the CURRENT store data, and clears the flag",
          leafAfter === true && State.staleTabs.money === false);
     } finally {
@@ -5909,7 +5909,7 @@ Store.init();
 
       renderCustodyPrint("2026-09-01", "2026-09-10");
       const slot = $("custodyPrintSlot");
-      const text = slot.allText();
+      const text = slot.textContent;   /* allText() was a gate-stub helper; a browser has no such method */
 
       ck("print exhibit distinguishes a PATTERN day (glyph + word, no colour)", /▦ Pattern/.test(text));
       ck("print exhibit distinguishes a one-off EXCEPTION day from a pattern day", /✕ Exception/.test(text));
@@ -5928,13 +5928,13 @@ Store.init();
       // honest empty states: no range chosen, and a real range with nothing recorded
       renderCustodyPrint(null, null);
       ck("no date range selected: an honest empty message, not a blank exhibit",
-         $("custodyPrintSlot").allText().indexOf("No date range selected") >= 0);
+         $("custodyPrintSlot").textContent.indexOf("No date range selected") >= 0);
       // before the seeded pattern's effectiveFrom (2026-08-01), so no pattern,
       // exception, swap or event from this probe (or anything else fixed-date
       // in the self-check) reaches it — a genuine zero, not just an unlucky date.
       renderCustodyPrint("2020-01-01", "2020-01-03");
       ck("a real range with nothing recorded: an honest per-section empty message, not a fabricated schedule",
-         $("custodyPrintSlot").allText().indexOf("No custody information recorded for this range") >= 0);
+         $("custodyPrintSlot").textContent.indexOf("No custody information recorded for this range") >= 0);
     } finally {
       Store.saveLocal = realSaveLocal; Store.push = realPush;
     }
