@@ -408,6 +408,8 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 .field > .qlab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
                color:var(--muted);margin-bottom:8px;display:flex;gap:7px;align-items:baseline}
 .req{color:var(--danger);font-weight:700;font-size:10px;letter-spacing:.04em}
+.stepno{font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:10px;color:var(--muted)}
+.step2lab{margin:16px 0 -4px}
 /* REQUIRED turning into a green ANSWERED is the clearest confirmation available,
    because it sits exactly where the eye already is when choosing */
 .req.ok{color:var(--good)}
@@ -844,6 +846,10 @@ button.wkcell:active{background:var(--surface-2);transition-duration:0s}
          color:var(--ink-2);margin-bottom:7px}
 .privlock{font-size:12px}
 .calswap .etime{font-size:11.5px}
+/* an entry the other parent wrote used to read as plain body text with a small
+   lock — easy to skim past. The sunk background gives it the look of a
+   disabled control at a glance, in every theme; the words say who and why. */
+.locked-other{margin-top:6px;padding:8px 10px;border-radius:8px;background:var(--sunk);color:var(--muted)}
 
 /* ---------- custody & swap print exhibit ----------
    Only ever visible under print (see the body.print-custody block below);
@@ -1044,8 +1050,11 @@ body[data-tab="messages"]{--accent:#9B4F1F;--accent-soft:#F5E6D8}
     --dad:#2C4880; --mom:#653576;
     --dad-bg:#E5ECFA; --mom-bg:#F2E5F5;
     --amber:#7A5900; --amber-ink:#3D2E00; --amber-bg:#FBEBC4;
-    --sev1:#EFC9AE; --sev2:#E0A377; --sev3:#CE7A4B; --sev4:#B0512C; --sev5:#8A2F1C;
-    --sev1-edge:#BF7A46; --sev2-edge:#B9703F; --sev3-edge:#A0552C; --sev4-edge:#8A3C1E; --sev5-edge:#6B2214;
+    /* PRINT SEVERITY 3 vs 4 (panel 5, print exhibit): the screen ramp's 3/4 step
+       read as one smudge once ink replaced a lit screen. Widened here, print-only —
+       the screen tokens above are untouched. See the ramp gap self-check. */
+    --sev1:#EFC9AE; --sev2:#E0A377; --sev3:#DB8F5C; --sev4:#953F1F; --sev5:#8A2F1C;
+    --sev1-edge:#BF7A46; --sev2-edge:#B9703F; --sev3-edge:#B06A3B; --sev4-edge:#6E2D16; --sev5-edge:#6B2214;
     --sev1-ink:#1A0C04; --sev2-ink:#1A0C04; --sev3-ink:#1A0C04; --sev4-ink:#FFFFFF; --sev5-ink:#FFFFFF;
     --shadow:none;
   }
@@ -3797,6 +3806,7 @@ function draftForm(){
   const nmiss = d.missing && !String(d.note||"").trim();
   const nf = el("div","field whatfield" + (nmiss ? " missing" : ""));
   const nl = el("div","qlab"); nl.id = "notelab";
+  if(!running) nl.appendChild(el("span","stepno","Step 1 of 2"));
   nl.appendChild(el("span",null,"What happened"));
   const noteTag = el("span","req" + (String(d.note||"").trim() ? " ok" : ""), String(d.note||"").trim() ? "✓ ANSWERED" : (nmiss ? "STILL NEEDED" : "REQUIRED"));
   nl.appendChild(noteTag);
@@ -3878,6 +3888,7 @@ function draftForm(){
      tap, and a free thumb mid-episode should be able to answer anything. */
   const step2 = running || !!(d.stepOpen || d.trig || d.place || d.resp);
   if(step2){
+    if(!running) wrap.appendChild(el("div","stepno step2lab","Step 2 of 2"));
     wrap.appendChild(chipRow("Trigger", true, optionsFor("trig"), d.trig,
       v=>{ d.trig=v; const h=$("respHint"); if(h) h.parentNode.replaceChild(respHint(v), h);
            if(d.missing) renderLog(); }, d.missing && !d.trig, false, "trig", renderLog));
@@ -5182,6 +5193,13 @@ function beginSettle(){
   renderMoney();
 }
 function cancelSettle(){ State.settleDraft = null; renderMoney(); }
+/* the Save button echoes the balance banner above it ("To settle: $X"), using
+   centsToDollars the same way ledgerBalance does, so the two never disagree —
+   falls back to a bare label when what's typed isn't a valid amount yet */
+function settleSaveLabel(amountStr){
+  const c = dollarsToCents(amountStr);
+  return (c != null && c > 0) ? "Record settlement of " + centsToDollars(c) : "Record settlement";
+}
 
 function settleForm(){
   const d = State.settleDraft;
@@ -5193,7 +5211,8 @@ function settleForm(){
   wrap.appendChild(chipRow("Who paid", true, WHO_OPTS, d.payer,
     v=>{ d.payer=v; if(d.missing) renderMoney(); }, d.missing && !d.payer, false, null, null));
 
-  const amtOk = dollarsToCents(d.amount) != null && dollarsToCents(d.amount) > 0;
+  const amtCents = dollarsToCents(d.amount);
+  const amtOk = amtCents != null && amtCents > 0;
   const af = el("div","field" + (d.missing && !amtOk ? " missing" : ""));
   const al = el("div","qlab"); al.id = "sAmtLab";
   al.appendChild(el("span",null,"Amount"));
@@ -5201,9 +5220,13 @@ function settleForm(){
   af.appendChild(al);
   if(d.missing && !amtOk) af.appendChild(fieldNeed("a valid amount"));
   const ain = document.createElement("input");
-  ain.type = "text"; ain.inputMode = "decimal"; ain.placeholder = "0.00"; ain.value = d.amount;
+  ain.type = "text"; ain.inputMode = "decimal"; ain.placeholder = "0.00"; ain.value = d.amount; ain.id = "sAmtIn";
   ain.setAttribute("aria-labelledby","sAmtLab");
-  ain.oninput = ()=>{ d.amount = ain.value; };
+  ain.oninput = ()=>{ d.amount = ain.value;
+    /* echoes the balance banner ("To settle: $X") on the button that acts on it,
+       so the amount just typed is the amount the tap commits — typing does not
+       re-render (same reason as the note box above: the caret would jump) */
+    const btn = $("settleSaveBtn"); if(btn) btn.textContent = settleSaveLabel(d.amount); };
   af.appendChild(ain);
   wrap.appendChild(af);
 
@@ -5236,7 +5259,7 @@ function settleForm(){
   if(d.tooBig){ const e = el("div","err","That amount is over " + centsToDollars(MONEY_MAX_CENTS) + ". Check the decimal point."); e.setAttribute("role","alert"); wrap.appendChild(e); }
   if(d.bigAsk){ wrap.appendChild(bigAmountBox(d, d.bigAsk, renderMoney, saveSettle)); }
   else {
-  const save = el("button","bigbtn","Save settlement");
+  const save = el("button","bigbtn",settleSaveLabel(d.amount)); save.id = "settleSaveBtn";
   save.onclick = saveSettle;
   wrap.appendChild(save);
   }
@@ -6246,7 +6269,11 @@ function calEventCard(e){
     eb.onclick = ()=>{ State.calEditingEvent = {id:e.id}; calDrawDaySheet(); };
     card.appendChild(eb);
   } else {
-    const lk = el("p","sub","🔒 " + WHO_NAME[e.who] + " added this — only " + WHO_NAME[e.who] + " can revise it.");
+    /* MUTED, NOT JUST CAPTIONED (panel 5): a bare caption + a small lock read as
+       plain body text, so a parent could miss that this entry was not theirs to
+       edit at all. .locked-other gives it its own sunk background the way a
+       disabled control reads, on top of the existing lock glyph and wording. */
+    const lk = el("p","sub locked-other","🔒 " + WHO_NAME[e.who] + "’s entry — only " + WHO_NAME[e.who] + " can change it.");
     card.appendChild(lk);
   }
   card.appendChild(calNoteBox(e));
@@ -7725,6 +7752,13 @@ Store.init();
     ck("a nonzero balance names the transfer that settles it and its direction, never who is owed or a spend comparison",
        balanceSentence(5050, true) === "To settle: $50.50, Mom to Dad." &&
        balanceSentence(-150, true) === "To settle: $1.50, Dad to Mom." && !/owed/.test(balanceSentence(5050,true)));
+    ck("settle button echoes the typed amount the same way the banner formats it (centsToDollars, not a re-derived string)",
+       settleSaveLabel("50.50") === "Record settlement of " + centsToDollars(dollarsToCents("50.50")) &&
+       settleSaveLabel("50.50") === "Record settlement of $50.50" &&
+       "To settle: " + settleSaveLabel("50.50").slice("Record settlement of ".length) + ", Mom to Dad." === balanceSentence(5050, true));
+    ck("settle button falls back to a bare label when the typed amount is empty, zero, or not a number",
+       settleSaveLabel("") === "Record settlement" && settleSaveLabel("0") === "Record settlement" &&
+       settleSaveLabel("abc") === "Record settlement" && settleSaveLabel("-5") === "Record settlement");
   })();
 
   // ---- MONEY: primary action follows the balance. Nothing owed -> "Log a
@@ -7754,6 +7788,18 @@ Store.init();
         ck("money primary button: a balance owed makes Record a settlement primary",
            !!settleBtnOwed && !settleBtnOwed.className.includes("ghost") &&
            !!claimBtnOwed && claimBtnOwed.className.includes("ghost"));
+        beginSettle();
+        const sb = $("settleSaveBtn");
+        ck("settle form: Save button keeps its id and starts holding the prefilled balance amount",
+           !!sb && sb.textContent === "Record settlement of $50.00");
+        const ain = $("sAmtIn");
+        ain.value = "12.34"; ain.oninput();
+        ck("settle form: typing an amount updates the Save label to match, without a full re-render",
+           $("settleSaveBtn").textContent === "Record settlement of $12.34" && $("settleSaveBtn") === sb);
+        ain.value = ""; ain.oninput();
+        ck("settle form: clearing the amount falls the Save label back to the bare label",
+           $("settleSaveBtn").textContent === "Record settlement");
+        cancelSettle();
       } finally {
         Store.saveLocal = realSaveLocal; Store.push = realPush;
         Store.expenses = JSON.parse(beforeExp); Store.settlements = JSON.parse(beforeSet);
@@ -7930,6 +7976,25 @@ Store.init();
     Store.calNotes = JSON.parse(beforeNotes);
     ck("the self-check left no private note behind",
        !Store.myNote("dad","selfcheck_ev") && !Store.myNote("mom","selfcheck_ev"));
+  })();
+
+  // ---- LOCKED ENTRY: an event the OTHER parent wrote must read as muted
+  // (its own class, own background) beyond just the caption + lock glyph
+  // that used to be the only signal, and it must say WHOSE it is by name.
+  // An event of the viewer's own must never carry that class.
+  (function(){
+    const wasMe = State.me;
+    try {
+      State.me = "dad";
+      const theirs = calEventCard({id:"lk1", who:"mom", date:"2026-09-20", type:"school", title:"Field trip", location:"", note:"", created:0, revs:[]});
+      const lk = theirs.querySelector(".locked-other");
+      ck("an event the other parent wrote gets the muted .locked-other treatment, naming them by name",
+         !!lk && lk.textContent === "🔒 Mom’s entry — only Mom can change it.");
+      const mine = calEventCard({id:"lk2", who:"dad", date:"2026-09-20", type:"school", title:"Field trip", location:"", note:"", created:0, revs:[]});
+      ck("the viewer's OWN event never carries .locked-other (and still offers Edit)",
+         !mine.querySelector(".locked-other") &&
+         Array.from(mine.querySelectorAll(".linkbtn")).some(n=>n.textContent === "Edit"));
+    } finally { State.me = wasMe; }
   })();
 
   // ---- EPISODE OVERLAY: a behaviour entry lands on exactly its own day and
@@ -8719,7 +8784,7 @@ Store.init();
       beginRetro();
       const f = $("logSlot");
       const labs = Array.from(f.querySelectorAll(".qlab")).map(n=>n.textContent);
-      ck("What happened comes before the severity question", labs.length > 1 && /^What happened/.test(labs[0]) && /How far it went/.test(labs[1]));
+      ck("What happened comes before the severity question", labs.length > 1 && /^(Step 1 of 2\s*)?What happened/.test(labs[0]) && /How far it went/.test(labs[1]));
       (function(){
         State.draft.stepOpen = true; renderLog();
         const l2 = Array.from($("logSlot").querySelectorAll(".qlab")).map(n=>n.textContent.replace(/\s+/g," ").trim());
@@ -8943,6 +9008,17 @@ Store.init();
          State.draft.trig = "no"; renderLog();
          ck("above Save: one gap reads '1 thing still needed'", $("logSlot").querySelector(".stillcount").textContent === "1 thing still needed");
          State.draft = null;
+
+         beginRetro(); renderLog();
+         ck("log form: step one is labelled 'Step 1 of 2' beside What happened, step two not shown yet",
+            /Step 1 of 2/.test($("notelab").textContent) && !/Step 2 of 2/.test($("logSlot").textContent));
+         State.draft.note = "selfcheck steplabel"; State.draft.stepOpen = true; renderLog();
+         ck("log form: once step two opens it is labelled 'Step 2 of 2', and step one keeps its own label",
+            /Step 2 of 2/.test($("logSlot").textContent) && /Step 1 of 2/.test($("notelab").textContent));
+         State.draft = null; beginLive();
+         ck("log form: no step labels while the timer is running (nothing is gated)",
+            !/Step 1 of 2|Step 2 of 2/.test($("logSlot").textContent));
+         if(State.tick){ clearInterval(State.tick); State.tick = null; } State.draft = null;
 
          ck("timer indicator: hidden while no timer runs", (paintTimerPill(), $("timerPill").hidden === true));
          beginLive(); State.tab = "calendar"; paintTimerPill();
@@ -9313,6 +9389,15 @@ Store.init();
            distinct(hue(light.amber), hue(light.sev3)) && distinct(hue(light.amber), hue(light.sev4)) &&
            distinct(hue(dark.amber), hue(dark.sev3)) && distinct(hue(dark.amber), hue(dark.sev4)) &&
            distinct(hue(print.amber), hue(print.sev3)) && distinct(hue(print.amber), hue(print.sev4)));
+
+         /* PRINT SEVERITY 3 vs 4: the printed exhibit swatches used to sit close
+            enough in lightness to read as one smudge (panel 5). Threshold: a
+            WCAG-style contrast ratio between the two swatch fills of at least
+            2.2:1 (a 3-digit hex would need expanding first — both tokens here
+            are already 6-digit, expanded the same way `hue`/`L` above do). */
+         const gap = cr(print.sev3, print.sev4);
+         ck("print severity: --sev3 vs --sev4 fill are at least 2.2:1 apart in relative luminance (was ~1.60:1)",
+           !!print.sev3 && !!print.sev4 && gap >= 2.2);
       })();
 
       ck("insights type: no chart label is set below the 12px floor of the type scale", (function(){
