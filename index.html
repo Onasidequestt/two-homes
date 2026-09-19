@@ -9630,6 +9630,14 @@ Store.init();
     })();
   }
 
+  /* LAST, after every probe above has restored Store/State: the probes seed messages,
+     swaps and entries, and a badge painted mid-probe used to outlive the restore — a
+     phone with no messages opened showing "1 unread". Repaint from the REAL state, then
+     prove what the parent sees matches it. Session 88. */
+  updateTabCounts();
+  ck("after the self-check, the Messages badge the parent sees matches the real unread count",
+     ($("cnt-messages").textContent||"").trim() === tabCountLabel(State.me ? Store.unreadCount(State.me) : 0, " unread", " unread").trim());
+
   if(fail.length) console.error("BBL SELF-CHECK FAILED " + fail.length + "/" + ran + ":", fail);
   else console.log("BBL self-check: " + ran + "/" + ran + " checks passed");
 })();
