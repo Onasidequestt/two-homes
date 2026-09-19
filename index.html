@@ -955,7 +955,7 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
     --sev1-ink:#1A0C04; --sev2-ink:#1A0C04; --sev3-ink:#1A0C04; --sev4-ink:#FFFFFF; --sev5-ink:#FFFFFF;
     --shadow:none;
   }
-  body[data-tab],:root:not([data-theme="light"]) body[data-tab],:root[data-theme="dark"] body[data-tab]{--accent:#1F4F54;--accent-soft:#fff}
+  body[data-tab],:root:not([data-theme="light"]) body[data-tab],:root[data-theme="dark"] body[data-tab]{--accent:#1F4F54;--accent-soft:#E4E7FA}
   .tabs,.start,.linkbtn,.bigbtn,.scrim,.no-print,.whoami,.syncline{display:none !important}
   .about.shut .aboutbody{display:flex !important}
   body{background:#fff;font-size:11pt}
@@ -8487,14 +8487,17 @@ Store.init();
       /* ---- section colour: each tab owns a hue, and every hue stays readable ---- */
       ck("section colour: each tab has its own accent, and it clears 4.5:1 on its own tint, on a card, and under white", (function(){
          const lin = c=>{ c/=255; return c<=.03928? c/12.92 : Math.pow((c+.055)/1.055,2.4); };
-         const L = h=>{ const n=parseInt(h.replace("#",""),16); return .2126*lin(n>>16&255)+.7152*lin(n>>8&255)+.0722*lin(n&255); };
+         const L = h=>{ let x=h.replace("#",""); if(x.length===3) x=x.replace(/./g,"$&$&");   /* the print tokens are written #fff */
+           const n=parseInt(x,16); return .2126*lin(n>>16&255)+.7152*lin(n>>8&255)+.0722*lin(n&255); };
          const cr = (a,b)=>{ const x=L(a), y=L(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
          const was = document.body.getAttribute("data-tab"), seen = {}; let ok = true;
          TABS.forEach(t=>{
            document.body.setAttribute("data-tab", t);
            const cs = getComputedStyle(document.body), g = n=>cs.getPropertyValue(n).trim();
            const a = g("--accent"), soft = g("--accent-soft"), ink = g("--accent-ink"), surf = g("--surface");
-           if(seen[a]) ok = false; seen[a] = 1;
+           const paper = g("--paper") === "#fff";   /* the print tokens are in force (real print, or the probe's print fixtures): every tab shares ONE ink accent */
+           if(!paper && seen[a]) ok = false; seen[a] = 1;
+           if(paper && Object.keys(seen).length !== 1) ok = false;
            if(!(cr(a,soft) >= 4.5 && cr(a,surf) >= 4.5 && cr(ink,a) >= 4.5)) ok = false;
          });
          if(was === null) document.body.removeAttribute("data-tab"); else document.body.setAttribute("data-tab", was);
