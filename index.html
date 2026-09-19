@@ -678,6 +678,8 @@ textarea{border-radius:10px}
 
 /* ---------- calendar ---------- */
 .cal-hd.lifted{margin-top:20px}   /* the lifted schedule card touched the month title */
+.caladd{align-self:flex-start;margin:10px 2px 2px}
+.panel > .empty{background:none;box-shadow:none;padding:6px 8px 16px}   /* a card inside a card */
 .calhint{font-size:12.5px;color:var(--muted);margin:8px 2px 0;text-align:center}
 .cal-hd{display:flex;align-items:center;justify-content:space-between;padding:0 2px}
 .cal-mo{font-size:16px;font-weight:700;letter-spacing:-.015em}
@@ -861,6 +863,8 @@ textarea,input[type="number"],input[type="time"],input[type="date"],input[type="
    64px cell beside six others read as "slightly different", not "chosen". */
 .dcell.painted{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .dcell.painted .dnum{color:var(--accent-ink)}
+.dcell.painted.pdad{background:var(--dad);border-color:var(--dad)} .dcell.painted.pmom{background:var(--mom);border-color:var(--mom)}
+.dcell.painted.pdad.today .dnum{color:var(--dad)} .dcell.painted.pmom.today .dnum{color:var(--mom)}
 .dcell.painted.today .dnum{background:var(--accent-ink);color:var(--accent)}
 
 /* the split is the one number a parent came to the form to check */
@@ -928,6 +932,13 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
 .tab[aria-selected="true"]::before{content:"";position:absolute;top:6px;left:50%;width:46px;height:30px;margin-left:-23px;
                                    border-radius:999px;background:var(--accent-soft);z-index:-1}
 .tabs{isolation:isolate}
+/* INSIGHTS TYPE (panels 4 and 5, designer): chart labels were 10 to 11.5px, below the 12 floor of the
+   scale above, and the first three cards touched. Labels join the scale; stacked cards get the one gap. */
+.pcard + .pcard,.pcard + .panel,.panel + .pcard,.moneybanner + .panel,.moneybanner + .bigbtn{margin-top:14px}
+.pchdr h3{font-size:17px;letter-spacing:-.02em}
+.bar .lab,.bar .val{font-size:13px}
+.hr .hl,.hourlegend,.n,.lockrow-n,.lockrow-u{font-size:12px}
+.pcsub.pchow{font-size:12px}
 
 @media print{
   /* listed three ways on purpose: the two dark selectors below are (0,2,0)
@@ -3507,7 +3518,11 @@ function draftForm(){
     grid.appendChild(b);
   });
   sf.appendChild(grid);
-  wrap.appendChild(sf);
+  /* REQUIRED BEFORE OPTIONAL (panel 5, usability): on the full form the skippable "How far it went"
+     sat between What happened and the two required chip groups, so a parent reached Save without
+     passing them. On step one it keeps its place; once step two is open it goes after Where. */
+  const sevAfterRequired = running || !!(d.stepOpen || d.trig || d.place || d.resp);
+  if(!sevAfterRequired) wrap.appendChild(sf);
 
   /* ponytail: after a failed save the form still re-renders on the first pick,
      so THAT tap does not fade. Deliberate — an error state must correct itself
@@ -3531,6 +3546,7 @@ function draftForm(){
            if(d.missing) renderLog(); }, d.missing && !d.trig, false, "trig", renderLog));
     wrap.appendChild(chipRow("Where", true, optionsFor("place"), d.place,
       v=>{ d.place=v; if(d.missing) renderLog(); }, d.missing && !d.place, false, "place", renderLog));
+    wrap.appendChild(sf);
   } else {
     const nx = el("p","sub stepnote","Two quick questions after this — what set it off, and where.");
     wrap.appendChild(nx);
@@ -4970,7 +4986,7 @@ function renderTrends(){
   if(days.length < 14){
     const c = el("div","tcard");
     c.appendChild(el("p","eyebrow","Not enough days yet"));
-    c.appendChild(el("p","sub","A day-by-day series needs at least 14 recorded days before a rise or fall "
+    c.appendChild(el("p","sub","A day-by-day series needs at least 14 recorded days (they do not need to be in a row) before a rise or fall "
       + "means anything — " + days.length + " so far. A recorded day counts even when nothing happened, "
       + "which is what the daily card is for."));
     const bar = el("div","lockbar");
@@ -5104,6 +5120,13 @@ function renderCalendar(){
   const liftCustody = !State.paint && !Store.allCustodyPatterns().length;
   if(liftCustody){ slot.appendChild(calCustodyPanel()); hd.className = "cal-hd lifted"; }
   slot.appendChild(hd);
+  /* the grid was the ONLY way to add an event, and the line saying so sits under it, below the fold */
+  if(!State.paint){
+    const today = dayOf(Date.now()), target = today.slice(0,7) === ym ? today : ym + "-01";
+    const add = el("button","chip add caladd","+ Add an event"); add.id = "calAddTop"; add.type = "button";
+    add.onclick = ()=>{ calOpenDay(target); State.calAdding = calBlankDraft(target); calDrawDaySheet(); };
+    slot.appendChild(add);
+  }
 
   const wds = el("div","cal-wds");
   ["S","M","T","W","T","F","S"].forEach(w=>{
@@ -5228,6 +5251,8 @@ function calPaintBand(btn, band, dstr, cst){
   band.className = "dband " + (parent || "none") + (changed ? " exception" : "");
   band.textContent = parent ? (WHO_NAME[parent].charAt(0) + (changed ? "*" : "")) : "";
   btn.classList.toggle("painted", !!pending);
+  /* the filled day wears the colour of the parent it is going to, the same blue/purple as the band and the chip */
+  btn.classList.toggle("pdad", pending === "dad"); btn.classList.toggle("pmom", pending === "mom");
 }
 
 /* ============================================================
@@ -5272,6 +5297,7 @@ function calDrawPaintBar(){
   row.setAttribute("role","group"); row.setAttribute("aria-label","Assign days to");
   ["dad","mom"].forEach(w=>{
     const b = el("button","chip","Assign to " + WHO_NAME[w]); b.type = "button";
+    b.setAttribute("data-k", w);
     b.setAttribute("aria-pressed", String(P.parent === w));
     b.onclick = ()=>{ P.parent = w; P.nudge = false; calDrawPaintBar(); };
     row.appendChild(b);
@@ -5300,10 +5326,16 @@ function calDrawPaintBar(){
     act.appendChild(no); act.appendChild(yes); box.appendChild(act);
     slot.appendChild(box);
   } else {
-    const save = el("button","bigbtn", w.length ? "Review " + w.length + (w.length===1 ? " change" : " changes") : "Tap dates to assign");
-    save.disabled = !w.length;
-    save.onclick = ()=>{ P.confirming = true; calDrawPaintBar(); };
-    slot.appendChild(save);
+    /* with nothing chosen there is nothing to review: a grey dead button read as broken (panel 4, A8).
+       The hint is a sentence, and the button appears with the first day tapped. */
+    if(w.length){
+      const save = el("button","bigbtn", "Review " + w.length + (w.length===1 ? " change" : " changes")); save.id = "paintReview";
+      save.onclick = ()=>{ P.confirming = true; calDrawPaintBar(); };
+      slot.appendChild(save);
+    } else {
+      const wait = el("p","pcount pwait", P.parent ? "No days chosen yet. Tap dates in the month above." : "Pick a parent first, then tap dates in the month above."); wait.id = "paintWait";
+      slot.appendChild(wait);
+    }
   }
   const cancel = el("button","linkbtn danger-link","Cancel"); 
   cancel.onclick = ()=>{ State.paint = null; renderCalendar(); };
@@ -6416,14 +6448,14 @@ function renderTab(name){
 }
 /* A zero under a tab read as a broken counter to a first-time eye ("Money 0" beside a full
    Calendar). A count appears once there is something to count; nothing is an honest nothing. */
-function tabCountLabel(n, suffix){ return n > 0 ? n + (suffix||"") : ""; }
+function tabCountLabel(n, suffix, one){ return n > 0 ? n + ((n === 1 && one) || suffix || "") : ""; }
 function updateTabCounts(){
   const all = Store.allEntries().filter(e=>!e.voided);
   const today = dayOf(Date.now());
   $("cnt-log").textContent = tabCountLabel(all.filter(e=>dayOf(e.start)===today).length, " today");
   $("cnt-history").textContent = tabCountLabel(all.length);
   const recDays = new Set(all.map(e=>dayOf(e.start)).concat(Store.allDayCards().map(c=>c.date))).size;
-  $("cnt-insights").textContent = tabCountLabel(recDays, " days");
+  $("cnt-insights").textContent = tabCountLabel(recDays, " days", " day");
   const liveMoney = Store.allExpenses().filter(e=>!e.voided).length + Store.allSettlements().filter(e=>!e.voided).length;
   $("cnt-money").textContent = tabCountLabel(liveMoney);
   const evAll = Store.allEvents().filter(e=>!e.voided);
@@ -8008,6 +8040,16 @@ Store.init();
       State.paint = {parent:"mom", days:{"2026-02-02":"dad","2026-02-03":"mom"}, confirming:false};
       const w = paintWrites();
       ck("assigning a day to the parent who already has it writes nothing", w.length === 1 && w[0].date === "2026-02-03" && w[0].parent === "mom");
+      (function(){
+        State.calMonth = "2026-02"; renderCalendar();
+        const cells = Array.from($("calSlot").querySelectorAll(".dcell.painted")).map(b=>b.className.replace(/.*painted/,"").replace(/today/,"").trim()).sort().join();
+        ck("assign days: a chosen day is filled in the colour of the parent it is going to", cells === "pdad,pmom");
+        const hasReview = !!$("paintReview"), keys = Array.from($("paintBar").querySelectorAll(".prow .chip")).map(b=>b.getAttribute("data-k")).join();
+        const held = State.paint.days; State.paint.days = {}; calDrawPaintBar();
+        ck("assign days: with no day chosen there is a sentence, not a dead button; the Review button arrives with the first day",
+           hasReview && !$("paintReview") && !!$("paintWait") && /Tap dates/.test($("paintWait").textContent) && keys === "dad,mom");
+        State.paint.days = held; calDrawPaintBar();
+      })();
       commitPaint();
       const c3 = custodyForDate("2026-02-03"), c2 = custodyForDate("2026-02-02");
       ck("an assigned day lands as a one-off change by the parent who tapped, and only that day",
@@ -8053,6 +8095,14 @@ Store.init();
       const f = $("logSlot");
       const labs = Array.from(f.querySelectorAll(".qlab")).map(n=>n.textContent);
       ck("What happened comes before the severity question", labs.length > 1 && /^What happened/.test(labs[0]) && /How far it went/.test(labs[1]));
+      (function(){
+        State.draft.stepOpen = true; renderLog();
+        const l2 = Array.from($("logSlot").querySelectorAll(".qlab")).map(n=>n.textContent.replace(/\s+/g," ").trim());
+        const at = re=>l2.findIndex(t=>re.test(t));
+        ck("log form: once step two is open, the required Trigger and Where come BEFORE the skippable 'How far it went'",
+           at(/^Trigger/) > 0 && at(/^Where/) > at(/^Trigger/) && at(/^How far it went/) > at(/^Where/) && at(/^What ended it/) > at(/^How far it went/));
+        State.draft.stepOpen = false; renderLog();
+      })();
       ck("the severity ladder is shut until asked for: words come first on the form", !!$("sevOpenBtn") && f.querySelector(".sevgrid").hidden === true);
       if($("sevOpenBtn")) $("sevOpenBtn").onclick();   /* the TAP must open it, not the flag */
       ck("each severity row shows its description at the moment of choosing", !$("sevOpenBtn") && $("logSlot").querySelector(".sevgrid").hidden === false && $("logSlot").querySelectorAll(".sev .detail").length === 5);
@@ -8210,6 +8260,21 @@ Store.init();
            const ks = Array.from(row.querySelectorAll(".chip")).map(b=>b.getAttribute("data-k") + "=" + b.getAttribute("aria-pressed")).join();
            ck("money colours: a Dad/Mom chip carries its parent key so the chosen one takes that parent's colour", ks === "dad=false,mom=true");
          })();
+         (function(){
+           const wasDay = State.calDay, wasAdd = State.calAdding, wasPaint = State.paint, wasMonth = State.calMonth;
+           State.calMonth = "2031-03"; State.paint = null; renderCalendar();
+           const b = $("calAddTop"); if(b) b.onclick();
+           ck("calendar: '+ Add an event' sits above the grid and opens the add form on a day of the month being viewed",
+              !!b && Array.from($("calSlot").children).indexOf(b) < Array.from($("calSlot").children).findIndex(n=>/cal-grid/.test(n.className)) &&
+              State.calDay === "2031-03-01" && !!State.calAdding && State.calAdding.date === "2031-03-01");
+           State.calAdding = null; calCloseDay();
+           State.paint = {parent:null, days:{}, confirming:false, nudge:false}; renderCalendar();
+           ck("calendar: no Add-event control while assigning days (a tap there paints)", !$("calAddTop"));
+           State.paint = wasPaint; State.calMonth = wasMonth; State.calDay = wasDay; State.calAdding = wasAdd; renderCalendar();
+         })();
+         ck("tab count: one recorded day reads '1 day', never '1 days'",
+            tabCountLabel(1, " days", " day") === "1 day" && tabCountLabel(2, " days", " day") === "2 days" && tabCountLabel(0, " days", " day") === "" &&
+            tabCountLabel(1, " today") === "1 today" && $("cnt-insights").textContent !== "1 days");
          ck("calendar: a line under the grid says a day can be tapped", !!$("calHint") && /Tap any day/.test($("calHint").textContent));
          ck("empty calendar: the schedule card is drawn once, not twice",
             kids.filter(n=>/No custody schedule set/.test(n.textContent)).length === 1);
@@ -8435,6 +8500,14 @@ Store.init();
          if(was === null) document.body.removeAttribute("data-tab"); else document.body.setAttribute("data-tab", was);
          return ok;
       })());
+      ck("insights type: no chart label is set below the 12px floor of the type scale", (function(){
+         const host = document.createElement("div"); host.className = "bar";
+         const mk = c=>{ const n = document.createElement("span"); n.className = c; host.appendChild(n); return n; };
+         const ns = [mk("lab"), mk("val"), mk("n"), mk("hourlegend"), mk("lockrow-n"), mk("lockrow-u")];
+         const hr = document.createElement("div"); hr.className = "hr"; const hl = document.createElement("span"); hl.className = "hl"; hr.appendChild(hl); host.appendChild(hr); ns.push(hl);
+         document.body.appendChild(host);
+         const ok = ns.every(n=>parseFloat(getComputedStyle(n).fontSize) >= 12);
+         host.remove(); return ok; })());
       ck("section colour: switching tab moves the hue (setTab writes body[data-tab])", (function(){
          const was = State.tab; setTab("money"); const m = document.body.getAttribute("data-tab");
          setTab(was); return m === "money" && document.body.getAttribute("data-tab") === was; })());
