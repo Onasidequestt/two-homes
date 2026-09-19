@@ -442,7 +442,7 @@ textarea{border-radius:10px}
 .badge.dad{background:color-mix(in srgb, var(--dad) 18%, var(--surface))} .badge.mom{background:color-mix(in srgb, var(--mom) 18%, var(--surface))}
 .badge.dad::before,.badge.mom::before{content:"";width:6px;height:6px;border-radius:50%;flex:none}
 .badge.dad::before{background:var(--dad)} .badge.mom::before{background:var(--mom)}
-.whoami{padding:2px 8px 2px 7px;border-radius:4px;font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink)}
+.whoami{padding:2px 6px;border-radius:4px;gap:4px;font-weight:700;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink)}
 .whoami:has(.dot.dad){background:color-mix(in srgb, var(--dad) 18%, var(--surface))}
 .whoami:has(.dot.mom){background:color-mix(in srgb, var(--mom) 18%, var(--surface))}
 .whoami .dot{width:6px;height:6px}
@@ -916,6 +916,7 @@ textarea{border-radius:10px}
       <p class="sub printonly" id="recordCover"></p>
       <p class="sub printonly pkey" data-k="record"></p>
       <div id="histSlot"></div>
+      <div class="no-print" id="freshSlot" hidden></div>
       <p class="sub printonly plimits"></p>
       <button class="bigbtn ghost no-print" id="printBtn">Print or save as PDF</button>
     </section>
@@ -1015,6 +1016,15 @@ function anchorOf(n){
   const a = (SEV.find(s=>s.n===n)||{}).anchor;
   return a ? a.charAt(0).toUpperCase() + a.slice(1) : "";
 }
+/* SEVERITY IS OPTIONAL (Simon's ruling 09-18): "what happened" is required instead, so every
+   entry still has a headline. The ONE resolver for it: the rung's anchor when a rung was given,
+   otherwise the parent's own words. Every row, sheet and label reads this, never e.sev directly. */
+function headlineOf(e){
+  if(e.sev) return anchorOf(e.sev) || ("Severity " + e.sev);
+  const t = String(e.note||"").trim().split("\n")[0];
+  return t ? (t.length > 90 ? t.slice(0,88).trimEnd() + "…" : t) : labelOf(e.trig);
+}
+function sevPhrase(e){ return e.sev ? "severity " + e.sev + " of 5, " + anchorOf(e.sev) : "no severity given"; }
 const TRIGGERS = [
   ["no","Told no"],["transition","Stop playing"],["screen","Screen taken"],
   ["hungry","Hungry"],["tired","Tired"],["dressing","Dressing"],
@@ -1195,8 +1205,9 @@ function ledgerBalance(claims, settlements){
 function balanceSentence(cents, anyRecords){
   if(!anyRecords) return "Nothing has been logged. The balance is $0.00 because nothing is on the record yet.";
   if(cents === 0) return "Settled — nothing outstanding.";
-  const who = cents > 0 ? "Dad" : "Mom";
-  return who + " is owed " + centsToDollars(Math.abs(cents)) + ".";
+  /* Simon's ruling 09-18: the headline names the TRANSFER that settles it, not a person who "is owed":
+     the old sentence read as a scoreboard with a winner. Direction is unchanged: positive = Mom pays Dad. */
+  return "To settle: " + centsToDollars(Math.abs(cents)) + ", " + (cents > 0 ? "Mom to Dad" : "Dad to Mom") + ".";
 }
 
 /* ---------- motion helpers ----------
@@ -1493,15 +1504,27 @@ const Store = {
   },
 
   /* ---- local mirror + outbox: a tantrum in a dead-signal car park still logs ---- */
+  /* every collection the mirror holds, in ONE list: loadLocal, saveLocal and startFresh
+     all read it, so a new collection cannot be saved yet survive a reset. */
+  MIRROR_KEYS: ["entries","days","options","expenses","settlements","calEvents","calNotes",
+                "custodyPatterns","custodyExceptions","swapRequests","swapResponses","handovers"],
+  /* START FRESH — device mode ONLY. There the phone's own storage is the whole record,
+     so emptying it is honest. In any shared mode the record is append-only on a server
+     and both parents rely on it: a local wipe would only pretend, so this refuses.
+     Keeps bbl.me (which parent this phone is). `ls` is a parameter so the self-check
+     can run the real logic against a fake store and never near a real record. */
+  startFresh(ls){
+    if(this.mode !== "device") return false;
+    ls = ls || localStorage;
+    try { ["bbl.mirror","bbl.outbox",this.CLEANUP_KEY].forEach(k=>ls.removeItem(k)); } catch(e){ return false; }
+    this.MIRROR_KEYS.forEach(k=>{ this[k] = {}; });
+    this.emit();
+    return true;
+  },
   loadLocal(){
     try {
       const raw = localStorage.getItem("bbl.mirror");
-      if(raw){ const m = JSON.parse(raw); this.entries = m.entries||{}; this.days = m.days||{}; this.options = m.options||{};
-        this.expenses = m.expenses||{}; this.settlements = m.settlements||{};
-        this.calEvents = m.calEvents||{}; this.calNotes = m.calNotes||{};
-        this.custodyPatterns = m.custodyPatterns||{}; this.custodyExceptions = m.custodyExceptions||{};
-        this.swapRequests = m.swapRequests||{}; this.swapResponses = m.swapResponses||{};
-        this.handovers = m.handovers||{}; }
+      if(raw){ const m = JSON.parse(raw); this.MIRROR_KEYS.forEach(k=>{ this[k] = m[k]||{}; }); }
     } catch(e){}
   },
   /* Once localStorage is full, THIS call throws — and used to be swallowed by
@@ -1514,11 +1537,8 @@ const Store = {
      console log. It self-clears the next time a save actually lands. */
   saveLocal(){
     try {
-      localStorage.setItem("bbl.mirror", JSON.stringify({entries:this.entries, days:this.days, options:this.options,
-        expenses:this.expenses, settlements:this.settlements,
-        calEvents:this.calEvents, calNotes:this.calNotes, custodyPatterns:this.custodyPatterns,
-        custodyExceptions:this.custodyExceptions, swapRequests:this.swapRequests, swapResponses:this.swapResponses,
-        handovers:this.handovers}));
+      const m = {}; this.MIRROR_KEYS.forEach(k=>{ m[k] = this[k]; });
+      localStorage.setItem("bbl.mirror", JSON.stringify(m));
       this.storageError = null;
     } catch(e){
       this.storageError = {at:Date.now(), message:(e && e.message) || "Storage is full"};
@@ -1975,7 +1995,10 @@ const Store = {
   },
   allHandovers(){
     const out = [];
-    Object.values(this.handovers).forEach(doc=>Object.values(doc.items||{}).forEach(x=>out.push(x)));
+    /* a note with no date cannot be placed on any day; it arrives only from a foreign
+       writer to the shared server, and one such note used to throw in friendlyDay and
+       take the whole Log tab down. ponytail: skipped silently; upgrade = a "1 unreadable note" line. */
+    Object.values(this.handovers).forEach(doc=>Object.values(doc.items||{}).forEach(x=>{ if(x && typeof x.date === "string") out.push(x); }));
     return out.sort((a,b)=>b.at-a.at);
   },
   allCustodyExceptions(){
@@ -2262,6 +2285,8 @@ const State = {
   tick:null,
   editing:null,
   handoverDraft:null, handoverFlash:null,
+  freshAsk:false,  /* is the "Start fresh" confirm open. Outside the DOM: renderSync redraws the slot on every emit */
+  freshDone:false,
   showVoided:{},   /* day -> is its withdrawn group open. Outside the DOM, because
                       renderHistory rebuilds its whole subtree on every echo. */
   staleTabs:{},    /* U2: tabname -> "a store echo landed while this tab was in the
@@ -2344,9 +2369,9 @@ function printLimitsText(){
    be able to decode every mark on the page from the page itself. */
 function printKeyText(kind){
   if(kind === "record") return "The numbered square is how hard the episode was: " +
-    SEV.map(s=>s.n + " " + s.anchor).join(" · ") + ". est = the length was entered afterwards from memory, not timed. " +
+    SEV.map(s=>s.n + " " + s.anchor).join(" · ") + ". – = no severity was given; the headline is the parent’s own words. est = the length was entered afterwards from memory, not timed. " +
     "🔒 = written by the other parent, who is the only one who can revise it. DAD / MOM = whose phone logged it.";
-  if(kind === "money") return "DAD PAID / MOM PAID = who paid the bill. The line under each amount is each parent’s share of it. " +
+  if(kind === "money") return "DAD / MOM beside “paid” = who paid the bill. The line under each amount is each parent’s share of it. " +
     "SETTLEMENT = money one parent paid the other. A struck-through item was withdrawn and is not counted.";
   return "▦ Pattern = the day follows the set schedule. ✎ Changed for this day = one parent recorded a different arrangement for that date only. " +
     "⇄ Accepted swap = one parent asked, the other agreed.";
@@ -2354,7 +2379,33 @@ function printKeyText(kind){
 function fillPrintBlock(n, head, text){
   n.innerHTML = ""; n.appendChild(el("b", null, head + " ")); n.appendChild(el("span", null, text));
 }
+/* "Start fresh on this phone": drawn ONLY in device mode (see Store.startFresh). Two steps,
+   red, because it is the one action in the app that really erases. */
+function renderFresh(){
+  const slot = $("freshSlot"); if(!slot) return;
+  slot.innerHTML = "";
+  slot.hidden = Store.mode !== "device";
+  if(slot.hidden){ State.freshAsk = false; return; }
+  if(State.freshDone){ const f = el("p","flash","This phone is now empty. Nothing from before is left on it."); f.setAttribute("role","status"); slot.appendChild(f); }
+  if(!State.freshAsk){
+    const b = el("button","danger-btn","Start fresh on this phone");
+    b.onclick = ()=>{ State.freshAsk = true; State.freshDone = false; renderFresh(); };
+    slot.appendChild(b);
+    slot.appendChild(el("p","sub","For trying the app out. Available only because this copy is not shared with the other parent."));
+    return;
+  }
+  const box = el("div","confirmbox"); box.setAttribute("role","group");
+  box.appendChild(el("p",null,"Erase everything saved on this phone? Every entry, event, expense, schedule and note recorded here is removed and cannot be brought back. This phone stays set as " + WHO_NAME[State.me] + "."));
+  const act = el("div","confirmact");
+  const no = el("button","cno","Keep everything");
+  no.onclick = ()=>{ State.freshAsk = false; renderFresh(); };
+  const yes = el("button","cyes","Erase and start fresh");
+  yes.onclick = ()=>{ State.freshAsk = false; State.freshDone = Store.startFresh(); renderFresh(); };
+  act.appendChild(no); act.appendChild(yes); box.appendChild(act);
+  slot.appendChild(box);
+}
 function renderSync(){
+  renderFresh();
   Array.from(document.querySelectorAll ? document.querySelectorAll(".plimits") : []).forEach(n=>fillPrintBlock(n, "Limits of this record.", printLimitsText()));
   Array.from(document.querySelectorAll ? document.querySelectorAll(".pkey") : []).forEach(n=>fillPrintBlock(n, "How to read this.", printKeyText(n.getAttribute("data-k"))));
   const rc = $("recordCover");
@@ -2637,15 +2688,15 @@ function todayStrip(){
   const row = el("div","chips");
   mine.slice().reverse().forEach(e=>{
     const c = el("span","chip sm");
-    c.style.borderColor = "var(--sev"+e.sev+"-edge)";
-    c.textContent = clockOf(e.start)+" · "+e.sev+" · "+durText(e.dur);
+    if(e.sev) c.style.borderColor = "var(--sev"+e.sev+"-edge)";
+    c.textContent = clockOf(e.start)+(e.sev ? " · "+e.sev : "")+" · "+durText(e.dur);
     row.appendChild(c);
   });
   box.appendChild(row);
-  const worst = Math.max.apply(null, mine.map(e=>e.sev));
+  const worst = Math.max.apply(null, mine.map(e=>e.sev||0));
   const tot = mine.reduce((a,e)=>a+(e.dur||0),0);
-  box.appendChild(el("p","sub", mine.length+" logged · worst was "+worst+"/5, "+
-    anchorOf(worst).toLowerCase()+" · "+durText(tot)+" total"));
+  box.appendChild(el("p","sub", mine.length+" logged · "+(worst ? "worst was "+worst+"/5, "+
+    anchorOf(worst).toLowerCase()+" · " : "")+durText(tot)+" total"));
   return box;
 }
 
@@ -3012,13 +3063,16 @@ function draftForm(){
 
   /* WHAT HAPPENED — first, and in the parent's own words. It was an unlabelled
      "Note" under four chip groups: the one field that says what she actually
-     DID was the one nobody scrolled to. Optional on purpose — at 4pm with one
-     hand the chips alone must still save — and it is offered while the timer
+     DID was the one nobody scrolled to. REQUIRED since 09-18 (severity became
+     optional in exchange, Simon's ruling), and it is offered while the timer
      runs too, because that is often when there is a free thumb. Stored in the
      same `note` field it always was, so no record changes shape. */
-  const nf = el("div","field whatfield");
+  const nmiss = d.missing && !String(d.note||"").trim();
+  const nf = el("div","field whatfield" + (nmiss ? " missing" : ""));
   const nl = el("div","qlab"); nl.id = "notelab";
   nl.appendChild(el("span",null,"What happened"));
+  const noteTag = el("span","req" + (String(d.note||"").trim() ? " ok" : ""), String(d.note||"").trim() ? "✓ ANSWERED" : (nmiss ? "STILL NEEDED" : "REQUIRED"));
+  nl.appendChild(noteTag);
   nl.appendChild(el("span","opt","in your words · both parents read this"));
   nf.appendChild(nl);
   const ta = document.createElement("textarea");
@@ -3026,18 +3080,18 @@ function draftForm(){
   ta.placeholder = "What she did, and what was going on. One sentence is plenty.";
   ta.setAttribute("aria-labelledby","notelab");
   const grow = ()=>{ ta.style.height = "auto"; ta.style.height = Math.max(64, ta.scrollHeight + 2) + "px"; };
-  ta.oninput = ()=>{ d.note = ta.value; grow(); };
+  ta.oninput = ()=>{ d.note = ta.value; grow();
+    /* typing does not re-render (the caret would jump), so the tag is updated in place */
+    const ok = !!ta.value.trim(); noteTag.className = "req" + (ok ? " ok" : ""); noteTag.textContent = ok ? "✓ ANSWERED" : "REQUIRED"; };
   nf.appendChild(ta);
   wrap.appendChild(nf);
   setTimeout(grow, 0);   /* needs layout, so after the form is in the page */
 
   /* severity */
-  const miss = d.missing && !d.sev;
-  const sf = el("div","field" + (miss ? " missing" : ""));
+  const sf = el("div","field");
   const sl = el("div","qlab"); sl.id = "sevlab";
   sl.appendChild(el("span",null,"How far it went"));
-  const sevTag = el("span","req" + (d.sev ? " ok" : ""),
-    d.sev ? "✓ ANSWERED" : (miss ? "STILL NEEDED" : "REQUIRED"));
+  const sevTag = d.sev ? el("span","req ok","✓ ANSWERED") : el("span","opt","optional");
   sl.appendChild(sevTag);
   sf.appendChild(sl);
   const grid = el("div","sevgrid");
@@ -3087,7 +3141,7 @@ function draftForm(){
      explaining the blocked save sat below the control being tapped */
   if(d.missing){
     const still = [];
-    if(!d.sev) still.push("severity");
+    if(!String(d.note||"").trim()) still.push("what happened");
     if(!d.trig) still.push("trigger");
     if(!d.place) still.push("where");
     if(still.length){
@@ -3117,7 +3171,7 @@ function draftForm(){
 function saveDraft(){
   const d = State.draft;
   const missing = [];
-  if(!d.sev) missing.push("how bad");
+  if(!String(d.note||"").trim()) missing.push("what happened");
   if(!d.trig) missing.push("what set it off");
   if(!d.place) missing.push("where");
   if(missing.length){ d.missing = missing; renderLog(); return; }
@@ -3140,7 +3194,7 @@ function saveDraft(){
     dur: dur,
     measured: !!d.measured,
     timeSource: d.measured ? "timed" : (entered == null ? "assumed" : "entered"),
-    sev: d.sev, trig: d.trig, place: d.place,
+    sev: d.sev || null, trig: d.trig, place: d.place,
     resp: d.resp || null,
     note: (d.note||"").trim(),
     created: Date.now(),
@@ -3152,7 +3206,7 @@ function saveDraft(){
   /* Saving was silent — the form just vanished. Name what was actually written,
      never a generic "done": this is a record, and the confirmation should be
      checkable against the row it created. */
-  State.flash = "Saved · " + (dayOf(start) === dayOf(Date.now()) ? "" : friendlyDay(dayOf(start)) + " · ") + clockOf(start) + " · severity " + entry.sev + " · " + durText(dur);
+  State.flash = "Saved · " + (dayOf(start) === dayOf(Date.now()) ? "" : friendlyDay(dayOf(start)) + " · ") + clockOf(start) + (entry.sev ? " · severity " + entry.sev : "") + " · " + durText(dur);
   clearTimeout(flashT);
   flashT = setTimeout(()=>{ State.flash = null; if(!State.draft) renderLog(); }, 6000);
   renderAll();
@@ -3267,7 +3321,7 @@ function renameFootnote(entries){
 function entryRow(e){
   const mine = e.who === State.me;
   const row = el(mine ? "button" : "div", "entry" + (mine ? " mine" : "") + (e.voided ? " voided" : ""));
-  const stripe = el("span","stripe b"+e.sev, String(e.sev));
+  const stripe = el("span","stripe b"+(e.sev||0), e.sev ? String(e.sev) : "–");
   stripe.setAttribute("aria-hidden","true");   /* the row's own label names the severity */
   row.appendChild(stripe);
 
@@ -3284,8 +3338,8 @@ function entryRow(e){
      escalates. It used to be the trigger, with this line sitting in the grey
      meta row as 13px throwaway metadata — so the row named what a parent
      guessed caused it louder than what the child actually did. */
-  const anchor = anchorOf(e.sev);
-  b.appendChild(el("div","etitle a"+e.sev, anchor || ("Severity " + e.sev)));
+  const anchor = sevPhrase(e);
+  b.appendChild(el("div","etitle a"+(e.sev||0), headlineOf(e)));
 
   const meta = el("div","emeta");
   meta.appendChild(el("span","etrig", labelOf(e.trig)));
@@ -3305,7 +3359,7 @@ function entryRow(e){
   if(anyRenamed) meta.appendChild(el("span","badge renamed","renamed"));
   b.appendChild(meta);
 
-  if(e.note) b.appendChild(el("div","enote",e.note));
+  if(e.note && headlineOf(e) !== String(e.note).trim()) b.appendChild(el("div","enote",e.note));   /* not twice when the words ARE the headline */
   row.appendChild(b);
 
   /* aria-label overrides all child text for AT, so the "renamed" badge above
@@ -3314,15 +3368,14 @@ function entryRow(e){
   if(mine){
     row.onclick = ()=>openEdit(e);
     row.setAttribute("aria-label", "Your entry, " + friendlyDay(dayOf(e.start)) + " " + clockOf(e.start) +
-      ", severity " + e.sev + " of 5, " + anchor + ", after " + labelOf(e.trig) + ". Tap to revise." + renameNote);
+      ", " + anchor + ", after " + labelOf(e.trig) + ". Tap to revise." + renameNote);
   } else {
     /* the glyph stays as the visual cue but is hidden from AT, which otherwise
        announced a bare "locked" with no subject; the meaning goes on the row */
     const lk = el("span","lock","🔒");
     lk.setAttribute("aria-hidden","true");
     row.appendChild(lk);
-    row.setAttribute("aria-label", WHO_NAME[e.who] + " logged this entry. Severity " + e.sev +
-      " of 5, " + anchor + ", after " + labelOf(e.trig) + ". Only " +
+    row.setAttribute("aria-label", WHO_NAME[e.who] + " logged this entry: " + anchor + ", after " + labelOf(e.trig) + ". Only " +
       WHO_NAME[e.who] + "'s link can revise it." + renameNote);
   }
   return row;
@@ -3467,7 +3520,7 @@ function drawSheet(e){
     o.appendChild(el("b",null,"original "));
     o.appendChild(document.createTextNode(
       new Date(e.orig.created).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}) +
-      " — severity " + e.orig.sev + ", " + labelOf(e.orig.trig) + ", " + labelOf(e.orig.place)
+      " — " + (e.orig.sev ? "severity " + e.orig.sev : "no severity given") + ", " + labelOf(e.orig.trig) + ", " + labelOf(e.orig.place)
     ));
     rl.appendChild(o);
     s.appendChild(rl);
@@ -3933,7 +3986,9 @@ function moneyRow(e){
     body.appendChild(top);
     body.appendChild(el("div","mtitle", moneyCatLabel(e.cat)));
     const meta = el("div","emeta");
-    meta.appendChild(el("span","badge "+e.payer, WHO_NAME[e.payer] + " paid"));
+    /* ONE who-badge: the pill carries the name only, as it does on every other row; "paid" is plain text beside it */
+    meta.appendChild(el("span","badge "+e.payer, WHO_NAME[e.payer]));
+    meta.appendChild(el("span",null,"paid"));
     body.appendChild(meta);
     body.appendChild(el("div","enote", splitSummary(e)));
     if(e.desc) body.appendChild(el("div","enote", e.desc));
@@ -4415,7 +4470,7 @@ function renderTrends(){
     const d = dayOf(e.start);
     rec[d] = true;
     cnt[d] = (cnt[d]||0) + 1;
-    worst[d] = Math.max(worst[d]||0, e.sev);
+    worst[d] = Math.max(worst[d]||0, e.sev||0);
   });
   const days = Object.keys(rec).sort();
   if(days.length < 14){
@@ -4457,12 +4512,13 @@ function renderTrends(){
     const bar = el("i");
     if(n){
       bar.style.height = Math.max(6, Math.round(100*n/max)) + "%";
-      bar.style.background = "var(--sev" + (worst[d]||1) + ")";
-      bar.style.border = "1px solid var(--sev" + (worst[d]||1) + "-edge)";
+      /* a day whose entries carry no severity is drawn neutral: painting it as rung 1 would invent a rating */
+      bar.style.background = worst[d] ? "var(--sev" + worst[d] + ")" : "var(--surface-2)";
+      bar.style.border = "1px solid " + (worst[d] ? "var(--sev" + worst[d] + "-edge)" : "var(--line-strong)");
     }
     col.appendChild(bar);
     col.setAttribute("aria-label", friendlyDay(d) + ": " +
-      (n ? n + (n===1?" entry":" entries") + ", worst severity " + worst[d]
+      (n ? n + (n===1?" entry":" entries") + (worst[d] ? ", worst severity " + worst[d] : ", no severity given")
          : (rec[d] ? "recorded, none logged" : "no record")));
     series.appendChild(col);
   });
@@ -4593,6 +4649,7 @@ function renderCalendar(){
     if(sm.changed) bits.push(sm.changed + " changed from the schedule");
     if(sm.none) bits.push(sm.none + " not covered");
     if(bits.length) sum.appendChild(el("span","sumnote", bits.join(" · ")));
+    sum.appendChild(el("span","sumnote", "Counted from the schedule — not a score."));
     slot.appendChild(sum);
   }
 
@@ -5297,7 +5354,7 @@ function calEpisodeRow(e){
   if(!e.measured){ const s = el("span","est"," est"); dur.appendChild(s); }
   top.appendChild(dur);
   row.appendChild(top);
-  row.appendChild(el("div","evtitle a"+e.sev, anchorOf(e.sev)));
+  row.appendChild(el("div","evtitle a"+(e.sev||0), headlineOf(e)));
   const meta = el("div","emeta");
   meta.appendChild(el("span","badge "+e.who, WHO_NAME[e.who]));
   row.appendChild(meta);
@@ -6501,9 +6558,9 @@ Store.init();
        balanceSentence(0, false).toLowerCase().indexOf("settled") === -1);
     ck("a real zero balance after real claims says Settled",
        balanceSentence(0, true) === "Settled — nothing outstanding.");
-    ck("a nonzero balance names the parent who is owed, never a spend comparison",
-       balanceSentence(5050, true) === "Dad is owed $50.50." &&
-       balanceSentence(-150, true) === "Mom is owed $1.50.");
+    ck("a nonzero balance names the transfer that settles it and its direction, never who is owed or a spend comparison",
+       balanceSentence(5050, true) === "To settle: $50.50, Mom to Dad." &&
+       balanceSentence(-150, true) === "To settle: $1.50, Dad to Mom." && !/owed/.test(balanceSentence(5050,true)));
   })();
 
   // ---- MONEY: category labels resolve; an unrecognised key falls back to
@@ -6522,9 +6579,43 @@ Store.init();
       State.handoverDraft = {sleep:null, eat:null, good:"   ", next:""};
       const cnt = Store.allHandovers().length; saveHandover();
       ck("an empty handover note is refused, not saved", Store.allHandovers().length === cnt && State.handoverDraft && State.handoverDraft.missing === true);
+      Store.handovers["2026-09__dad"] = {who:"dad", month:"2026-09", items:{selfcheck_bad:{id:"selfcheck_bad", who:"dad", revs:[]}}};
+      ck("a dateless handover note from the server is skipped and the card still draws",
+         (function(){ try{ handoverCard(); return !Store.allHandovers().some(h=>h.id === "selfcheck_bad"); }catch(e){ return false; } })());
       Store.handovers = JSON.parse(before); State.handoverDraft = bd; State.handoverFlash = bf; Store.saveLocal();
       ck("the handover self-check leaves no note behind", !Store.allHandovers().some(h=>h.id === "selfcheck_h1"));
     })();
+    (function(){
+      const mkLs = ()=>{ const d = {"bbl.mirror":"{}", "bbl.outbox":"[]", "bbl.cleanupV1":"1", "bbl.me":"mom"};
+        return {d, removeItem(k){ delete d[k]; }}; };
+      const mkStore = mode=>{ const f = {mode, MIRROR_KEYS:Store.MIRROR_KEYS, CLEANUP_KEY:Store.CLEANUP_KEY, emitted:0, emit(){ this.emitted++; }};
+        Store.MIRROR_KEYS.forEach(k=>{ f[k] = {x:{items:{a:1}}}; }); return f; };
+      const ls = mkLs(), f = mkStore("device");
+      const ok = Store.startFresh.call(f, ls);
+      ck("start fresh empties the mirror, the outbox and the cleanup mark, and every collection in memory",
+         ok === true && !("bbl.mirror" in ls.d) && !("bbl.outbox" in ls.d) && !("bbl.cleanupV1" in ls.d) &&
+         Store.MIRROR_KEYS.every(k=>Object.keys(f[k]).length === 0) && f.emitted === 1);
+      ck("start fresh keeps which parent this phone is", ls.d["bbl.me"] === "mom");
+      ck("start fresh refuses in every mode where the record is or may be shared",
+         ["sync","local","needkey","connecting"].every(m=>{ const l = mkLs(), g = mkStore(m);
+           return Store.startFresh.call(g, l) === false && Object.keys(l.d).length === 4 && Object.keys(g.entries).length === 1 && g.emitted === 0; }));
+      ck("every collection saveLocal writes is one start fresh clears", (function(){
+         const src = Store.saveLocal.toString() + Store.loadLocal.toString();
+         return /MIRROR_KEYS/.test(Store.saveLocal.toString()) && /MIRROR_KEYS/.test(Store.loadLocal.toString()) && !/this\.entries\b/.test(src); })());
+      const realMode = Store.mode, ask = State.freshAsk, done = State.freshDone;
+      try {
+        const slot = $("freshSlot");
+        Store.mode = "sync"; State.freshAsk = true; renderFresh();
+        ck("the start fresh control is not drawn when the record is shared", !!slot && slot.hidden === true && slot.children.length === 0);
+        Store.mode = "device"; State.freshAsk = false; State.freshDone = false; renderFresh();
+        ck("on this phone only: one button, and one tap erases nothing", slot.hidden === false && slot.querySelectorAll(".danger-btn").length === 1 && slot.querySelectorAll(".cyes").length === 0);
+        State.freshAsk = true; renderFresh();
+        ck("the second step is the red confirm, with a way back", slot.querySelectorAll(".confirmbox").length === 1 && !/affirm/.test(slot.querySelectorAll(".confirmbox")[0].className) && slot.querySelectorAll(".cno").length === 1 && slot.querySelectorAll(".cyes").length === 1 && !/affirm/.test(slot.querySelectorAll(".cyes")[0].className));
+      } finally { Store.mode = realMode; State.freshAsk = ask; State.freshDone = done; renderFresh(); }
+    })();
+    ck("the who-badge on a money row is the bare name, the same pill every other row uses", (function(){
+       const r = moneyRow({id:"sc_m", kind:"expense", who:"dad", payer:"dad", amount:1000, dadCents:500, momCents:500, splitPct:50, cat:"other", at:1, revs:[]});
+       const b = r.querySelectorAll(".badge.dad"); return b.length === 1 && b[0].textContent === "Dad"; })());
     ck("an ordinary amount saves without a second question", (function(){ const d={}; return bigAmountStops(d, 36000) === false && !d.bigAsk && !d.tooBig; })());
     ck("a large amount is asked about once, and saves after the SAME amount is confirmed", (function(){
        const d={}; const asked = bigAmountStops(d, 1234500) === true && d.bigAsk === 1234500;
@@ -7253,7 +7344,7 @@ Store.init();
       const bandOf = n => cells[n-1].querySelector(".dband").textContent;
       ck("the grid says whose day in a LETTER, and marks a changed day", bandOf(2) === "D" && bandOf(3) === "M*" && bandOf(7) === "M");
       ck("the key is drawn in the grid's own marks, not a paragraph", !!$("calKey") && $("calKey").querySelectorAll(".dband").length === 3 && !/right-leaning/.test($("calSlot").textContent));
-      ck("the month summary is on screen", !!$("calSum") && (function(t){ return /19 days with Dad/.test(t) && /8 days with Mom/.test(t) && /1 not covered/.test(t); })($("calSum").textContent.replace(/\s+/g," ")));
+      ck("the month summary is on screen", !!$("calSum") && (function(t){ return /19 days with Dad/.test(t) && /8 days with Mom/.test(t) && /1 not covered/.test(t) && /from the schedule — not a score/.test(t); })($("calSum").textContent.replace(/\s+/g," ")));
 
       // tried-before readout: silent under the threshold, a count never a ranking
       const mk = (i,resp)=>({id:"rh"+i, who:i%2?"mom":"dad", start:Date.UTC(2026,1,2+i,16), end:Date.UTC(2026,1,2+i,16,5), dur:300, measured:true, sev:2, trig:"no", place:"home", resp:resp, note:"", created:1, revs:[]});
@@ -7287,6 +7378,28 @@ Store.init();
       ck("the save confirmation names the day", /·/.test(State.flash||"") && (State.flash||"").indexOf(friendlyDay(twoAgo)) >= 0);
       clearTimeout(flashT); State.flash = null;
       ck("and comes back afterwards", $("dailySlot").hidden === false);
+      // SEVERITY IS OPTIONAL, "what happened" is not (Simon's ruling 09-18)
+      beginRetro(); Object.assign(State.draft, {whenT:"09:15", sev:3, trig:"no", place:"home", note:"   "});
+      const nBefore = Store.allEntries().length; saveDraft();
+      ck("an entry with no 'what happened' is refused, even with a severity chosen",
+         Store.allEntries().length === nBefore && !!State.draft && (State.draft.missing||[]).indexOf("what happened") >= 0 &&
+         /Still needed: what happened/.test($("logSlot").textContent));
+      if(!State.draft) beginRetro();   /* a wrongly accepted save closed the form: the ck above is already red, do not crash on top of it */
+      Object.assign(State.draft, {whenT:"09:15", trig:"no", place:"home", sev:null, note:"selfcheck nosev: threw her cup"}); saveDraft();
+      const ns = Store.allEntries().filter(e=>e.note === "selfcheck nosev: threw her cup")[0];
+      ck("an entry saves with NO severity, stored as null, and the confirmation does not invent one",
+         !!ns && ns.sev === null && !/severity/.test(State.flash||""));
+      clearTimeout(flashT); State.flash = null;
+      if(ns){
+        const clean = n=>{ const t = n.textContent + " " + (n.getAttribute && n.getAttribute("aria-label") || "") + " " + n.className; return !/undefined|null|NaN|Infinity/.test(t); };
+        const r = entryRow(ns);
+        ck("with no severity the row's headline is the parent's own words, said once, and the badge shows a dash",
+           r.querySelector(".etitle").textContent === "selfcheck nosev: threw her cup" && r.querySelectorAll(".enote").length === 0 &&
+           r.querySelector(".stripe").textContent === "–" && /no severity given/.test(r.getAttribute("aria-label")) && clean(r));
+        ck("the calendar's episode row reads the same headline", calEpisodeRow(ns).querySelector(".evtitle").textContent === "selfcheck nosev: threw her cup" && clean(calEpisodeRow(ns)));
+        ck("the Today strip and the Insights tab draw an unrated entry without inventing a number",
+           (function(){ try{ const t = todayStrip(); renderTrends(); return clean(t) && !/worst was 0|worst severity 0|-Infinity/.test(t.textContent + $("v-insights").textContent); }catch(e){ return false; } })());
+      }
     } finally {
       Store.saveLocal = realSaveLocal; Store.push = realPush;
       Store.entries = JSON.parse(keep.e); Store.custodyExceptions = JSON.parse(keep.x); Store.custodyPatterns = JSON.parse(keep.p);
