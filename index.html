@@ -25,6 +25,11 @@
   --primary:#0E1116; --primary-ink:#FFFFFF;
   --scrim:rgba(10,14,18,.5);
   --r:20px; --shadow:0 1px 2px rgba(60,40,10,.05), 0 14px 34px rgba(60,40,10,.08);
+  /* Simon's ruling 09-18 (direction3 option A): a serif display face for
+     brand/section/day headings, system fonts only (no web font/CDN). A font
+     stack, not a colour, so it needs no dark-mode or print re-declaration —
+     it inherits through both automatically. */
+  --display:ui-serif,"New York",Georgia,"Times New Roman",serif;
 
   /* ---------- MOTION SCALE — the only place a duration or curve is written ----------
      Two classes of change, deliberately different lengths:
@@ -527,7 +532,12 @@ textarea{border-radius:10px}
 .lockrow + .lockrow{border-top:1px solid var(--line)}
 .lockrow-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .lockrow-t{font-size:13px;font-weight:600;color:var(--ink-2)}
-.lockrow-n{font-size:11px;color:var(--muted);flex:none}
+/* Simon's ruling 09-18 (direction3 option B): drop the "n/need" fraction from
+   view, keep only the thin progress bar. The real numbers are not lost — the
+   row already carries the full sentence in its own aria-label ("locked, n of
+   need unit"), and the bar below gets aria-valuenow/min/max so AT still gets
+   the exact figures a sighted reader no longer sees as a fraction. */
+.lockrow-n{display:none}
 .lockrow-u{font-size:11px;color:var(--faint);margin-top:4px}
 .lockbar{height:4px;background:var(--sunk);border-radius:2px;overflow:hidden;margin-top:7px}
 .lockbar i{display:block;height:100%;background:var(--accent);border-radius:2px}
@@ -703,7 +713,7 @@ textarea{border-radius:10px}
 .cal-wd{font-size:9.5px;font-weight:700;letter-spacing:.03em;text-align:center;
         color:var(--faint);text-transform:uppercase}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:4px}
-.dcell{position:relative;min-height:64px;border-radius:9px;background:var(--surface);
+.dcell{position:relative;min-height:52px;border-radius:9px;background:var(--surface);
        border:1px solid var(--line);display:flex;flex-direction:column;
        padding:4px 3px 18px;gap:2px;overflow:hidden;text-align:left;
        transition:background-color var(--t-tap) var(--ease-out)}
@@ -713,7 +723,7 @@ textarea{border-radius:10px}
 @media (hover:hover) and (pointer:fine){ .dcell:hover{border-color:var(--line-strong)} }
 .dtop{display:flex;align-items:center;justify-content:space-between;width:100%}
 .dnum{font-size:12.5px;font-weight:700;color:var(--ink-2)}
-.epi{font-size:9px;line-height:1;color:var(--sev4);font-weight:700}
+.epi{font-size:13px;line-height:1;color:var(--sev4);font-weight:700}
 .dmarks{display:flex;flex-wrap:wrap;gap:2px;width:100%}
 .evtag{font-size:9.5px;font-weight:700;letter-spacing:.01em;padding:1px 3px;border-radius:3px;
        background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);line-height:1.4}
@@ -802,8 +812,14 @@ textarea{border-radius:10px}
    one card (.panel = .pcard = .moneybanner = .daylist), one chip, buttons: primary (ink) > ghost > link.
    Placed AFTER the component rules and BEFORE print, so it wins on screen and print still wins on paper.
    ===================================================================== */
-.brand{font-size:22px;font-weight:800;letter-spacing:-.04em}
-.sec{font-size:34px;font-weight:800;letter-spacing:-.045em;line-height:1.05;margin:4px 0 4px}
+/* Simon's ruling 09-18 (direction3 option A): serif display headings via
+   --display (system fonts only), tabular numerals wherever digits need to
+   line up. --display is just a font stack, so dark mode and print inherit
+   it with no re-declaration; nothing here resets font-family for these
+   selectors in either place. */
+.brand{font-size:22px;font-weight:800;letter-spacing:-.04em;font-family:var(--display)}
+.sec{font-size:34px;font-weight:800;letter-spacing:-.045em;line-height:1.05;margin:4px 0 4px;font-family:var(--display)}
+body{font-variant-numeric:tabular-nums}
 .hdr{border-bottom:0;background:color-mix(in srgb, var(--paper) 86%, transparent)}
 .eyebrow{font-size:12px;letter-spacing:.08em}
 .sub{font-size:15px}
@@ -829,14 +845,14 @@ textarea{border-radius:10px}
 .tab svg{width:22px;height:22px}
 .tab[aria-selected="true"]{color:var(--ink)}
 .tab[aria-selected="true"] svg{color:var(--accent)}
-.dayhdr .d{font-size:17px;font-weight:800;letter-spacing:-.03em}
+.dayhdr .d{font-size:17px;font-weight:800;letter-spacing:-.03em;font-family:var(--display)}
 .stripe{border-radius:12px;border:0}
 .sheet{border-radius:24px 24px 0 0}
 .note-strip{border-radius:16px;font-size:13px}
 textarea,input[type="number"],input[type="time"],input[type="date"],input[type="text"]{border-radius:12px;border-color:var(--line)}
 .savedock{bottom:calc(92px + env(safe-area-inset-bottom))}
 .gate{min-height:100vh;justify-content:center;padding:28px 20px}
-.gate .brand{font-size:34px;letter-spacing:-.045em;color:var(--ink)}
+.gate .brand{font-size:34px;letter-spacing:-.045em;color:var(--ink);font-family:var(--display)}
 
 /* ---------- icons (see ICOP in the script: one definition per shape) ----------
    Sized in three steps only — 15 beside an eyebrow, 20 inline, 26 in a section
@@ -884,9 +900,15 @@ textarea,input[type="number"],input[type="time"],input[type="date"],input[type="
    .printonly already hides these on screen, so nothing here needs a print
    block: the three printed records share one masthead, so a loose page found
    in a folder says which record it belongs to and when it was made. */
-.pmast{border-bottom:2px solid var(--ink);padding-bottom:7px;margin-bottom:12px}
-.pmast .pmt{font-size:17pt;font-weight:800;letter-spacing:-.02em;line-height:1.15;display:block}
-.pmast .pmk{font-size:10pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:2px}
+/* Simon's ruling 09-18 (direction3 option A): full letterhead band, not a
+   one-line rule — a page found loose in a folder should read as a document
+   on first glance. Page numbering was tried (the direction3 mock faked
+   "Page 1 of 1" via content:) and dropped: CSS @page counters cannot total
+   content-driven pages honestly in Chromium, and a fake count is worse than
+   none — OMITTED here on purpose, see NEXT_SESSION_DELIVERY.md. */
+.pmast{border:1.5pt solid var(--ink);border-bottom:2.5pt solid var(--ink);padding:10pt 12pt;margin-bottom:16pt}
+.pmast .pmt{font-size:20pt;font-weight:800;letter-spacing:-.02em;line-height:1.15;display:block;margin:2pt 0;font-family:var(--display)}
+.pmast .pmk{font-size:8.5pt;font-weight:700;letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:2px}
 .pmast .pms{font-size:9.5pt;color:var(--ink-2);display:block;margin-top:3px}
 
 /* ---------- the chooser is the first screen anyone sees ----------
@@ -2725,6 +2747,18 @@ const MASTHEAD = {
   money:   "Money and settlements",
   custody: "Custody schedule and swaps"
 };
+/* Simon's ruling 09-18 (direction3 option A): full letterhead band on the
+   printed exhibit, including the REAL date range of what's being printed —
+   never hardcoded. Pure function so the self-check can assert it against a
+   fixed sample without touching the DOM: given a list of ms timestamps (or
+   already-computed dstrs), return "covering <min> to <max>" or null when
+   there is nothing to print yet. */
+function mastheadRangeText(stamps){
+  if(!stamps || !stamps.length) return null;
+  const days = stamps.map(s=>typeof s === "number" ? dayOf(s) : s).sort();
+  const lo = days[0], hi = days[days.length-1];
+  return "covering " + friendlyExhibitDate(lo) + (hi === lo ? "" : " to " + friendlyExhibitDate(hi));
+}
 function mastheadSub(extra){
   return "Two Homes · kept by " + WHO_NAME.dad + " and " + WHO_NAME.mom +
          (extra ? " · " + extra : "") +
@@ -2742,7 +2776,11 @@ function fillMastheads(extra){
   if(!document.querySelectorAll) return;
   Array.from(document.querySelectorAll(".pmast[data-mast]")).forEach(n=>{
     const k = n.getAttribute("data-mast");
-    if(k !== "custody") fillMasthead(n, k);
+    if(k === "custody") return;
+    let range = null;
+    if(k === "record") range = mastheadRangeText(Store.allEntries().map(e=>e.start));
+    else if(k === "money") range = mastheadRangeText(Store.allExpenses().map(c=>c.date).concat(Store.allSettlements().map(s=>s.date)));
+    fillMasthead(n, k, range);
   });
 }
 function renderSync(){
@@ -4061,6 +4099,11 @@ function card(title, sub, n, need, unit, bodyFn){
     top.appendChild(el("span","lockrow-n mono", n + "/" + need));
     r.appendChild(top);
     const bar = el("div","lockbar");
+    bar.setAttribute("role","progressbar");
+    bar.setAttribute("aria-valuenow", String(n));
+    bar.setAttribute("aria-valuemin","0");
+    bar.setAttribute("aria-valuemax", String(need));
+    bar.setAttribute("aria-label", title + " progress");
     const i = el("i"); i.style.width = Math.max(0, Math.min(100, 100*n/need)) + "%";
     bar.appendChild(i);
     r.appendChild(bar);
@@ -5219,9 +5262,8 @@ function renderCalendar(){
   kitem(kb("dad","D"), "Dad’s day");
   kitem(kb("mom","M"), "Mom’s day");
   kitem(kb("dad exception","D*"), "* changed that day");
-  kitem(el("span","evtag","Med"), "an event");
   const kd = el("span","epi","●"); kd.setAttribute("aria-hidden","true");
-  kitem(kd, "an entry in the Record");
+  kitem(kd, "something recorded that day — tap it to see what");
   slot.appendChild(key);
 
   const pb = el("div","paintbar"); pb.id = "paintBar"; pb.hidden = true;
@@ -5233,7 +5275,18 @@ function renderCalendar(){
   if(State.calDay) calDrawDaySheet();
 }
 
-const CELL_TAGS = 1;
+/* Simon's ruling 09-18 (direction3 option B): ONE dot per day, tap to open — not
+   every tag shown in the cell. hasDayDot() is the pure decision (a day with
+   ANYTHING — an event or a Record entry — gets exactly one dot; a day with
+   neither gets none), kept separate from the DOM so the self-check can assert
+   the count without a browser. The dot is a GLYPH ("●"), not a bare colour
+   swap (§5 of CONVENTIONS.md): its presence/absence IS the signal, so it
+   never needs a second hue to be told apart from "nothing". Real per-day
+   detail (what and how many) lives in the button's aria-label, not in the
+   dot — no font-size:0 hack, the text is genuinely read by AT. */
+function hasDayDot(evs, epis){
+  return !!((evs && evs.length) || (epis && epis.length));
+}
 function calDayCell(dstr, isToday, evsByDay, episByDay){
   const p = dParts(dstr);
   const evs = evsByDay ? (evsByDay[dstr] || []) : Store.eventsForDay(dstr).filter(e=>!e.voided);
@@ -5246,20 +5299,9 @@ function calDayCell(dstr, isToday, evsByDay, episByDay){
   top.appendChild(el("span","dnum", String(p.d)));
   const epi = el("span","epi","●");
   epi.setAttribute("aria-hidden","true");
-  if(!epis.length) epi.hidden = true;
+  if(!hasDayDot(evs, epis)) epi.hidden = true;
   top.appendChild(epi);
   btn.appendChild(top);
-
-  if(evs.length){
-    const marks = el("div","dmarks");
-    /* DENSITY at 390px (Simon's ruling 09-18: keep the month grid, no second view). A 50px cell
-       held two 8px tags, a dot and a letter band. It now holds ONE readable tag and a count;
-       the day sheet is where the list lives. ponytail: CELL_TAGS is fixed at 1; if a wider
-       layout ever ships, derive it from the cell's width instead. */
-    evs.slice(0,CELL_TAGS).forEach(e=>marks.appendChild(el("span","evtag", calTypeLabel(e.type).slice(0,3))));
-    if(evs.length > CELL_TAGS) marks.appendChild(el("span","evtag more", "+" + (evs.length-CELL_TAGS)));
-    btn.appendChild(marks);
-  }
 
   const band = el("span","dband");
   band.setAttribute("aria-hidden","true");
@@ -8271,10 +8313,13 @@ Store.init();
             const facts = kids.map((n,i)=>/\bbadge\b|\bmsep\b/.test(n.className) ? -1 : i).filter(i=>i >= 0);
             return !(who.length === 1 && facts.length >= 1 && facts.every(i=>i < who[0]) && !/\bbadge\b/.test(kids[0].className));
           });
-          ck("a busy calendar day shows ONE event tag and a '+2' count, never a stack of tiny tags", (function(){
+          /* SUPERSEDED by Simon's 09-18 direction3 ruling (option B): a busy day now
+             shows ONE dot, not a stack of tags or a "+2" count — the day sheet is
+             where the list lives. */
+          ck("a busy calendar day shows exactly ONE dot, never a stack of tiny tags", (function(){
             const d = "2026-03-04", cell = calDayCell(d, false, {[d]:[{type:"medical"},{type:"school"},{type:"activity"}]}, {});
-            const tags = Array.from(cell.querySelectorAll(".evtag"));
-            return tags.length === 2 && /\bmore\b/.test(tags[1].className) && tags[1].textContent === "+2"; })());
+            const dots = Array.from(cell.querySelectorAll(".epi")).filter(n=>!n.hidden);
+            return dots.length === 1 && cell.querySelectorAll(".evtag").length === 0; })());
           ck("ONE row grammar: in Record, Money and the day sheet the facts come first and the who-badge is LAST on the meta line", bad.length === 0 ? true : (console.log("row grammar broken in: " + bad.join(", ")), false));
           ck("a Money row states the split ON its meta line, not in a quoted note", /Dad\s*\$43\.75 ·\s*Mom\s*\$43\.76/.test(rows["Money"].querySelector(".emeta").textContent) &&   /* \s*: names are spans now, and the node stub pads child text */
              Array.from(rows["Money"].querySelectorAll(".enote")).every(n=>!/\$43\.75/.test(n.textContent)));
@@ -8678,6 +8723,53 @@ Store.init();
     const slots = ["logSlot","dailySlot","calSlot","moneySlot","histSlot","patSlot","trendSlot","app"];
     ck("no self-check fixture text is left anywhere a parent can see",
        !slots.some(id=>/selfcheck|capprobe|probe event/i.test($(id).textContent || "")));
+  })();
+
+  /* (a) calendar: ONE dot per day — a day with anything gets exactly one dot,
+     a day with nothing gets none. Tests the pure decision function, not the
+     live DOM, per CONVENTIONS.md §8. */
+  ck("calendar day dot: shows for a day with an event", hasDayDot([{type:"med"}], []) === true);
+  ck("calendar day dot: shows for a day with an entry, no events", hasDayDot([], [{sev:3}]) === true);
+  ck("calendar day dot: none for a day with nothing", hasDayDot([], []) === false);
+  ck("calendar day dot: still exactly one signal regardless of count", hasDayDot([{type:"a"},{type:"b"},{type:"c"}], [{},{}]) === true);
+
+  /* (c) insights progress bar: the visible fraction is gone, but the real
+     n/need numbers must still reach a locked card's aria attributes. */
+  (function(){
+    const row = card("Sample", "sub", 3, 10, "days", ()=>{});
+    ck("insights lockbar: aria-valuenow is the real n", row.querySelector(".lockbar").getAttribute("aria-valuenow") === "3");
+    ck("insights lockbar: aria-valuemax is the real need", row.querySelector(".lockbar").getAttribute("aria-valuemax") === "10");
+    ck("insights lockbar: role is progressbar", row.querySelector(".lockbar").getAttribute("role") === "progressbar");
+    ck("insights lockbar: fraction text node still exists for AT even though CSS hides it",
+       /3\/10/.test(row.querySelector(".lockrow-n").textContent));
+    /* real DOM only: the node stub does not compute CSS, so the "hidden from
+       sighted view" half of this ruling can only be proven in a real browser. */
+    if(document.querySelectorAll && document.body && typeof document.body.removeChild === "function"){
+      document.body.appendChild(row);
+      ck("insights lockbar: the fraction is visually hidden (display:none), not just left in place",
+         getComputedStyle(row.querySelector(".lockrow-n")).display === "none");
+      document.body.removeChild(row);
+    }
+  })();
+
+  /* (d) print letterhead: the date range is computed from real min/max
+     timestamps, and the parent names come from Store (WHO_NAME), never
+     hardcoded or invented. */
+  ck("letterhead range: min/max of real timestamps, ascending",
+     mastheadRangeText([Date.parse("2026-02-10T12:00:00"), Date.parse("2026-01-03T12:00:00"), Date.parse("2026-01-20T12:00:00")])
+       === "covering " + friendlyExhibitDate(dayOf(Date.parse("2026-01-03T12:00:00"))) + " to " + friendlyExhibitDate(dayOf(Date.parse("2026-02-10T12:00:00"))));
+  ck("letterhead range: a single day prints once, not as a to-itself range",
+     mastheadRangeText([Date.parse("2026-01-03T12:00:00")]) === "covering " + friendlyExhibitDate(dayOf(Date.parse("2026-01-03T12:00:00"))));
+  ck("letterhead range: nothing to print yet returns null, never a fake range",
+     mastheadRangeText([]) === null);
+  (function(){
+    /* prove mastheadSub reads WHO_NAME live rather than a hardcoded "Dad"/"Mom" copy,
+       by changing it and checking the output moves with it. */
+    const realDad = WHO_NAME.dad;
+    WHO_NAME.dad = "Selfcheck-Dad-Name";
+    ck("letterhead names come from the real store, not hardcoded",
+       mastheadSub(null).indexOf("kept by Selfcheck-Dad-Name and " + WHO_NAME.mom) !== -1);
+    WHO_NAME.dad = realDad;
   })();
 
   if(fail.length) console.error("BBL SELF-CHECK FAILED " + fail.length + "/" + ran + ":", fail);
