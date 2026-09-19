@@ -605,6 +605,7 @@ textarea{border-radius:10px}
 .cyes{background:var(--danger);color:#FFFFFF}
 .cyes.affirm{background:var(--accent);color:var(--accent-ink)}   /* accepting a swap is not a withdrawal */
 .cyes:active{filter:brightness(.92)}
+.confirmact .cyes.small{flex:0 1 auto;padding:12px 12px;font-size:12.5px;font-weight:600;background:transparent;color:var(--danger);border:1px solid var(--danger)}   /* erasing a phone: the way back is the big button */
 .cno{background:var(--surface-2);color:var(--ink);border:1px solid var(--line-strong)}
 .cno:active{background:var(--sunk)}
 
@@ -2399,7 +2400,7 @@ function renderFresh(){
   const act = el("div","confirmact");
   const no = el("button","cno","Keep everything");
   no.onclick = ()=>{ State.freshAsk = false; renderFresh(); };
-  const yes = el("button","cyes","Erase and start fresh");
+  const yes = el("button","cyes","Erase and start fresh"); yes.className += " small";   /* red card, red button (ramp-check reads the pair); only the weight drops */
   yes.onclick = ()=>{ State.freshAsk = false; State.freshDone = Store.startFresh(); renderFresh(); };
   act.appendChild(no); act.appendChild(yes); box.appendChild(act);
   slot.appendChild(box);
@@ -3094,7 +3095,16 @@ function draftForm(){
   const sevTag = d.sev ? el("span","req ok","✓ ANSWERED") : el("span","opt","optional");
   sl.appendChild(sevTag);
   sf.appendChild(sl);
-  const grid = el("div","sevgrid");
+  /* WORDS FIRST, IN FACT (Simon's ruling 09-18, after a blind Mom scored 4.5): "optional" did not
+     register while the five-step ladder was drawn in full. It now opens only when asked for.
+     State lives on the draft, not the DOM: renderLog rebuilds this form. */
+  const sevShut = !d.sev && !d.sevOpen;
+  if(sevShut){
+    const open = el("button","chip addsev","+ Add how far it went"); open.type = "button"; open.id = "sevOpenBtn";
+    open.onclick = ()=>{ d.sevOpen = true; renderLog(); };
+    sf.appendChild(open);
+  }
+  const grid = el("div","sevgrid"); grid.hidden = sevShut;
   grid.setAttribute("role","radiogroup");
   grid.setAttribute("aria-labelledby","sevlab");
   SEV.forEach(s=>{
@@ -6610,7 +6620,7 @@ Store.init();
         Store.mode = "device"; State.freshAsk = false; State.freshDone = false; renderFresh();
         ck("on this phone only: one button, and one tap erases nothing", slot.hidden === false && slot.querySelectorAll(".danger-btn").length === 1 && slot.querySelectorAll(".cyes").length === 0);
         State.freshAsk = true; renderFresh();
-        ck("the second step is the red confirm, with a way back", slot.querySelectorAll(".confirmbox").length === 1 && !/affirm/.test(slot.querySelectorAll(".confirmbox")[0].className) && slot.querySelectorAll(".cno").length === 1 && slot.querySelectorAll(".cyes").length === 1 && !/affirm/.test(slot.querySelectorAll(".cyes")[0].className));
+        ck("the second step is the red confirm, with a way back", slot.querySelectorAll(".confirmbox").length === 1 && !/affirm/.test(slot.querySelectorAll(".confirmbox")[0].className) && slot.querySelectorAll(".cno").length === 1 && slot.querySelectorAll(".cyes").length === 1 && !/affirm/.test(slot.querySelectorAll(".cyes")[0].className) && /small/.test(slot.querySelectorAll(".cyes")[0].className));
       } finally { Store.mode = realMode; State.freshAsk = ask; State.freshDone = done; renderFresh(); }
     })();
     ck("the who-badge on a money row is the bare name, the same pill every other row uses", (function(){
@@ -7365,7 +7375,9 @@ Store.init();
       const f = $("logSlot");
       const labs = Array.from(f.querySelectorAll(".qlab")).map(n=>n.textContent);
       ck("What happened comes before the severity question", labs.length > 1 && /^What happened/.test(labs[0]) && /How far it went/.test(labs[1]));
-      ck("each severity row shows its description at the moment of choosing", f.querySelectorAll(".sev .detail").length === 5);
+      ck("the severity ladder is shut until asked for: words come first on the form", !!$("sevOpenBtn") && f.querySelector(".sevgrid").hidden === true);
+      if($("sevOpenBtn")) $("sevOpenBtn").onclick();   /* the TAP must open it, not the flag */
+      ck("each severity row shows its description at the moment of choosing", !$("sevOpenBtn") && $("logSlot").querySelector(".sevgrid").hidden === false && $("logSlot").querySelectorAll(".sev .detail").length === 5);
       ck("the already-ended form asks which DAY", !!$("whenD") && f.querySelectorAll(".retro-days .chip").length === 4);
       ck("the morning card steps aside while logging", $("dailySlot").hidden === true);
       // end to end: the chosen DAY is what gets stored, not just what the helper returns
