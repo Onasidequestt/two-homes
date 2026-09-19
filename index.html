@@ -277,6 +277,14 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 /* the destructive link used to begin at the exact pixel the Save button ended,
    so a thumb overshooting Save discarded a just-logged entry */
 .linkbtn.danger-link{color:var(--danger);margin-top:10px}
+.sevhint{display:block;font-size:11.5px;color:var(--muted);margin-top:6px}
+#freshDetails{margin-top:10px}
+#freshDetails>summary{color:var(--accent);font-size:13px;font-weight:600;text-decoration:underline;
+         text-underline-offset:3px;padding:13px 8px;cursor:pointer;list-style:none;
+         transition:color var(--t-tap) var(--ease-out)}
+#freshDetails>summary::-webkit-details-marker{display:none}
+#freshDetails>summary:active{opacity:.6;transition-duration:0s}
+#freshDetails[open]>summary{margin-bottom:4px}
 @media (hover:hover) and (pointer:fine){
   .start:hover{filter:brightness(1.06)}
   .bigbtn:hover{filter:brightness(1.08)}
@@ -983,6 +991,7 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
   #v-custodyprint{display:none !important}
   .storebanner,.timerpill{display:none !important}
   .nm.dad,.nm.mom{color:inherit}
+  .sevlegend{display:none !important}   /* the printed exhibit already decodes severity in .pkey text */
   /* PRINTED TABLES: set as a document, not a spreadsheet export. Horizontal rules only,
      small-caps column heads that repeat on every page, figures that line up, and a row
      never split across two pages. */
@@ -1135,9 +1144,14 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
       <p class="sub printonly" id="recordCover"></p>
       <p class="sub printonly pkey" data-k="record"></p>
       <div id="histSlot"></div>
-      <div class="no-print" id="freshSlot" hidden></div>
       <p class="sub printonly plimits"></p>
       <button class="bigbtn ghost no-print" id="printBtn"><span class="ico" data-ico="print"></span><span>Print or save as PDF</span></button>
+      <!-- "Start fresh on this phone" is the one action here that really erases;
+           it does not belong beside routine actions like Print, so it sits folded
+           under a native <details> at the very bottom. no-print already excluded it. -->
+      <details class="no-print" id="freshDetails"><summary>More</summary>
+        <div id="freshSlot" hidden></div>
+      </details>
     </section>
 
     <!-- ============ INSIGHTS (Trends + Patterns merged, 2026-09-17 ruling:
@@ -3496,6 +3510,9 @@ function draftForm(){
     const open = el("button","chip addsev","+ Add how far it went"); open.type = "button"; open.id = "sevOpenBtn";
     open.onclick = ()=>{ d.sevOpen = true; renderLog(); };
     sf.appendChild(open);
+    /* the collapsed chip said nothing about the ladder behind it — a parent had
+       to open it just to learn there was a 1-5 scale at all. */
+    sf.appendChild(el("span","opt sevhint","1 " + SEV[0].anchor + " – 5 " + SEV[4].anchor));
   }
   const grid = el("div","sevgrid"); grid.hidden = sevShut;
   grid.setAttribute("role","radiogroup");
@@ -3649,6 +3666,21 @@ function saveDraft(){
 /* ============================================================
    RENDER — history
    ============================================================ */
+/* The 1-5 severity colours used to be decoded only in print (printKeyText).
+   Reuses the exact swatch markup + --sevN/--sevN-edge tokens the Insights
+   tlegend already draws on screen (line ~5039), so the record's own
+   severity squares (SEV, .swatch, .s1..s5) are never re-invented here. */
+function sevLegend(){
+  const lg = el("div","tlegend sevlegend");
+  SEV.forEach(s=>{
+    const it = el("span"); const i = el("i");
+    i.style.background = "var(--sev" + s.n + ")"; i.style.borderColor = "var(--sev" + s.n + "-edge)";
+    it.appendChild(i);
+    it.appendChild(el("span",null, s.n + " " + s.anchor));
+    lg.appendChild(it);
+  });
+  return lg;
+}
 function renderHistory(){
   const slot = $("histSlot");
   slot.innerHTML = "";
@@ -3657,6 +3689,7 @@ function renderHistory(){
     slot.appendChild(emptyBox("Nothing logged yet","The first entry you save will appear here, stamped with the time and who logged it.","record"));
     return;
   }
+  slot.appendChild(sevLegend());
   const groups = {};
   all.forEach(e=>{ const d = dayOf(e.start); (groups[d] = groups[d]||[]).push(e); });
 
@@ -4378,11 +4411,14 @@ function renderMoney(){
   }
   slot.appendChild(banner);
 
+  /* A balance owed makes settling it the primary action; with nothing owed, logging
+     a new claim stays primary as before. Ruling: money_few panel-6 CONFIRMED defect 1. */
+  const owed = cents !== 0;
   if(State.moneyDraft){ slot.appendChild(claimForm()); updateSplitPreview(); }
-  else { const b = el("button","bigbtn","Log a claim"); b.onclick = beginClaim; slot.appendChild(b); }
+  else { const b = el("button","bigbtn" + (owed ? " ghost" : "")); b.textContent = "Log a claim"; b.onclick = beginClaim; slot.appendChild(b); }
 
   if(State.settleDraft) slot.appendChild(settleForm());
-  else { const b2 = el("button","bigbtn ghost","Record a settlement"); b2.onclick = beginSettle; slot.appendChild(b2); }
+  else { const b2 = el("button","bigbtn" + (owed ? "" : " ghost")); b2.textContent = "Record a settlement"; b2.onclick = beginSettle; slot.appendChild(b2); }
 
   const live = liveClaims.map(c=>Object.assign({kind:"expense"},c))
     .concat(liveSettles.map(s=>Object.assign({kind:"settlement"},s)))
@@ -5606,6 +5642,14 @@ function commitCustodySave(){
   renderAll();
 }
 
+/* The two custody paths (a repeating pattern vs tapping individual days) sit
+   side by side as buttons but were never named as alternatives — a parent
+   could tap either without knowing the other existed or why it might fit
+   better. One quiet line, shown wherever both buttons are reachable. */
+function custodyPathsHint(){
+  return el("p","sub custodyhint","A repeating pattern covers the usual week going forward. Tapping days is for "
+    + "one-off weeks or exceptions — either can be used any time, and using one does not rule out the other.");
+}
 function paintEntryButton(){
   const b = el("button","bigbtn ghost","Assign days by tapping");
   b.onclick = ()=>{ State.paint = {parent:null, days:{}, confirming:false, nudge:false}; State.calDay = null; renderCalendar(); window.scrollTo(0,0); };
@@ -5630,12 +5674,18 @@ function calCustodyPanel(){
 
   const pats = Store.allCustodyPatterns();
   if(!pats.length){
+    /* "both will see it" used to be said no matter what the header's sync line claimed —
+       on device mode nothing leaves this phone, so the two sentences disagreed. Same test
+       as renderSync's header line and the Log-tab handover flash (line ~3013). */
+    const shared = Store.mode !== "device";
     wrap.appendChild(emptyBox("No custody schedule set",
-      "Set a repeating schedule, or tap the dates one by one. Either parent can do it, and both will see it.","sched"));
+      "Set a repeating schedule, or tap the dates one by one. Either parent can do it" +
+      (shared ? ", and both will see it." : "; this copy is not shared with the other parent."),"sched"));
     const b = el("button","bigbtn");
     b.appendChild(ico("sched")); b.appendChild(el("span",null,"Set a repeating schedule"));
     b.onclick = ()=>{ State.custodyDraft = blankCustodyDraft(); renderCalendar(); };
     wrap.appendChild(b);
+    wrap.appendChild(custodyPathsHint());
     wrap.appendChild(paintEntryButton());
     return wrap;
   }
@@ -5652,6 +5702,7 @@ function calCustodyPanel(){
   const chg = el("button","bigbtn ghost");
   chg.appendChild(ico("sched")); chg.appendChild(el("span",null,"Change the schedule"));
   chg.onclick = ()=>{ State.custodyDraft = blankCustodyDraft(); renderCalendar(); };
+  wrap.appendChild(custodyPathsHint());
   wrap.appendChild(paintEntryButton());
   wrap.appendChild(chg);
 
@@ -6554,6 +6605,20 @@ Store.init();
   ck("original preserved", r.orig.sev === 2 && r.orig.note === "first");
   ck("edited flagged", r.edited === true && r.voided === false);
 
+  // the live severity legend (Record tab, previously print-only) must name
+  // all five rungs and use the same --sevN/--sevN-edge tokens the severity
+  // chips already use — never re-inventing a second colour source.
+  if(typeof sevLegend === "function"){
+    const lg = sevLegend();
+    const swatches = Array.from(lg.querySelectorAll("i"));
+    ck("severity legend: one swatch per SEV rung, in order, with its own token colours",
+       swatches.length === SEV.length &&
+       swatches.every((i,idx)=> i.style.background === "var(--sev" + SEV[idx].n + ")" &&
+                                 i.style.borderColor === "var(--sev" + SEV[idx].n + "-edge)"));
+    ck("severity legend: every anchor phrase is named in the visible text",
+       SEV.every(s=> lg.textContent.indexOf(s.anchor) >= 0));
+  }
+
   const v = resolve({id:"y", sev:1, revs:[{at:1, void:true}]});
   ck("void flagged", v.voided === true);
 
@@ -7204,6 +7269,42 @@ Store.init();
        balanceSentence(5050, true) === "To settle: $50.50, Mom to Dad." &&
        balanceSentence(-150, true) === "To settle: $1.50, Dad to Mom." && !/owed/.test(balanceSentence(5050,true)));
   })();
+
+  // ---- MONEY: primary action follows the balance. Nothing owed -> "Log a
+  // claim" is primary as before; a balance owed -> "Record a settlement"
+  // becomes primary instead, so the button that actually clears the debt is
+  // the one weighted heaviest. Real DOM only: renders into the live #moneySlot.
+  if(typeof renderMoney === "function" && typeof $ === "function"){
+    (function(){
+      const beforeExp = JSON.stringify(Store.expenses), beforeSet = JSON.stringify(Store.settlements);
+      const beforeMe = State.me, beforeDraft = State.moneyDraft, beforeSettleDraft = State.settleDraft;
+      const realSaveLocal = Store.saveLocal, realPush = Store.push;
+      Store.saveLocal = function(){}; Store.push = function(){};
+      try {
+        State.me = "dad"; State.moneyDraft = null; State.settleDraft = null;
+        Store.expenses = {}; Store.settlements = {};
+        renderMoney();
+        const claimBtnEven = Array.from($("moneySlot").querySelectorAll(".bigbtn")).find(b=>/Log a claim/.test(b.textContent));
+        const settleBtnEven = Array.from($("moneySlot").querySelectorAll(".bigbtn")).find(b=>/Record a settlement/.test(b.textContent));
+        ck("money primary button: nothing owed keeps Log a claim primary",
+           !!claimBtnEven && !claimBtnEven.className.includes("ghost") &&
+           !!settleBtnEven && settleBtnEven.className.includes("ghost"));
+        Store.putExpense("dad", {id:"selfcheck_owe", who:"dad", payer:"dad", amount:10000, dadCents:5000, momCents:5000,
+          cat:"other", desc:"", date:Date.now(), created:Date.now(), revs:[]});
+        renderMoney();
+        const claimBtnOwed = Array.from($("moneySlot").querySelectorAll(".bigbtn")).find(b=>/Log a claim/.test(b.textContent));
+        const settleBtnOwed = Array.from($("moneySlot").querySelectorAll(".bigbtn")).find(b=>/Record a settlement/.test(b.textContent));
+        ck("money primary button: a balance owed makes Record a settlement primary",
+           !!settleBtnOwed && !settleBtnOwed.className.includes("ghost") &&
+           !!claimBtnOwed && claimBtnOwed.className.includes("ghost"));
+      } finally {
+        Store.saveLocal = realSaveLocal; Store.push = realPush;
+        Store.expenses = JSON.parse(beforeExp); Store.settlements = JSON.parse(beforeSet);
+        State.me = beforeMe; State.moneyDraft = beforeDraft; State.settleDraft = beforeSettleDraft;
+        if($("moneySlot")) renderMoney();
+      }
+    })();
+  }
 
   // ---- MONEY: category labels resolve; an unrecognised key falls back to
   // itself rather than rendering blank in a record a mediator reads.
@@ -7975,6 +8076,19 @@ Store.init();
       ck("selfcheck custody UI: renderCalendar shows the empty state with no pattern on record",
          $("calSlot").textContent.indexOf("No custody schedule set") >= 0);
 
+      /* the empty-state card used to say "both will see it" no matter what the
+         header's own sync line claimed on a device-only phone. The two must agree. */
+      const realMode = Store.mode;
+      try {
+        Store.mode = "device"; renderCalendar();
+        ck("calendar empty state: device mode does not promise the other parent will see it",
+           $("calSlot").textContent.indexOf("both will see it") === -1 &&
+           $("calSlot").textContent.indexOf("not shared with the other parent") >= 0);
+        Store.mode = "sync"; renderCalendar();
+        ck("calendar empty state: a shared copy still promises both will see it",
+           $("calSlot").textContent.indexOf("both will see it") >= 0);
+      } finally { Store.mode = realMode; renderCalendar(); }
+
       Store.putCustodyPattern("dad", "week", "2026-02-02", "2026-02-02", {parentA:"dad", parentB:"mom"});
       renderCalendar();
       ck("selfcheck custody UI: renderCalendar shows the pattern summary once one is on record",
@@ -8363,8 +8477,11 @@ Store.init();
         const n = $(id).querySelector(".plimits"), k = $(id).querySelector(".pkey"), v = $(id);
         ck("the " + id + " exhibit carries the disclosure line", !!n && /does not verify/.test(n.textContent));
         ck("the " + id + " exhibit closes with the SAME limits block, word for word, as its last text",
+           /* excludes #freshDetails: "Start fresh on this phone" is no-print app
+              chrome folded at the very bottom of the Record tab and never appears
+              in the printed exhibit, so a <p> inside it must not count as "last". */
            !!n && n.textContent === "Limits of this record. " + printLimitsText() &&
-           Array.from(v.querySelectorAll("p")).pop() === n);
+           Array.from(v.querySelectorAll("p")).filter(p=>!p.closest || !p.closest("#freshDetails")).pop() === n);
         ck("the " + id + " exhibit opens with a key to its own marks", !!k && !!n && k.textContent.length > 60 && (k.compareDocumentPosition(n) & 4) === 4);
       });
       ck("the Record key decodes all five severity numbers and the padlock",
