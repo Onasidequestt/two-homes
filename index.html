@@ -229,6 +229,10 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
        font-weight:700;font-size:14px;flex:none;
        transition:filter var(--t-tap) var(--ease-out)}
 .addgo:active{filter:brightness(.95)}
+/* the decline reason gets a full-width line: beside two buttons its placeholder read "Reason" */
+.adder.declinebox{flex-wrap:wrap;align-items:center}
+.adder.declinebox input{flex:1 0 100%}
+.adder.declinebox .cno{flex:1;padding:12px 10px;border-radius:9px;font-weight:700;font-size:14px}
 .adderr{margin-top:8px;font-size:12px;color:var(--danger);font-weight:600}
 /* rename/remove for a parent's own custom options, inside the same "+ Other"
    panel they used to add one — no settings screen, no 6th tab. */
@@ -5876,7 +5880,7 @@ function swapDeclineControl(r, act, direction){
   }
   const box = el("div","adder declinebox");
   const inp = document.createElement("input");
-  inp.type = "text"; inp.maxLength = 140; inp.placeholder = "Reason (optional). Both parents will see it";
+  inp.type = "text"; inp.maxLength = 140; inp.placeholder = "Reason, optional. Both parents see it";
   inp.setAttribute("aria-label","Reason for declining, optional. Both parents will see it and it prints in the record");
   no.textContent = "Decline this request";
   no.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "decline", inp.value.trim(), direction); State.calDeclineOpen = null; calDrawDaySheet(); };
