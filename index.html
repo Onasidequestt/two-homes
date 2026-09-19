@@ -10,9 +10,9 @@
 :root{
   color-scheme:light dark;
 
-  --paper:#F3F4F7; --surface:#FFFFFF; --surface-2:#ECEEF3; --sunk:#E3E6EC;
+  --paper:#F7F4EF; --surface:#FFFEFC; --surface-2:#F0EBE3; --sunk:#E9E3D9;
   --ink:#0E1116; --ink-2:#2E3440; --muted:#5B6372; --faint:#5B6372;
-  --line:#E2E5EB; --line-strong:#8A92A3;
+  --line:#E9E2D7; --line-strong:#8A8678;
   --accent:#3B4CCA; --accent-ink:#FFFFFF; --accent-soft:#E4E7FA;
   --sev1:#EFC9AE; --sev2:#E0A377; --sev3:#CE7A4B; --sev4:#B0512C; --sev5:#8A2F1C;
   --sev1-edge:#BF7A46; --sev2-edge:#B9703F; --sev3-edge:#A0552C; --sev4-edge:#8A3C1E; --sev5-edge:#6B2214;
@@ -24,7 +24,7 @@
   --dad:#3A5FA8; --mom:#7A4090;
   --primary:#0E1116; --primary-ink:#FFFFFF;
   --scrim:rgba(10,14,18,.5);
-  --r:20px; --shadow:0 1px 2px rgba(14,17,22,.05), 0 12px 32px rgba(14,17,22,.07);
+  --r:20px; --shadow:0 1px 2px rgba(60,40,10,.05), 0 14px 34px rgba(60,40,10,.08);
 
   /* ---------- MOTION SCALE — the only place a duration or curve is written ----------
      Two classes of change, deliberately different lengths:
@@ -898,6 +898,33 @@ textarea,input[type="number"],input[type="time"],input[type="date"],input[type="
 .gate .gatefoot{font-size:13px;color:var(--muted);margin-top:14px;line-height:1.5}
 .whoami .switchme{padding:0;font-size:12.5px;font-weight:600;margin-left:8px}
 
+/* ---------- SECTION COLOUR on WARM PAPER (Simon's pick 09-18 night, options shown as shots) ----------
+   Five panels held Beautiful at 5-6: "every screen is the same white card and black button".
+   Each tab now owns ONE hue, carried by --accent only, so every accent-coloured thing on that
+   tab (section icon, links, chips, hero card, the selected tab) follows without a new rule.
+   setTab() writes body[data-tab]; sheets live outside the views, so the hue sits on body.
+   Buttons stay ink (one primary). Dad blue / Mom purple / severity orange are NOT section hues.
+   TRAP: ramp-check reads the print block up to the first line-start brace, so the dark block below closes on its last rule's line. */
+body[data-tab="calendar"]{--accent:#0F766E;--accent-soft:#DDF1EE}
+body[data-tab="money"]{--accent:#1B7A4B;--accent-soft:#DFF2E6}
+body[data-tab="history"]{--accent:#51607A;--accent-soft:#E8EBF1}
+body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) body[data-tab="calendar"]{--accent:#5EC9BD;--accent-soft:#12332F}
+  :root:not([data-theme="light"]) body[data-tab="money"]{--accent:#6FCF97;--accent-soft:#143323}
+  :root:not([data-theme="light"]) body[data-tab="history"]{--accent:#A7B4CC;--accent-soft:#222A38}
+  :root:not([data-theme="light"]) body[data-tab="insights"]{--accent:#6FBDE3;--accent-soft:#12303F} }
+:root[data-theme="dark"] body[data-tab="calendar"]{--accent:#5EC9BD;--accent-soft:#12332F}
+:root[data-theme="dark"] body[data-tab="money"]{--accent:#6FCF97;--accent-soft:#143323}
+:root[data-theme="dark"] body[data-tab="history"]{--accent:#A7B4CC;--accent-soft:#222A38}
+:root[data-theme="dark"] body[data-tab="insights"]{--accent:#6FBDE3;--accent-soft:#12303F}
+.sec .ico{width:44px;height:44px;padding:9px;border-radius:14px;background:var(--accent-soft)}
+.moneybanner,.cal-sum{background:linear-gradient(180deg,var(--accent-soft),var(--surface) 150%)}
+.tab[aria-selected="true"]{position:relative}
+.tab[aria-selected="true"]::before{content:"";position:absolute;top:6px;left:50%;width:46px;height:30px;margin-left:-23px;
+                                   border-radius:999px;background:var(--accent-soft);z-index:-1}
+.tabs{isolation:isolate}
+
 @media print{
   /* listed three ways on purpose: the two dark selectors below are (0,2,0)
      and a bare :root (0,1,0) loses to them — a dark-mode phone printed a
@@ -913,6 +940,7 @@ textarea,input[type="number"],input[type="time"],input[type="date"],input[type="
     --sev1-ink:#1A0C04; --sev2-ink:#1A0C04; --sev3-ink:#1A0C04; --sev4-ink:#FFFFFF; --sev5-ink:#FFFFFF;
     --shadow:none;
   }
+  body[data-tab],:root:not([data-theme="light"]) body[data-tab],:root[data-theme="dark"] body[data-tab]{--accent:#1F4F54;--accent-soft:#fff}
   .tabs,.start,.linkbtn,.bigbtn,.scrim,.no-print,.whoami,.syncline{display:none !important}
   .about.shut .aboutbody{display:flex !important}
   body{background:#fff;font-size:11pt}
@@ -4850,6 +4878,7 @@ TABS.forEach(t=>{ if(t !== State.tab) State.staleTabs[t] = true; });
 let enterT = null;
 function setTab(name, focusTab){
   State.tab = name;
+  document.body.setAttribute("data-tab", name);   /* the section hue hangs off this */
   if(State.staleTabs[name]) renderTab(name);
   TABS.forEach(t=>{
     const v = $("v-"+t);
@@ -8285,6 +8314,26 @@ Store.init();
          document.body.appendChild(a); document.body.appendChild(b);
          const same = getComputedStyle(a).backgroundColor === getComputedStyle(b).backgroundColor;
          a.remove(); b.remove(); return same; })());
+
+      /* ---- section colour: each tab owns a hue, and every hue stays readable ---- */
+      ck("section colour: each tab has its own accent, and it clears 4.5:1 on its own tint, on a card, and under white", (function(){
+         const lin = c=>{ c/=255; return c<=.03928? c/12.92 : Math.pow((c+.055)/1.055,2.4); };
+         const L = h=>{ const n=parseInt(h.replace("#",""),16); return .2126*lin(n>>16&255)+.7152*lin(n>>8&255)+.0722*lin(n&255); };
+         const cr = (a,b)=>{ const x=L(a), y=L(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+         const was = document.body.getAttribute("data-tab"), seen = {}; let ok = true;
+         TABS.forEach(t=>{
+           document.body.setAttribute("data-tab", t);
+           const cs = getComputedStyle(document.body), g = n=>cs.getPropertyValue(n).trim();
+           const a = g("--accent"), soft = g("--accent-soft"), ink = g("--accent-ink"), surf = g("--surface");
+           if(seen[a]) ok = false; seen[a] = 1;
+           if(!(cr(a,soft) >= 4.5 && cr(a,surf) >= 4.5 && cr(ink,a) >= 4.5)) ok = false;
+         });
+         if(was === null) document.body.removeAttribute("data-tab"); else document.body.setAttribute("data-tab", was);
+         return ok;
+      })());
+      ck("section colour: switching tab moves the hue (setTab writes body[data-tab])", (function(){
+         const was = State.tab; setTab("money"); const m = document.body.getAttribute("data-tab");
+         setTab(was); return m === "money" && document.body.getAttribute("data-tab") === was; })());
     }
   })();
 
