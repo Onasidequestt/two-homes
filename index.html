@@ -647,6 +647,7 @@ textarea{border-radius:10px}
    lack: a balance banner, a split-preset row, and a receipt thumbnail. */
 .moneybanner{background:var(--surface);border-radius:var(--r);padding:18px 16px;box-shadow:var(--shadow);text-align:center}
 .moneybanner .big{font-size:21px;font-weight:700;letter-spacing:-.02em;line-height:1.35}
+.nm{font-weight:700} .nm.dad{color:var(--dad)} .nm.mom{color:var(--mom)}
 .moneybanner .sub2{font-size:12.5px;color:var(--muted);margin-top:5px}
 .eamt{font-size:15px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .mtitle{font-size:15.5px;font-weight:700;color:var(--ink);letter-spacing:-.015em;margin-top:2px}   /* = .evtitle: one title for every row that carries no severity */
@@ -673,6 +674,8 @@ textarea{border-radius:10px}
 .pick .dot{width:13px;height:13px}
 
 /* ---------- calendar ---------- */
+.cal-hd.lifted{margin-top:20px}   /* the lifted schedule card touched the month title */
+.calhint{font-size:12.5px;color:var(--muted);margin:8px 2px 0;text-align:center}
 .cal-hd{display:flex;align-items:center;justify-content:space-between;padding:0 2px}
 .cal-mo{font-size:16px;font-weight:700;letter-spacing:-.015em}
 .cal-nav{display:flex;gap:6px}
@@ -791,9 +794,13 @@ textarea{border-radius:10px}
 .eyebrow{font-size:12px;letter-spacing:.08em}
 .sub{font-size:15px}
 .panel,.pcard,.moneybanner{border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+/* RHYTHM: cards built into one slot sat flush against each other (Today on Handover notes,
+   "Record a settlement" on the ledger). One gap between any two stacked surfaces. */
+.panel + .panel,.panel + .daylist,.daylist + .panel,.bigbtn + .daylist,.bigbtn + .panel,.daylist + .daylist{margin-top:14px}
 .daily{background:var(--accent-soft);border-left:0;border-radius:var(--r);padding:20px}
 .daily h3{font-size:17px;letter-spacing:-.02em}
-.start,.bigbtn{background:var(--primary);color:var(--primary-ink)}
+/* ONE primary: inline actions (Log it, Ask, Accept) were indigo while every form Save was ink */
+.start,.bigbtn,.addgo,.cyes.affirm{background:var(--primary);color:var(--primary-ink)}
 .start{border-radius:var(--r);padding:22px;font-size:19px;font-weight:700;letter-spacing:-.02em;box-shadow:var(--shadow)}
 .bigbtn{border-radius:16px;letter-spacing:-.015em}
 .bigbtn.ghost{background:var(--surface);color:var(--ink);border:0;box-shadow:0 0 0 1px var(--line), var(--shadow)}
@@ -932,6 +939,7 @@ textarea,input[type="number"],input[type="time"],input[type="date"],input[type="
   #v-money{display:none !important}
   #v-custodyprint{display:none !important}
   .storebanner,.timerpill{display:none !important}
+  .nm.dad,.nm.mom{color:inherit}
   /* PRINTED TABLES: set as a document, not a spreadsheet export. Horizontal rules only,
      small-caps column heads that repeat on every page, figures that line up, and a row
      never split across two pages. */
@@ -2704,7 +2712,7 @@ function renderSync(){
   try { pending = JSON.parse(localStorage.getItem("bbl.outbox")||"[]").length; } catch(e){}
   if(pending){
     d.className = "syncdot local";
-    m.textContent = pending + (pending===1 ? " entry" : " entries") + " not sent yet — on this device only";
+    m.textContent = pending + (pending===1 ? " change" : " changes") + " not sent yet — on this device only";
     return;
   }
   if(Store.mode === "device"){
@@ -4295,7 +4303,7 @@ function renderMoney(){
   }
 
   const banner = el("div","moneybanner");
-  banner.appendChild(el("div","big", balanceSentence(cents, anyRecord)));
+  banner.appendChild(paintNames(el("div","big"), balanceSentence(cents, anyRecord)));
   if(anyRecord){
     const voidedCount = voidedClaims.length + voidedSettles.length;
     banner.appendChild(el("div","sub2",
@@ -4353,6 +4361,16 @@ function renderMoney(){
   }
 }
 
+/* WHO IS WHO, IN COLOUR (Simon 09-18): Dad is blue and Mom is purple on the calendar and the
+   badges, and Money wrote both names in plain ink. One helper colours every "Dad"/"Mom" in a
+   money sentence; the words themselves do not change, so print and screen readers are as before. */
+function paintNames(node, text){
+  String(text).split(/\b(Dad|Mom)\b/).forEach(part=>{
+    if(part === WHO_NAME.dad || part === WHO_NAME.mom) node.appendChild(el("span","nm " + (part === WHO_NAME.dad ? "dad" : "mom"), part));
+    else if(part) node.appendChild(document.createTextNode(part));
+  });
+  return node;
+}
 function splitSummary(e){
   const note = (e.splitPct===50 && e.amount % 2 === 1)
     ? " (odd cent to " + WHO_NAME[e.payer] + ", who paid)" : "";
@@ -4376,7 +4394,7 @@ function moneyRow(e){
     body.appendChild(top);
     body.appendChild(el("div","mtitle", moneyCatLabel(e.cat)));
     /* same meta line as a Record row: the facts, then the name. The pill carries the name only. */
-    body.appendChild(rowMeta([splitSummary(e), "paid by"], e.payer));
+    body.appendChild(rowMeta([paintNames(el("span",null), splitSummary(e)), "paid by"], e.payer));
     if(e.desc) body.appendChild(el("div","enote", e.desc));
     if(e.receipt && e.receipt.dataUrl){
       const tw = el("div","receipt-thumb");
@@ -4454,7 +4472,7 @@ function splitRecapLines(cents, payer, pct){
     head: WHO_NAME[payer] + " paid " + centsToDollars(cents) + ".",
     shares: WHO_NAME.dad + "'s share " + centsToDollars(sp.dadCents) + " · " +
             WHO_NAME.mom + "'s share " + centsToDollars(sp.momCents) +
-            (pct === 50 ? " (half each)" : " (" + pct + "% to " + WHO_NAME[payer] + ", who paid)"),
+            (pct === 50 ? " (half each)" : " (" + WHO_NAME[payer] + " covers " + pct + "%, " + WHO_NAME[other] + " " + (100-pct) + "%)"),
     owes: owedByOther > 0
       ? WHO_NAME[other] + " owes " + WHO_NAME[payer] + " " + centsToDollars(owedByOther) + " for this claim."
       : WHO_NAME[payer] + " is carrying all of this one — it adds nothing to the balance.",
@@ -4469,9 +4487,9 @@ function updateSplitPreview(){
   node.innerHTML = "";
   const r = splitRecapLines(dollarsToCents(d.amount), d.payer, d.splitPct);
   if(!r){ node.textContent = "Enter an amount to see the split."; return; }
-  const a = el("div",null); a.appendChild(el("b",null,r.head)); node.appendChild(a);
-  node.appendChild(el("div",null,r.shares));
-  const c = el("div",null); c.appendChild(el("b",null,r.owes)); node.appendChild(c);
+  const a = el("div",null); a.appendChild(paintNames(el("b",null), r.head)); node.appendChild(a);
+  node.appendChild(paintNames(el("div",null), r.shares));
+  const c = el("div",null); c.appendChild(paintNames(el("b",null), r.owes)); node.appendChild(c);
   if(r.odd) node.appendChild(el("div",null,r.odd));
 }
 
@@ -5026,7 +5044,7 @@ function renderCalendar(){
   /* NO SCHEDULE YET: the set-a-schedule card goes ABOVE the grid. Under it, a new
      parent saw a bare month and the one card that fills it sat below the tab bar. */
   const liftCustody = !State.paint && !Store.allCustodyPatterns().length;
-  if(liftCustody) slot.appendChild(calCustodyPanel());
+  if(liftCustody){ slot.appendChild(calCustodyPanel()); hd.className = "cal-hd lifted"; }
   slot.appendChild(hd);
 
   const wds = el("div","cal-wds");
@@ -5059,6 +5077,8 @@ function renderCalendar(){
   });
   days.forEach(dstr=>grid.appendChild(calDayCell(dstr, dstr===today, evsByDay, episByDay)));
   slot.appendChild(grid);
+  /* nothing on screen said a day could be tapped; the grid is the only way to add an event */
+  if(!State.paint){ const hint = el("p","calhint","Tap any day to add an event, ask for a swap, or see that day."); hint.id = "calHint"; slot.appendChild(hint); }
 
   /* the month at a glance */
   const sm = monthCustodySummary(ym);
@@ -7969,7 +7989,7 @@ Store.init();
             const tags = Array.from(cell.querySelectorAll(".evtag"));
             return tags.length === 2 && /\bmore\b/.test(tags[1].className) && tags[1].textContent === "+2"; })());
           ck("ONE row grammar: in Record, Money and the day sheet the facts come first and the who-badge is LAST on the meta line", bad.length === 0 ? true : (console.log("row grammar broken in: " + bad.join(", ")), false));
-          ck("a Money row states the split ON its meta line, not in a quoted note", /Dad \$43\.75 · Mom \$43\.76/.test(rows["Money"].querySelector(".emeta").textContent) &&
+          ck("a Money row states the split ON its meta line, not in a quoted note", /Dad\s*\$43\.75 ·\s*Mom\s*\$43\.76/.test(rows["Money"].querySelector(".emeta").textContent) &&   /* \s*: names are spans now, and the node stub pads child text */
              Array.from(rows["Money"].querySelectorAll(".enote")).every(n=>!/\$43\.75/.test(n.textContent)));
         })();
         ck("the calendar's episode row reads the same headline", calEpisodeRow(ns).querySelector(".evtitle").textContent === "selfcheck nosev: threw her cup" && clean(calEpisodeRow(ns)));
@@ -7999,7 +8019,7 @@ Store.init();
     ck("the split recap names who owes whom, and the two shares still add up to the claim", (function(){
        const sp = assignSplit(10000, "mom", 70), r = splitRecapLines(10000, "mom", 70);
        return sp.dadCents + sp.momCents === 10000 &&
-         /^Mom paid \$100\.00\.$/.test(r.head) && /70% to Mom, who paid/.test(r.shares) &&
+         /^Mom paid \$100\.00\.$/.test(r.head) && /\(Mom covers 70%, Dad 30%\)/.test(r.shares) &&
          /Dad owes Mom \$30\.00 for this claim\./.test(r.owes);
     })());
     ck("a claim split 100% to the payer says the balance does not move, never 'owes $0.00'", (function(){
@@ -8050,6 +8070,14 @@ Store.init();
          const kids = Array.from($("calSlot").children);
          const iCard = kids.findIndex(n=>/No custody schedule set/.test(n.textContent)), iGrid = kids.findIndex(n=>/cal-grid/.test(n.className));
          ck("empty calendar: the set-a-schedule card sits ABOVE the month grid", iCard >= 0 && iGrid >= 0 && iCard < iGrid);
+         (function(){
+           const n = paintNames(el("div",null), "To settle: $50.50, Mom to Dad.");
+           const nm = Array.from(n.querySelectorAll(".nm"));
+           ck("money colours: every Dad is .nm.dad and every Mom is .nm.mom, and the sentence is unchanged",
+              nm.length === 2 && /mom/.test(nm[0].className) && nm[0].textContent === "Mom" && /dad/.test(nm[1].className) &&
+              n.textContent.replace(/\s+/g,"") === "Tosettle:$50.50,MomtoDad.");   /* the node stub pads child text; a browser does not */
+         })();
+         ck("calendar: a line under the grid says a day can be tapped", !!$("calHint") && /Tap any day/.test($("calHint").textContent));
          ck("empty calendar: the schedule card is drawn once, not twice",
             kids.filter(n=>/No custody schedule set/.test(n.textContent)).length === 1);
          Store.putCustodyPattern("dad","week","2026-02-02","2026-02-02",{parentA:"dad",parentB:"mom"}); renderCalendar();
