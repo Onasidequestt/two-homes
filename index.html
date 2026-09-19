@@ -118,6 +118,18 @@ html{scroll-padding-top:76px;scroll-padding-bottom:64px}
 .dot.dad{background:var(--dad)} .dot.mom{background:var(--mom)}
 .syncline{margin-top:6px;font-size:11.5px;color:var(--faint);display:flex;align-items:center;gap:6px}
 .syncdot{width:6px;height:6px;border-radius:50%;background:var(--faint);flex:none}
+/* STORAGE FULL is the one state where what is on screen is NOT on disk: a banner, not the
+   grey sync line it used to share with "Saved on this phone". */
+.storebanner{margin-top:8px;display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:10px;
+     background:color-mix(in srgb, var(--danger) 10%, var(--surface));border:1px solid var(--danger);color:var(--ink)}
+.storebanner .ico{width:20px;height:20px;color:var(--danger);flex:none;margin-top:1px}
+.storebanner b{display:block;font-size:13.5px;font-weight:700;line-height:1.3}
+.storebanner span{display:block;font-size:12.5px;color:var(--ink-2);line-height:1.45;margin-top:2px}
+/* a running timer follows the parent to every tab: it lives in the sticky header */
+.timerpill{margin-top:8px;width:100%;display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;
+     border:1px solid var(--accent);background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;text-align:left}
+.timerpill .livedot{width:8px;height:8px;border-radius:50%;background:var(--danger);flex:none}
+.timerpill:active{filter:brightness(.96)}
 .syncdot.ok{background:var(--good)} .syncdot.local{background:var(--warn)} .syncdot.danger{background:var(--danger)}
 
 /* ---------- tabs ---------- */
@@ -862,6 +874,16 @@ textarea,input[type="number"],input[type="time"],input[type="date"],input[type="
 .gate .pick button:active{box-shadow:0 0 0 2px var(--accent), var(--shadow)}
 .gate .pick #pickDad .ico{color:var(--dad)}
 .gate .pick #pickMom .ico{color:var(--mom)}
+.gate .gatemark{width:76px;height:48px;margin-bottom:2px}
+.gate .gatemark .hd{stroke:var(--dad);fill:color-mix(in srgb, var(--dad) 12%, transparent)}
+.gate .gatemark .hm{stroke:var(--mom);fill:color-mix(in srgb, var(--mom) 12%, transparent)}
+.gate .gatemark .hl{stroke:var(--accent)}
+.gate .gateholds{list-style:none;margin:2px 0 6px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gate .gateholds li{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--surface);
+                    box-shadow:0 0 0 1px var(--line);font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.gate .gateholds .ico{width:18px;height:18px;color:var(--accent)}
+.gate .pick #pickDad{background:color-mix(in srgb, var(--dad) 9%, var(--surface));box-shadow:0 0 0 1.5px color-mix(in srgb, var(--dad) 45%, var(--line)), var(--shadow)}
+.gate .pick #pickMom{background:color-mix(in srgb, var(--mom) 9%, var(--surface));box-shadow:0 0 0 1.5px color-mix(in srgb, var(--mom) 45%, var(--line)), var(--shadow)}
 .gate .gatefoot{font-size:13px;color:var(--muted);margin-top:14px;line-height:1.5}
 .whoami .switchme{padding:0;font-size:12.5px;font-weight:600;margin-left:8px}
 
@@ -905,6 +927,18 @@ textarea,input[type="number"],input[type="time"],input[type="date"],input[type="
      The custody/swap exhibit gets the identical treatment, same reason. */
   #v-money{display:none !important}
   #v-custodyprint{display:none !important}
+  .storebanner,.timerpill{display:none !important}
+  /* PRINTED TABLES: set as a document, not a spreadsheet export. Horizontal rules only,
+     small-caps column heads that repeat on every page, figures that line up, and a row
+     never split across two pages. */
+  .exhibit-tbl{font-size:9.5pt;line-height:1.4;border-top:1.5pt solid #000;border-bottom:1pt solid #000;font-variant-numeric:tabular-nums}
+  .exhibit-tbl thead{display:table-header-group}
+  .exhibit-tbl th,.exhibit-tbl td{border:0;border-bottom:.5pt solid #999;padding:5pt 8pt 5pt 0}
+  .exhibit-tbl th{background:none;font-size:7.5pt;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+                  color:#333;border-bottom:1pt solid #000;vertical-align:bottom;white-space:nowrap}
+  .exhibit-tbl td:first-child{font-weight:700;white-space:nowrap}
+  .exhibit-tbl tr{break-inside:avoid}
+  .exhibit-tbl tbody tr:last-child td{border-bottom:0}
 }
 /* ---------- money print exhibit ----------
    A second, independent @media print block rather than editing the one above:
@@ -966,6 +1000,8 @@ textarea,input[type="number"],input[type="time"],input[type="date"],input[type="
       <div class="whoami"><span class="dot" id="meDot"></span><span id="meName"></span><button type="button" class="linkbtn switchme" id="switchMe">Switch</button></div>
     </div>
     <div class="syncline" role="status"><span class="syncdot" id="syncDot"></span><span id="syncMsg">Connecting…</span></div>
+    <div class="storebanner" id="storeBanner" role="alert" hidden><span class="ico" data-ico="warn"></span><div><b>Not saved: this phone is out of storage</b><span>Your last change is on screen only. Delete a receipt photo, or free up space on the phone, then save again.</span></div></div>
+    <button type="button" class="timerpill" id="timerPill" hidden><span class="livedot" aria-hidden="true"></span><span id="timerPillText"></span></button>
   </header>
 
   <main>
@@ -1092,9 +1128,16 @@ textarea,input[type="number"],input[type="time"],input[type="date"],input[type="
 </div>
 
 <div class="gate" id="gate" hidden>
+  <svg class="gatemark" viewBox="0 0 64 40" aria-hidden="true" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path class="hd" d="M4 36V18L17 7l13 11v18z"/><path class="hm" d="M34 36V18L47 7l13 11v18z"/><path class="hl" d="M26 36h12"/>
+  </svg>
   <p class="brand">Two Homes</p>
   <p class="lede">A shared record for a child with two homes — episodes, calendar, custody and expenses.
      Both parents write to it. Nothing is deleted or edited in place, so what it shows is what was logged.</p>
+  <ul class="gateholds" aria-label="What it holds">
+    <li><span class="ico" data-ico="log"></span>Episodes</li><li><span class="ico" data-ico="calendar"></span>Calendar</li>
+    <li><span class="ico" data-ico="money"></span>Expenses</li><li><span class="ico" data-ico="record"></span>The record</li>
+  </ul>
   <h1>Which parent are you?</h1>
   <p class="sub">Your entries carry this name. It is a label, not a sign-in — the app cannot tell who
      is holding the phone. It is saved on this device, so it is asked once.</p>
@@ -1386,6 +1429,7 @@ const ICOP = {
   person:   '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c1.2-3.6 3.8-5.4 7-5.4s5.8 1.8 7 5.4"/>',
   print:    '<path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1.5"/><path d="M7 15.5h10V20H7z"/>',
   plus:     '<path d="M12 5v14M5 12h14"/>',
+  warn:     '<path d="M12 4.5L21 19.5H3z"/><path d="M12 10.5v4M12 17.2v.1"/>',
   check:    '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   next:     '<path d="M5 12h13l-4-4M18 12l-4 4"/>',
   swap:     '<path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5"/>',
@@ -2640,6 +2684,7 @@ function renderSync(){
   /* A failed local save outranks everything else here, including an unsent
      entry: it means the write this device just made is NOT on disk at all,
      which is worse than merely not yet reaching the other parent. */
+  const sb = $("storeBanner"); if(sb) sb.hidden = !Store.storageError;
   if(Store.storageError){
     d.className = "syncdot danger";
     m.textContent = "Not saved — this device's storage is full. Delete a receipt photo or free up space, then try again.";
@@ -2779,6 +2824,7 @@ function renderLog(){
   /* one job on screen at a time: the morning card steps aside while an episode
      is being timed or written up, and comes back the moment it is saved */
   $("dailySlot").hidden = !!State.draft;
+  paintTimerPill();
 
   if(State.flash){
     const fl = el("div","flash");
@@ -2882,9 +2928,8 @@ function handoverForm(){
   const save = el("button","bigbtn","Save note");
   save.onclick = saveHandover;
   wrap.appendChild(save);
-  const c = el("button","linkbtn danger-link","Discard");
-  c.onclick = ()=>{ State.handoverDraft = null; renderLog(); };
-  wrap.appendChild(c);
+  wrap.appendChild(discardControl(()=>{ const h = State.handoverDraft||{}; return !!(h.sleep || h.eat || (h.good||"").trim() || (h.next||"").trim()); },
+    ()=>{ State.handoverDraft = null; renderLog(); }));
   return wrap;
 }
 function saveHandover(){
@@ -2923,6 +2968,19 @@ function todayStrip(){
   return box;
 }
 
+/* RUNNING-TIMER INDICATOR: the timer used to be visible on the Log tab only, so a parent who
+   looked at the calendar mid-tantrum had no sign it was still counting. The timer itself
+   stays a small link (ruling); this only shows that one is running, and leads back to it. */
+function timerRunning(){ return !!(State.draft && State.draft.measured && !State.draft.end); }
+function paintTimerPill(){
+  const p = $("timerPill"); if(!p) return;
+  const on = timerRunning();
+  p.hidden = !on;
+  if(!on) return;
+  $("timerPillText").textContent = "Timer running · " + stopwatch(Math.floor((Date.now()-State.draft.start)/1000)) +
+    (State.tab === "log" ? "" : " · back to Log");
+  p.onclick = ()=>setTab("log", true);
+}
 function beginLive(){
   State.draft = {start:Date.now(), end:null, measured:true, sev:null, trig:null, place:null, resp:null, note:""};
   State.tick = setInterval(()=>{
@@ -2932,6 +2990,7 @@ function beginLive(){
        lived for exactly one tick. */
     const t = $("liveClock");
     if(t && State.draft && !State.draft.end) t.textContent = stopwatch(Math.floor((Date.now()-State.draft.start)/1000));
+    paintTimerPill();
   }, 1000);
   renderLog();
 }
@@ -2986,6 +3045,26 @@ function endDraft(){
   if(State.tick){ clearInterval(State.tick); State.tick = null; }
   renderLog();
 }
+/* DISCARD asks once, in place, with no browser modal: it sat right under Save and one slip
+   threw away a typed account. Nothing to lose (untouched form) = no question asked. */
+function discardControl(isDirty, onDiscard){
+  const wrap = el("div","discardwrap");
+  const c = el("button","linkbtn danger-link","Discard"); c.type = "button";
+  c.onclick = ()=>{
+    if(!isDirty()){ onDiscard(); return; }
+    wrap.innerHTML = "";
+    const box = el("div","confirmbox"); box.setAttribute("role","group"); box.setAttribute("aria-label","Discard what you typed?");
+    box.appendChild(el("p",null,"Discard what you typed? It has not been saved, so it cannot be brought back."));
+    const act = el("div","confirmact");
+    const yes = el("button","cyes","Discard it"); yes.type = "button"; yes.onclick = onDiscard;
+    const no = el("button","cno","Keep editing"); no.type = "button";
+    no.onclick = ()=>{ wrap.innerHTML = ""; wrap.appendChild(c); };
+    act.appendChild(no); act.appendChild(yes); box.appendChild(act);
+    wrap.appendChild(box);
+  };
+  wrap.appendChild(c);
+  return wrap;
+}
 function cancelDraft(){
   if(State.tick){ clearInterval(State.tick); State.tick = null; }
   State.draft = null;
@@ -2996,6 +3075,15 @@ let chipRowSeq = 0;
 /* A blocked Save used to explain itself only in the dock at the bottom of a long
    form. The sentence now also sits at each unanswered field, and the first one is
    brought into view, so the parent is never left hunting for what stopped them. */
+/* ABOVE SAVE: a count only (Simon's ruling 09-18). Each unanswered field already says what
+   it needs, in place (fieldNeed); naming them again above Save said everything twice.
+   ponytail: the custody form still names its gaps here, because not all of its fields
+   carry a fieldNeed yet. Upgrade path = give them one, then call this there too. */
+function stillNeededLine(n){
+  const e = el("div","err stillcount", n + (n===1 ? " thing" : " things") + " still needed");
+  e.setAttribute("role","alert");
+  return e;
+}
 function fieldNeed(what){ return el("div","err fielderr","Still needed: " + what + "."); }
 function showFirstMissing(root){
   const m = root && root.querySelector && root.querySelector(".field.missing");
@@ -3325,7 +3413,7 @@ function draftForm(){
   const sf = el("div","field");
   const sl = el("div","qlab"); sl.id = "sevlab";
   sl.appendChild(el("span",null,"How far it went"));
-  const sevTag = d.sev ? el("span","req ok","✓ ANSWERED") : el("span","opt","optional");
+  const sevTag = d.sev ? el("span","req ok","✓ ANSWERED") : el("span","opt","you can skip this one");
   sl.appendChild(sevTag);
   sf.appendChild(sl);
   /* WORDS FIRST, IN FACT (Simon's ruling 09-18, after a blind Mom scored 4.5): "optional" did not
@@ -3404,8 +3492,7 @@ function draftForm(){
     if(!d.trig) still.push("trigger");
     if(!d.place) still.push("where");
     if(still.length){
-      const e = el("div","err","Still needed: " + still.join(", ") + ".");
-      e.setAttribute("role","alert");
+      const e = stillNeededLine(still.length);
       dock.appendChild(e);
     }
   }
@@ -3434,9 +3521,7 @@ function draftForm(){
     dock.appendChild(b);
   }
 
-  const c = el("button","linkbtn danger-link","Discard");
-  c.onclick = cancelDraft;
-  wrap.appendChild(c);
+  wrap.appendChild(discardControl(()=>{ const x = State.draft||{}; return !!(x.measured || String(x.note||"").trim() || x.sev || x.trig || x.place || x.resp); }, cancelDraft));
   return wrap;
 }
 
@@ -4553,8 +4638,7 @@ function claimForm(){
     if(!d.cat) still.push("category");
     if(!d.payer) still.push("who paid");
     if(still.length){
-      const e = el("div","err","Still needed: " + still.join(", ") + ".");
-      e.setAttribute("role","alert");
+      const e = stillNeededLine(still.length);
       wrap.appendChild(e);
     }
   }
@@ -4566,9 +4650,7 @@ function claimForm(){
   save.onclick = saveClaim;
   wrap.appendChild(save);
   }
-  const disc = el("button","linkbtn danger-link","Discard");
-  disc.onclick = cancelClaim;
-  wrap.appendChild(disc);
+  wrap.appendChild(discardControl(()=>{ const x = State.moneyDraft||{}; return !!(String(x.amount||"").trim() || x.cat || String(x.note||"").trim() || x.receipt); }, cancelClaim));
   return wrap;
 }
 
@@ -4640,7 +4722,7 @@ function settlePrefill(cents, me){
 }
 function beginSettle(){
   const pre = settlePrefill(ledgerBalance(Store.allExpenses().filter(c=>!c.voided), Store.allSettlements().filter(s=>!s.voided)), State.me);
-  State.settleDraft = {payer:pre.payer, amount:pre.amount, dateStr:dayOf(Date.now()), note:"", missing:null};
+  State.settleDraft = {payer:pre.payer, amount:pre.amount, amount0:pre.amount, dateStr:dayOf(Date.now()), note:"", missing:null};
   renderMoney();
 }
 function cancelSettle(){ State.settleDraft = null; renderMoney(); }
@@ -4691,8 +4773,7 @@ function settleForm(){
     if(!d.payer) still.push("who paid");
     if(!amtOk) still.push("a valid amount");
     if(still.length){
-      const e = el("div","err","Still needed: " + still.join(", ") + ".");
-      e.setAttribute("role","alert");
+      const e = stillNeededLine(still.length);
       wrap.appendChild(e);
     }
   }
@@ -4703,9 +4784,7 @@ function settleForm(){
   save.onclick = saveSettle;
   wrap.appendChild(save);
   }
-  const disc = el("button","linkbtn danger-link","Discard");
-  disc.onclick = cancelSettle;
-  wrap.appendChild(disc);
+  wrap.appendChild(discardControl(()=>{ const x = State.settleDraft||{}; return !!(String(x.amount||"") !== String(x.amount0||"") || String(x.note||"").trim()); }, cancelSettle));
   return wrap;
 }
 
@@ -4768,6 +4847,7 @@ function setTab(name, focusTab){
      class early would snap them to full width */
   enterT = setTimeout(()=>v.classList.remove("entering"), ms("--t-view") + ms("--t-grow") + 40);
   if(focusTab) $("t-"+name).focus();
+  paintTimerPill();
   window.scrollTo(0,0);   /* instant by design: a tall view plus a moving thumb */
 }
 function tabKey(ev){
@@ -4939,6 +5019,10 @@ function renderCalendar(){
   nextB.onclick = ()=>{ State.calMonth = shiftYm(ym,1); renderCalendar(); };
   nav.appendChild(prevB); nav.appendChild(todayB); nav.appendChild(nextB);
   hd.appendChild(nav);
+  /* NO SCHEDULE YET: the set-a-schedule card goes ABOVE the grid. Under it, a new
+     parent saw a bare month and the one card that fills it sat below the tab bar. */
+  const liftCustody = !State.paint && !Store.allCustodyPatterns().length;
+  if(liftCustody) slot.appendChild(calCustodyPanel());
   slot.appendChild(hd);
 
   const wds = el("div","cal-wds");
@@ -5003,7 +5087,7 @@ function renderCalendar(){
   slot.appendChild(pb);
   calDrawPaintBar();
 
-  if(!State.paint) slot.appendChild(calCustodyPanel());
+  if(!State.paint && !liftCustody) slot.appendChild(calCustodyPanel());
 
   if(State.calDay) calDrawDaySheet();
 }
@@ -5186,11 +5270,10 @@ function custodyPatternSummary(patternType, def, effectiveFrom){
     };
   }
   if(patternType === "custom"){
-    const seq = def.sequence || [], tot = {dad:0, mom:0}; seq.forEach(w=>{ if(tot[w] != null) tot[w]++; });
+    const seq = def.sequence || [], rc = sequenceRecap(seq);
     return {
       who: "repeats every " + seq.length + " days",
-      text: "From " + from + ": " + sequenceRuns(seq).map(r=>WHO_NAME[r.who] + " " + r.n).join(", ") +
-            ", then again. Dad " + tot.dad + ", Mom " + tot.mom + " in each " + seq.length + " days."
+      text: "From " + from + ": " + rc.runs + ", then it repeats. " + rc.totals
     };
   }
   // "week"
@@ -5232,6 +5315,17 @@ function parseSplit(text, first){
   return seq;
 }
 /* a sequence back to words: "Dad 5, Mom 2" */
+/* ONE wording for a custom split, used by the form preview AND the saved schedule line.
+   "Mom 2, Dad 2, Mom 5, Dad 5. That is Dad 7, Mom 7" read as a miscount: bare numbers with
+   no unit, and totals in a different order from the runs. Every number now carries "days". */
+function sequenceRecap(seq){
+  const n = k=>k + (k===1 ? " day" : " days");
+  const tot = {dad:0, mom:0}; (seq||[]).forEach(w=>{ if(tot[w] != null) tot[w]++; });
+  return {
+    runs: sequenceRuns(seq).map(r=>WHO_NAME[r.who] + " " + n(r.n)).join(", then "),
+    totals: "Each " + n((seq||[]).length) + " add up to " + n(tot.dad) + " with Dad and " + n(tot.mom) + " with Mom."
+  };
+}
 function sequenceRuns(seq){
   const runs = [];
   (seq||[]).forEach(w=>{ const last = runs[runs.length-1]; if(last && last.who === w) last.n++; else runs.push({who:w, n:1}); });
@@ -5264,10 +5358,8 @@ function customSequenceField(d){
       b.onclick = ()=>{ d.sequence = d.sequence.slice(); d.sequence[i] = otherOf(d.sequence[i]); d.confirming = false; draw(); };
       strip.appendChild(b);
     });
-    const runs = sequenceRuns(d.sequence);
-    const tot = {dad:0, mom:0}; d.sequence.forEach(w=>tot[w]++);
-    help.textContent = "Repeats every " + d.sequence.length + " days: " + runs.map(r=>WHO_NAME[r.who] + " " + r.n).join(", ") +
-      ". That is Dad " + tot.dad + ", Mom " + tot.mom + ". Tap any day to switch it.";
+    const rc = sequenceRecap(d.sequence);
+    help.textContent = rc.runs + ", then it repeats. " + rc.totals + " Tap any day to switch it.";
   };
   inp.oninput = ()=>{ d.splitText = inp.value; d.sequence = d.parentPick ? parseSplit(d.splitText, d.parentPick) : null; d.confirming = false; draw(); };
   /* CHIPS are the way in; typing is the fallback behind "Other". One mechanism
@@ -5764,6 +5856,36 @@ function calSwapSection(dstr){
   return wrap;
 }
 
+/* THE DECLINE REASON (Simon's ruling 09-18): Store.respondToSwap always took a note, and no
+   screen ever asked for one or showed it. One helper words the outcome for the swap row
+   (both parents) AND the printed record, so the two cannot drift. The reason is quoted as
+   the responder's own words; the outcome word stays the flat "Declined". */
+function swapOutcomeText(r){
+  if(!r.response) return "Awaiting response";
+  const word = r.response.decision === "accept" ? "Accepted" : "Declined";
+  const note = (r.response.note || "").trim();
+  return note ? word + ". Reason given: “" + note + "”" : word;
+}
+/* Decline is two taps: the first opens an optional reason box, the second records it. */
+function swapDeclineControl(r, act, direction){
+  const no = el("button","cno","Decline");
+  if(State.calDeclineOpen !== r.id){
+    no.onclick = ()=>{ State.calDeclineOpen = r.id; calDrawDaySheet(); };
+    act.appendChild(no);
+    return null;
+  }
+  const box = el("div","adder declinebox");
+  const inp = document.createElement("input");
+  inp.type = "text"; inp.maxLength = 140; inp.placeholder = "Reason (optional). Both parents will see it";
+  inp.setAttribute("aria-label","Reason for declining, optional. Both parents will see it and it prints in the record");
+  no.textContent = "Decline this request";
+  no.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "decline", inp.value.trim(), direction); State.calDeclineOpen = null; calDrawDaySheet(); };
+  const back = el("button","linkbtn","Cancel");
+  back.onclick = ()=>{ State.calDeclineOpen = null; calDrawDaySheet(); };
+  box.appendChild(inp); box.appendChild(no); box.appendChild(back);
+  return box;
+}
+
 function calSwapRow(r){
   const row = el("div","panel calswap");
   const top = el("div","etop");
@@ -5784,10 +5906,10 @@ function calSwapRow(r){
         /* copy rule: "Declined" — never "refused", never "wouldn't". The record
            states an outcome, not a character judgement, because both parents
            and eventually a mediator read it. */
-        const no = el("button","cno","Decline");
-        no.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "decline"); calDrawDaySheet(); };
-        act.appendChild(yes); act.appendChild(no);
+        act.appendChild(yes);
+        const dbox = swapDeclineControl(r, act);
         row.appendChild(act);
+        if(dbox) row.appendChild(dbox);
       } else {
         /* Legacy request, no direction on record. NEVER guess which parent
            the day should go to — make the responder state it explicitly,
@@ -5800,10 +5922,10 @@ function calSwapRow(r){
         yesMe.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "accept", "", "responder"); calDrawDaySheet(); };
         const yesThem = el("button","cyes","Accept — " + WHO_NAME[r.by] + " keeps it");
         yesThem.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "accept", "", "requester"); calDrawDaySheet(); };
-        const no = el("button","cno","Decline");
-        no.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "decline"); calDrawDaySheet(); };
-        act.appendChild(yesMe); act.appendChild(yesThem); act.appendChild(no);
+        act.appendChild(yesMe); act.appendChild(yesThem);
+        const dbox = swapDeclineControl(r, act);
         row.appendChild(act);
+        if(dbox) row.appendChild(dbox);
       }
     } else {
       row.appendChild(el("p","sub","Waiting on " + WHO_NAME[otherOf(r.by)] + "."));
@@ -5812,6 +5934,8 @@ function calSwapRow(r){
     const verdict = r.response.decision === "accept" ? "Accepted" : "Declined";
     row.appendChild(el("p","sub", verdict + " by " + WHO_NAME[r.response.by] + " · " +
       new Date(r.response.at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})));
+    const why = (r.response.note || "").trim();
+    if(why){ const p = el("p","sub swapwhy", "Reason given: “" + why + "”"); row.appendChild(p); }
   }
   return row;
 }
@@ -5922,7 +6046,7 @@ function renderCustodyPrint(fromStr, toStr){
     const tbody = document.createElement("tbody");
     swaps.sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
       const tr = document.createElement("tr");
-      const outcome = r.response ? (r.response.decision === "accept" ? "Accepted" : "Declined") : "Awaiting response";
+      const outcome = swapOutcomeText(r);
       [
         friendlyExhibitDate(r.date),
         WHO_NAME[r.by],
@@ -7215,6 +7339,13 @@ Store.init();
       Store.saveLocal();
       ck("a storage-quota failure sets Store.storageError instead of failing silently",
          !!Store.storageError && typeof Store.storageError.at === "number");
+      renderSync();
+      const bannerUp = !!$("storeBanner") && $("storeBanner").hidden === false;
+      const heldErr = Store.storageError;
+      Store.storageError = null; renderSync();
+      ck("storage full: a banner is up while the write is failing, and down once it is not",
+         bannerUp && $("storeBanner").hidden === true);
+      Store.storageError = heldErr;   /* put it back: the next check must see a REAL error get cleared */
       localStorage.setItem = function(){};  // simulates a write that now succeeds, without
                                              // touching the REAL mirror during a self-check
       Store.saveLocal();
@@ -7501,6 +7632,16 @@ Store.init();
       ck("print exhibit distinguishes a one-off EXCEPTION day from a pattern day", /✎ Changed for this day/.test(text) && !/[✕✗✘]/.test(text));
       ck("print exhibit distinguishes an ACCEPTED SWAP day from a plain exception", /⇄ Accepted swap/.test(text));
       ck("a DECLINED swap appears with its outcome, the flat word \"Declined\"", /Declined/.test(text));
+      ck("swap decline reason: the printed record carries the reason the responder typed",
+         /Declined\. Reason given: “Already have plans”/.test(text));
+      (function(){
+        const dr = Store.swapWithResponse().find(x=>x.id===idDecline), wasMe = State.me;
+        const seen = ["dad","mom"].map(w=>{ State.me = w; return /Reason given: “Already have plans”/.test(calSwapRow(dr).textContent); });
+        State.me = wasMe;
+        ck("swap decline reason: the swap row shows it to BOTH parents", seen[0] && seen[1]);
+        const ar = {id:"x", by:"mom", at:1, date:"2026-09-06", wantsCustody:"requester", response:{decision:"accept", note:"", at:2, by:"dad"}};
+        ck("swap decline reason: no reason typed means no reason line", !/Reason given/.test(calSwapRow(ar).textContent) && swapOutcomeText(ar) === "Accepted");
+      })();
       ck("a declined swap is never editorialised as \"refused\" or \"wouldn't\"", !/refused|wouldn.t/i.test(text));
       ck("an UNANSWERED swap request appears, stated as awaiting response", /Awaiting response/.test(text));
       ck("a withdrawn event still appears in the exhibit, never omitted", text.indexOf("Soccer game") >= 0);
@@ -7689,7 +7830,7 @@ Store.init();
        resolvePatternParent(cp,"2026-09-21")==="dad" && resolvePatternParent(cp,"2026-09-25")==="dad" &&
        resolvePatternParent(cp,"2026-09-26")==="mom" && resolvePatternParent(cp,"2026-09-28")==="dad" &&
        resolvePatternParent(cp,"2026-09-20")==="mom");
-    ck("a custom split says its own numbers", /: Dad 5, Mom 2, then again/.test(custodyPatternSummary("custom", cp.definition, "2026-09-21").text));
+    ck("a custom split says its own numbers", /: Dad 5 days, then Mom 2 days, then it repeats\. Each 7 days add up to 5 days with Dad and 2 days with Mom\./.test(custodyPatternSummary("custom", cp.definition, "2026-09-21").text));
 
     // backdated entries
     const today = dayOf(Date.now()), two = addDaysStr(today,-2);
@@ -7893,6 +8034,68 @@ Store.init();
           /Where/.test($("logSlot").textContent) &&
           !/Next: two quick questions/.test($("logSlot").textContent));
        State.draft = bd; renderLog();
+    })();
+
+    /* ---- 09-18 late: empty calendar, custom wording, step one, discard, timer ---- */
+    (function(){
+       const bd = State.draft, bTab = State.tab, bPat = JSON.stringify(Store.custodyPatterns), bCD = State.custodyDraft, bPaint = State.paint;
+       const realSave = Store.saveLocal, realPush = Store.push, realTick = State.tick;
+       Store.saveLocal = function(){}; Store.push = function(){};
+       try {
+         Store.custodyPatterns = {}; State.custodyDraft = null; State.paint = null; renderCalendar();
+         const kids = Array.from($("calSlot").children);
+         const iCard = kids.findIndex(n=>/No custody schedule set/.test(n.textContent)), iGrid = kids.findIndex(n=>/cal-grid/.test(n.className));
+         ck("empty calendar: the set-a-schedule card sits ABOVE the month grid", iCard >= 0 && iGrid >= 0 && iCard < iGrid);
+         ck("empty calendar: the schedule card is drawn once, not twice",
+            kids.filter(n=>/No custody schedule set/.test(n.textContent)).length === 1);
+         Store.putCustodyPattern("dad","week","2026-02-02","2026-02-02",{parentA:"dad",parentB:"mom"}); renderCalendar();
+         const k2 = Array.from($("calSlot").children);
+         ck("a calendar WITH a schedule keeps its schedule card below the grid",
+            k2.findIndex(n=>/Change the schedule/.test(n.textContent)) > k2.findIndex(n=>/cal-grid/.test(n.className)));
+       } finally { Store.custodyPatterns = JSON.parse(bPat); State.custodyDraft = bCD; State.paint = bPaint; renderCalendar(); }
+       try {
+         const rc = sequenceRecap(parseSplit("2-2-5-5","mom"));
+         ck("custom split wording: every number carries its unit and the totals say what they total",
+            rc.runs === "Mom 2 days, then Dad 2 days, then Mom 5 days, then Dad 5 days" &&
+            rc.totals === "Each 14 days add up to 7 days with Dad and 7 days with Mom.");
+         ck("custom split wording: one day is 'day', not 'days'", /Dad 1 day,/.test(sequenceRecap(["dad","mom","mom"]).runs + ","));
+
+         beginRetro(); renderLog();
+         ck("step one: the severity tag no longer says a bare 'optional'",
+            Array.from($("logSlot").querySelectorAll(".opt")).some(n=>n.textContent === "you can skip this one"));
+         /* tap() never throws: a missing button must turn its OWN check red, not crash the run */
+         const btn = t=>Array.from($("logSlot").querySelectorAll("button")).filter(b=>b.textContent === t)[0];
+         const tap = t=>{ const b = btn(t); if(b && b.onclick){ b.onclick(); return true; } return false; };
+         const disc = ()=>btn("Discard");
+         State.draft.note = "He threw the cup"; renderLog(); tap("Discard");
+         ck("discard: a typed draft is NOT thrown away on the first tap; it asks in place",
+            !!State.draft && /Discard what you typed\?/.test($("logSlot").textContent));
+         const kept = tap("Keep editing");
+         ck("discard: 'Keep editing' keeps the draft and puts the Discard link back",
+            kept && !!State.draft && State.draft.note === "He threw the cup" && !!disc() && !/Discard what you typed\?/.test($("logSlot").textContent));
+         tap("Discard"); tap("Discard it");
+         ck("discard: confirming does discard", State.draft === null);
+         State.draft = null; beginRetro(); renderLog(); tap("Discard");
+         ck("discard: an untouched form closes without a question", State.draft === null);
+
+         beginRetro(); State.draft.stepOpen = true; State.draft.missing = ["x"]; State.draft.note = "n"; renderLog();
+         const sc = $("logSlot").querySelector(".stillcount");
+         ck("above Save: the line is a count only ('2 things still needed'), the fields name them",
+            !!sc && sc.textContent === "2 things still needed" && /Still needed: trigger/.test($("logSlot").textContent));
+         State.draft.trig = "no"; renderLog();
+         ck("above Save: one gap reads '1 thing still needed'", $("logSlot").querySelector(".stillcount").textContent === "1 thing still needed");
+         State.draft = null;
+
+         ck("timer indicator: hidden while no timer runs", (paintTimerPill(), $("timerPill").hidden === true));
+         beginLive(); State.tab = "calendar"; paintTimerPill();
+         ck("timer indicator: a running timer shows in the header on another tab, with the way back",
+            $("timerPill").hidden === false && /^Timer running · \d+:\d\d · back to Log$/.test($("timerPillText").textContent));
+         endDraft();
+         ck("timer indicator: gone the moment the timer is stopped", $("timerPill").hidden === true);
+       } finally {
+         if(State.tick && State.tick !== realTick){ clearInterval(State.tick); } State.tick = realTick;
+         State.draft = bd; State.tab = bTab; Store.saveLocal = realSave; Store.push = realPush; renderLog();
+       }
     })();
 
     /* ---- locked Insights cards are ONE card, not a wall ----
