@@ -157,6 +157,25 @@ html{scroll-padding-top:76px;scroll-padding-bottom:64px}
 .timerpill:active{filter:brightness(.96)}
 .syncdot.ok{background:var(--good)} .syncdot.local{background:var(--warn)} .syncdot.danger{background:var(--danger)}
 
+/* ---------- messages (session 88 4b) ----------
+   Bubbles carry the sender's own colour (--dad-bg/--mom-bg), never colour
+   alone: the name is printed on every bubble too. Own messages sit right,
+   the other parent's sit left — mirroring a normal chat, not a ledger. */
+.msgthread{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.msgempty{padding:16px 0}
+.msgbubble{max-width:82%;border-radius:14px;padding:9px 12px;display:flex;flex-direction:column;gap:2px}
+.msgbubble.dad{background:var(--dad-bg)} .msgbubble.mom{background:var(--mom-bg)}
+.msgbubble.mine{align-self:flex-end;align-items:flex-end;text-align:right}
+.msgbubble.theirs{align-self:flex-start;align-items:flex-start;text-align:left}
+.msgwho{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.msgwho.dad{color:var(--dad)} .msgwho.mom{color:var(--mom)}
+.msgtext{font-size:15px;line-height:1.4;white-space:pre-wrap;color:var(--ink)}
+.msgmeta{font-size:11px;color:var(--muted)}
+.msgcomposer{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.msgcomposer label{font-size:13px;font-weight:700}
+.msgcomposer textarea{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;
+     background:var(--surface);color:var(--ink);resize:vertical}
+
 /* ---------- tabs ---------- */
 .tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:.5px solid var(--line);
       background:color-mix(in srgb, var(--surface) 82%, transparent);
@@ -987,15 +1006,18 @@ body[data-tab="calendar"]{--accent:#0F766E;--accent-soft:#DDF1EE}
 body[data-tab="money"]{--accent:#1B7A4B;--accent-soft:#DFF2E6}
 body[data-tab="history"]{--accent:#51607A;--accent-soft:#E8EBF1}
 body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
+body[data-tab="messages"]{--accent:#9B4F1F;--accent-soft:#F5E6D8}
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]) body[data-tab="calendar"]{--accent:#5EC9BD;--accent-soft:#12332F}
   :root:not([data-theme="light"]) body[data-tab="money"]{--accent:#6FCF97;--accent-soft:#143323}
   :root:not([data-theme="light"]) body[data-tab="history"]{--accent:#A7B4CC;--accent-soft:#222A38}
-  :root:not([data-theme="light"]) body[data-tab="insights"]{--accent:#6FBDE3;--accent-soft:#12303F} }
+  :root:not([data-theme="light"]) body[data-tab="insights"]{--accent:#6FBDE3;--accent-soft:#12303F}
+  :root:not([data-theme="light"]) body[data-tab="messages"]{--accent:#E5A468;--accent-soft:#3A2717} }
 :root[data-theme="dark"] body[data-tab="calendar"]{--accent:#5EC9BD;--accent-soft:#12332F}
 :root[data-theme="dark"] body[data-tab="money"]{--accent:#6FCF97;--accent-soft:#143323}
 :root[data-theme="dark"] body[data-tab="history"]{--accent:#A7B4CC;--accent-soft:#222A38}
 :root[data-theme="dark"] body[data-tab="insights"]{--accent:#6FBDE3;--accent-soft:#12303F}
+:root[data-theme="dark"] body[data-tab="messages"]{--accent:#E5A468;--accent-soft:#3A2717}
 .sec .ico{width:44px;height:44px;padding:9px;border-radius:14px;background:var(--accent-soft)}
 .moneybanner,.cal-sum{background:linear-gradient(180deg,var(--accent-soft),var(--surface) 150%)}
 .tab[aria-selected="true"]{position:relative}
@@ -1053,6 +1075,7 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
      The custody/swap exhibit gets the identical treatment, same reason. */
   #v-money{display:none !important}
   #v-custodyprint{display:none !important}
+  #v-messages{display:none !important}
   .storebanner,.timerpill{display:none !important}
   .nm.dad,.nm.mom{color:inherit}
   .sevlegend{display:none !important}   /* the printed exhibit already decodes severity in .pkey text */
@@ -1097,6 +1120,18 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
 @media print{
   body.print-custody #v-history{display:none !important}
   body.print-custody #v-custodyprint{display:flex !important}
+}
+/* ---------- messages print exhibit ----------
+   A FOURTH, independent @media print block, same pattern as money/custody
+   above: #msgPrintBtn sets this class right before window.print() and
+   nothing else. #v-messages IS a real tab, so unlike custody it can already
+   be the visible view on screen — this override exists for the case a
+   parent opened Print messages while on some OTHER tab is not reachable
+   (the button only lives inside Messages), but it keeps the same defensive
+   shape as its siblings rather than assuming that. */
+@media print{
+  body.print-messages #v-history{display:none !important}
+  body.print-messages #v-messages{display:flex !important}
 }
 
 /* ---------- reduced motion ----------
@@ -1204,6 +1239,9 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
         <p class="sub"><b>est</b> beside a length means it was entered afterwards from memory, not timed. A lock marks an entry the other parent wrote — only they can revise it.</p></div>
         <p class="sub" id="limitsLine" hidden></p>
       </div>
+      <!-- Insights moved off the tab bar (session 88 4b); this is the one clearly
+           labelled way in, per Simon's ruling that a 6-tab bar does not fit a phone. -->
+      <button type="button" class="bigbtn ghost no-print" id="recordInsightsBtn"><span class="ico" data-ico="insights"></span><span>See Insights</span></button>
       <div class="printonly pmast" data-mast="record"></div>
       <p class="sub printonly" id="recordCover"></p>
       <p class="sub printonly pkey" data-k="record"></p>
@@ -1218,14 +1256,39 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
       </details>
     </section>
 
+    <!-- ============ MESSAGES (session 88 4b): a permanent thread between the two
+         parents. No edit, no delete — a correction is a new message, same as
+         every other collection in this app. Part of the printed record. ============ -->
+    <section class="view" id="v-messages" role="tabpanel" aria-labelledby="t-messages" tabindex="0" hidden>
+      <div class="about shut">
+        <h2 class="sec"><span class="ico" data-ico="messages"></span><span>Messages</span></h2>
+        <button type="button" class="linkbtn aboutbtn" aria-expanded="false">How this works</button>
+        <div class="aboutbody"><p class="sub">Messages are permanent: neither parent can edit or delete one once it is sent. A
+           correction is a new message, same as everything else in this record.</p></div>
+      </div>
+      <p class="sub" id="msgPermNote">Messages are permanent, cannot be edited or deleted, and are part of the printed record.</p>
+      <p class="sub" id="msgDeviceNote" hidden>On this phone only — messages stay on this phone until sharing is set up.</p>
+      <div class="printonly pmast" data-mast="messages"></div>
+      <div class="printonly" id="msgPrintSlot"></div>
+      <div id="msgThreadSlot"></div>
+      <div class="msgcomposer no-print">
+        <label for="msgInput" id="msgInputLab">Write a message</label>
+        <textarea id="msgInput" rows="3" maxlength="2000" aria-labelledby="msgInputLab"></textarea>
+        <button type="button" class="bigbtn" id="msgSendBtn" disabled>Send</button>
+      </div>
+      <button class="bigbtn ghost no-print" id="msgPrintBtn"><span class="ico" data-ico="print"></span><span>Print messages</span></button>
+    </section>
+
     <!-- ============ INSIGHTS (Trends + Patterns merged, 2026-09-17 ruling:
          a 6-tab bar does not fit a phone) — the time series answers "is this
          changing", the cards below answer "what does the lifetime shape look
          like"; the no-parent-comparison caveat is shared by both and sits
          once, up top, verbatim from the old Patterns tab. ============ -->
-    <section class="view" id="v-insights" role="tabpanel" aria-labelledby="t-insights" tabindex="0" hidden>
+    <section class="view" id="v-insights" role="region" aria-label="Insights" tabindex="0" hidden>
       <div class="about shut">
-        <h2 class="sec"><span class="ico" data-ico="insights"></span><span>Insights</span></h2>
+        <h2 class="sec"><span class="ico" data-ico="insights"></span><span>Insights</span><span class="cnt" id="cnt-insights" hidden>—</span></h2>
+        <!-- Insights left the tab bar (session 88 4b) — this is the one way back to Record. -->
+        <button type="button" class="linkbtn no-print" id="insightsBackBtn"><span class="ico" data-ico="record"></span><span>Back to Record</span></button>
         <button type="button" class="linkbtn aboutbtn" aria-expanded="false">How this works</button>
         <div class="aboutbody"><p class="sub">How much is being recorded over time, and the shapes in the record as a whole. Each
            card below stays locked until a count here would mean more than chance.</p>
@@ -1256,7 +1319,7 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
     <button class="tab" role="tab" id="t-calendar" aria-controls="v-calendar" aria-selected="false" tabindex="-1"><span class="ico" data-ico="calendar"></span><span>Calendar</span><span class="cnt" id="cnt-calendar">—</span><span class="ambertab" id="ambTabDot" hidden aria-hidden="true">?</span></button>
     <button class="tab" role="tab" id="t-money" aria-controls="v-money" aria-selected="false" tabindex="-1"><span class="ico" data-ico="money"></span><span>Money</span><span class="cnt" id="cnt-money">—</span></button>
     <button class="tab" role="tab" id="t-history" aria-controls="v-history" aria-selected="false" tabindex="-1"><span class="ico" data-ico="record"></span><span>Record</span><span class="cnt" id="cnt-history">—</span></button>
-    <button class="tab" role="tab" id="t-insights" aria-controls="v-insights" aria-selected="false" tabindex="-1"><span class="ico" data-ico="insights"></span><span>Insights</span><span class="cnt" id="cnt-insights">—</span></button>
+    <button class="tab" role="tab" id="t-messages" aria-controls="v-messages" aria-selected="false" tabindex="-1"><span class="ico" data-ico="messages"></span><span>Messages</span><span class="cnt" id="cnt-messages">—</span></button>
   </nav>
 </div>
 
@@ -1567,6 +1630,7 @@ const ICOP = {
   money:    '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5a2.5 2.5 0 0 1 2.5-1.5h1a2.25 2.25 0 0 1 0 4.5h-1a2.25 2.25 0 0 0 0 4.5h1a2.5 2.5 0 0 0 2.5-1.5"/>',
   record:   '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>',
   insights: '<path d="M4 17l5-5 3.5 3.5L20 8"/><path d="M20 13V8h-5"/>',
+  messages: '<path d="M4 5.5h16v10H9l-4 3.5v-3.5H4z"/><path d="M8 9.5h8M8 12.5h5"/>',
   write:    '<path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>',
   person:   '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c1.2-3.6 3.8-5.4 7-5.4s5.8 1.8 7 5.4"/>',
   print:    '<path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1.5"/><path d="M7 15.5h10V20H7z"/>',
@@ -1757,6 +1821,8 @@ const Store = {
   swapRequests:{},       // who -> {who, items:{id:request}}
   swapResponses:{},      // who -> {who, items:{requestId:response}}
   scheduleAccepts:{},    // who -> {who, items:{id:{id,patternId,at,by}}}  append-only, one accept per who per tap
+  messages:{},           // who -> {who, items:{id:{id,text,at,by}}}      append-only, no edit/delete API at all
+  messageSeen:{},        // who -> {who, items:{msgId:{id,at,by}}}        first-seen only, never overwritten
   storageError:null,     // {at,message} set by saveLocal() when the local write
                           // failed (quota, etc), cleared the next time one succeeds
 
@@ -1875,7 +1941,7 @@ const Store = {
      all read it, so a new collection cannot be saved yet survive a reset. */
   MIRROR_KEYS: ["entries","days","options","expenses","settlements","calEvents","calNotes",
                 "custodyPatterns","custodyExceptions","swapRequests","swapResponses","handovers",
-                "scheduleAccepts"],
+                "scheduleAccepts","messages","messageSeen"],
   /* START FRESH — device mode ONLY. There the phone's own storage is the whole record,
      so emptying it is honest. In any shared mode the record is append-only on a server
      and both parents rely on it: a local wipe would only pretend, so this refuses and
@@ -2366,6 +2432,53 @@ const Store = {
     const out = [];
     Object.values(this.scheduleAccepts).forEach(doc=>Object.values(doc.items||{}).forEach(a=>out.push(a)));
     return out;
+  },
+  /* ---- MESSAGES (session 88 4b): a permanent, printed thread — no edit, no
+     delete, ever. putMessage refuses an empty (or whitespace-only) body and
+     caps length so one paste cannot balloon the record; markSeen is written
+     ONLY by the parent who did NOT send the message, and only once — a
+     second open of the tab must never move a real "Seen <time>" backwards
+     or overwrite it with a later tap. Per-who doc, same append-only family
+     as swapRequests/scheduleAccepts. ---- */
+  putMessage(who, text){
+    const t = (text||"").trim();
+    if(!t) return null;
+    const id = "msg_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    const doc = this.messages[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    doc.items[id] = {id, text:t.slice(0,2000), at:Date.now(), by:who};
+    this.messages[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("messages", who);
+    return id;
+  },
+  allMessages(){
+    const out = [];
+    Object.values(this.messages).forEach(doc=>Object.values(doc.items||{}).forEach(m=>out.push(m)));
+    return out.sort((a,b)=>a.at-b.at);
+  },
+  /* first-seen only: if a seen record already exists for this message, this
+     call does nothing at all — not even to `who`'s own record — so a later
+     re-open can never push the shown "Seen" time forward. */
+  markSeen(who, msgId){
+    const msg = this.allMessages().find(m=>m.id===msgId);
+    if(!msg || msg.by === who) return;      // never marks your OWN message seen
+    if(this.seenAt(msgId) != null) return;  // first-seen only, never overwritten
+    const doc = this.messageSeen[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    doc.items[msgId] = {id:msgId, at:Date.now(), by:who};
+    this.messageSeen[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("messageSeen", who);
+  },
+  seenAt(msgId){
+    let hit = null;
+    Object.values(this.messageSeen).forEach(doc=>{ const x = doc.items && doc.items[msgId]; if(x && (!hit || x.at < hit.at)) hit = x; });
+    return hit ? hit.at : null;
+  },
+  /* unread FOR `who`: messages the OTHER parent sent that `who` has not yet opened. */
+  unreadCount(who){
+    return this.allMessages().filter(m=>m.by !== who && this.seenAt(m.id) == null).length;
   },
   /* Append-only, same guarantee as every other collection: a second accepted
      swap landing on a date this parent already has an exception for used to
@@ -2912,7 +3025,8 @@ function renderFresh(){
 const MASTHEAD = {
   record:  "Behaviour and episodes",
   money:   "Money and settlements",
-  custody: "Custody schedule and swaps"
+  custody: "Custody schedule and swaps",
+  messages:"Messages"
 };
 /* Simon's ruling 09-18 (direction3 option A): full letterhead band on the
    printed exhibit, including the REAL date range of what's being printed —
@@ -2947,6 +3061,7 @@ function fillMastheads(extra){
     let range = null;
     if(k === "record") range = mastheadRangeText(Store.allEntries().map(e=>e.start));
     else if(k === "money") range = mastheadRangeText(Store.allExpenses().map(c=>c.date).concat(Store.allSettlements().map(s=>s.date)));
+    else if(k === "messages") range = mastheadRangeText(Store.allMessages().map(m=>m.at));
     fillMasthead(n, k, range);
   });
 }
@@ -5160,23 +5275,32 @@ function saveSettle(){
 /* U3: 6 -> 5 tabs, Trends+Patterns merged into one "Insights" tab (a 6-tab bar
    does not fit a phone — sealed ruling, 2026-09-17). Order: Log, Calendar,
    Money, Record, Insights. */
-const TABS = ["log","calendar","money","history","insights"];
+/* session 88 4b: Insights leaves the tab bar (Simon 09-18 — a button on
+   Record reaches it instead), Messages joins it — still 5 nav tabs.
+   RENDER_TABS is every view that has a renderTab()/staleTabs entry,
+   nav bar or not, so Insights keeps rebuilding itself the moment it's
+   opened even though it no longer has a tablist button of its own. */
+const TABS = ["log","calendar","money","history","messages"];
+const RENDER_TABS = TABS.concat(["insights"]);
 /* every tab starts stale except the one that's visible on first paint —
    renderAll()'s first call (once State.me is chosen) renders State.tab and
    leaves these alone; setTab() below rebuilds a tab the moment it's actually
    opened, so no tab is ever SHOWN stale, only left un-rebuilt while hidden. */
-TABS.forEach(t=>{ if(t !== State.tab) State.staleTabs[t] = true; });
+RENDER_TABS.forEach(t=>{ if(t !== State.tab) State.staleTabs[t] = true; });
 let enterT = null;
 function setTab(name, focusTab){
   State.tab = name;
   document.body.setAttribute("data-tab", name);   /* the section hue hangs off this */
   if(State.staleTabs[name]) renderTab(name);
-  TABS.forEach(t=>{
+  RENDER_TABS.forEach(t=>{
     const v = $("v-"+t);
     v.classList.remove("entering");
     v.hidden = (t !== name);
-    $("t-"+t).setAttribute("aria-selected", String(t === name));
-    $("t-"+t).setAttribute("tabindex", t === name ? "0" : "-1");
+    const btn = $("t-"+t);              /* Insights has a view but no tablist button (session 88 4b) */
+    if(btn){
+      btn.setAttribute("aria-selected", String(t === name));
+      btn.setAttribute("tabindex", t === name ? "0" : "-1");
+    }
   });
   const v = $("v-"+name);
   /* forced reflow so re-adding the class restarts the animation deterministically
@@ -5188,7 +5312,7 @@ function setTab(name, focusTab){
      while the bars inside are still growing at --t-grow, and cancelling the
      class early would snap them to full width */
   enterT = setTimeout(()=>v.classList.remove("entering"), ms("--t-view") + ms("--t-grow") + 40);
-  if(focusTab) $("t-"+name).focus();
+  if(focusTab && $("t-"+name)) $("t-"+name).focus();   /* Insights has no tablist button (session 88 4b) */
   paintTimerPill();
   window.scrollTo(0,0);   /* instant by design: a tall view plus a moving thumb */
 }
@@ -6681,6 +6805,82 @@ function calCommitEventRevision(base, isVoid){
   calDrawDaySheet();
 }
 
+/* ============================================================
+   MESSAGES (session 88 4b) — a permanent thread, oldest first, scrolled to
+   newest. No edit/delete API exists anywhere in Store for it (see
+   Store.putMessage/markSeen above); a correction is a new message.
+   ============================================================ */
+function msgTimeText(at){ return friendlyDay(dayOf(at)) + " " + clockOf(at); }
+function msgBubble(m, me){
+  const mine = m.by === me;
+  const b = el("div","msgbubble " + m.by + " " + (mine ? "mine" : "theirs"));
+  b.appendChild(el("span","msgwho " + m.by, WHO_NAME[m.by]));
+  b.appendChild(el("p","msgtext", m.text));
+  const seenAt = Store.seenAt(m.id);
+  const meta = "Sent " + msgTimeText(m.at) + " · " + (seenAt != null ? "Seen " + msgTimeText(seenAt) : "Not seen yet");
+  b.appendChild(el("p","msgmeta", meta));
+  return b;
+}
+function renderMessages(){
+  const slot = $("msgThreadSlot"); if(!slot) return;
+  slot.innerHTML = "";
+  const device = Store.mode === "device";
+  const dn = $("msgDeviceNote"); if(dn) dn.hidden = !device;
+  const all = Store.allMessages();
+  /* opening the tab marks the OTHER parent's messages seen — markSeen already
+     ignores our own and never overwrites an earlier seen record. */
+  if(State.me) all.filter(m=>m.by !== State.me).forEach(m=>Store.markSeen(State.me, m.id));
+  if(!all.length){
+    slot.appendChild(el("p","sub msgempty", "No messages yet. " + (device
+      ? "A message you write stays on this phone until sharing is set up."
+      : "Write one below — " + WHO_NAME[otherWho()] + " will see it.")));
+  } else {
+    const thread = el("div","msgthread");
+    all.forEach(m=>thread.appendChild(msgBubble(m, State.me)));
+    slot.appendChild(thread);
+    slot.scrollTop = slot.scrollHeight;
+  }
+  updateTabCounts();
+}
+function paintMsgSend(){
+  const ta = $("msgInput"), btn = $("msgSendBtn");
+  if(!ta || !btn) return;
+  btn.disabled = ta.value.trim().length === 0;
+}
+function sendMessage(){
+  const ta = $("msgInput"); if(!ta) return;
+  const t = ta.value.trim();
+  if(!t) return;
+  Store.putMessage(State.me, t);
+  ta.value = "";
+  paintMsgSend();
+  renderMessages();
+}
+/* Built fresh at print time, same pattern as renderCustodyPrint: a table using
+   the shared .exhibit-tbl print styling already defined in the main @media
+   print block, so no new print CSS is needed for the rows themselves. */
+function renderMessagesPrint(){
+  const slot = $("msgPrintSlot"); if(!slot) return;
+  slot.innerHTML = "";
+  const all = Store.allMessages();
+  if(!all.length){ slot.appendChild(el("p","sub","No messages on record yet.")); return; }
+  const tbl = document.createElement("table"); tbl.className = "exhibit-tbl";
+  const thead = document.createElement("thead"); const htr = document.createElement("tr");
+  ["Sender","Sent","Seen","Message"].forEach(h=>{ const th = document.createElement("th"); th.textContent = h; htr.appendChild(th); });
+  thead.appendChild(htr); tbl.appendChild(thead);
+  const tbody = document.createElement("tbody");
+  all.forEach(m=>{
+    const tr = document.createElement("tr");
+    const seenAt = Store.seenAt(m.id);
+    [WHO_NAME[m.by], msgTimeText(m.at), seenAt != null ? msgTimeText(seenAt) : "Not seen", m.text].forEach(v=>{
+      const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  slot.appendChild(tbl);
+}
+
 /* U2: one entry per TABS name, each doing exactly what renderAll used to do
    unconditionally for that tab (same guards, same comments moved inline).
    renderTab() is the only thing allowed to clear State.staleTabs[name] —
@@ -6696,6 +6896,10 @@ const TAB_RENDER = {
     if(!State.draft) renderLog();
   },
   history(){ renderHistory(); },
+  /* opening Messages marks the OTHER parent's messages seen (design doc: "Opening
+     the tab marks the other parent's messages seen") — render first so the badge/
+     seen-times reflect the write immediately. */
+  messages(){ renderMessages(); },
   /* U3: Insights = Trends (time series) then Patterns (lifetime cards), in that
      reading order, both still their own functions/slots — only the tab they
      live under merged. */
@@ -6735,6 +6939,13 @@ function updateTabCounts(){
   const evAll = Store.allEvents().filter(e=>!e.voided);
   const thisMonthEvs = evAll.filter(e=>e.date.slice(0,7) === dayOf(Date.now()).slice(0,7)).length;
   $("cnt-calendar").textContent = tabCountLabel(thisMonthEvs, " this mo");
+  /* Messages tab count is the UNREAD badge, not a lifetime total (session 88 4b) —
+     it is a call to action, not a record of volume, so it disappears at zero. */
+  const unread = State.me ? Store.unreadCount(State.me) : 0;
+  const cm = $("cnt-messages");
+  if(cm) cm.textContent = tabCountLabel(unread, " unread", " unread");
+  const tMsg = $("t-messages");
+  if(tMsg) tMsg.setAttribute("aria-label", "Messages" + (unread ? " — " + unread + (unread===1 ? " unread" : " unread") : ""));
   /* amber tab badge (session 88): a "?" beside Calendar while a change request
      is unanswered — never colour-only, the glyph and the tab's own aria-label
      both carry it, same rule as the month-grid mark. */
@@ -6759,7 +6970,7 @@ function renderAll(){
      simply not redrawn while nobody can see it. The tab-bar count badges stay
      unconditional: they're visible regardless of which tab is open. */
   renderTab(State.tab);
-  TABS.forEach(t=>{ if(t !== State.tab) State.staleTabs[t] = true; });
+  RENDER_TABS.forEach(t=>{ if(t !== State.tab) State.staleTabs[t] = true; });
   updateTabCounts();
 }
 
@@ -6772,6 +6983,12 @@ TABS.forEach(t=>{
   $("t-"+t).onkeydown = tabKey;
 });
 $("printBtn").onclick = ()=>window.print();
+/* focusTab is omitted for both: Insights has no tablist button to focus
+   (setTab would try $("t-insights").focus() and there is none), and Record's
+   own t-history button already exists so it COULD focus, but this is a plain
+   navigation link, not tab-key cycling, so it does not grab focus either. */
+$("recordInsightsBtn").onclick = ()=>setTab("insights");
+$("insightsBackBtn").onclick = ()=>setTab("history");
 /* top-down only: the gate stub has no parentNode */
 function toggleAbout(box, btn){
   const open = box.className.indexOf("shut") >= 0;
@@ -6788,6 +7005,14 @@ function wireAbout(){
 wireAbout();
 paintIcons();
 $("moneyPrintBtn").onclick = ()=>{ document.body.classList.add("print-money"); window.print(); };
+$("msgInput").oninput = paintMsgSend;
+$("msgSendBtn").onclick = sendMessage;
+$("msgPrintBtn").onclick = ()=>{
+  renderMessagesPrint();
+  fillMastheads();
+  document.body.classList.add("print-messages");
+  window.print();
+};
 /* Sensible default range (last 30 days through today) so the exhibit is
    never printed with an accidentally-empty range on a first tap; the
    parent can still change either date before printing. */
@@ -6804,6 +7029,7 @@ $("custodyPrintBtn").onclick = ()=>{
 window.addEventListener("afterprint", ()=>{
   document.body.classList.remove("print-money");
   document.body.classList.remove("print-custody");
+  document.body.classList.remove("print-messages");
 });
 $("scrim").onclick = (ev)=>{ if(ev.target === $("scrim")) closeSheet(); };
 $("calScrim").onclick = (ev)=>{ if(ev.target === $("calScrim")) calCloseDay(); };
@@ -8029,8 +8255,8 @@ Store.init();
   ck("U3: six tabs merged to five", TABS.length === 5);
   ck("U3: no stale 'trends'/'patterns' tab name survived the merge",
      TABS.indexOf("trends") === -1 && TABS.indexOf("patterns") === -1);
-  ck("U3: Insights exists exactly once, in the ruled order",
-     TABS.join(",") === "log,calendar,money,history,insights");
+  ck("U3/4b: Messages replaced Insights in the tab bar, in the ruled order",
+     TABS.join(",") === "log,calendar,money,history,messages");
 
   // ---- U4: raw "n=" notation must never reach a rendered label again —
   // drives the REAL renderPatterns() (not a hand-built row) past its 24-entry/
@@ -9117,9 +9343,9 @@ Store.init();
     State.calDay = null; State.calAdding = null; State.calEditingEvent = null;
     State.custodyDraft = null; State.calExceptionDraft = null;
     if(bootMe){
-      TABS.forEach(t=>{ renderTab(t); });          /* rebuild every slot from the REAL store */
+      RENDER_TABS.forEach(t=>{ renderTab(t); });   /* rebuild every slot from the REAL store */
       setTab(bootTab);
-      TABS.forEach(t=>{ State.staleTabs[t] = (t !== bootTab); });
+      RENDER_TABS.forEach(t=>{ State.staleTabs[t] = (t !== bootTab); });
       updateTabCounts();
       $("meName").textContent = WHO_NAME[bootMe];
       $("meDot").className = "dot " + bootMe;
@@ -9128,9 +9354,9 @@ Store.init();
          real store without an identity, so empty every slot a probe drew into and
          mark each tab stale — the first real render happens after the pick. */
       State.tab = bootTab;
-      ["logSlot","dailySlot","calSlot","moneySlot","histSlot","patSlot","trendSlot","custodyPrintSlot"]
-        .forEach(id=>{ $(id).innerHTML = ""; });
-      TABS.forEach(t=>{ State.staleTabs[t] = true; });
+      ["logSlot","dailySlot","calSlot","moneySlot","histSlot","patSlot","trendSlot","custodyPrintSlot","messagesSlot"]
+        .forEach(id=>{ if($(id)) $(id).innerHTML = ""; });
+      RENDER_TABS.forEach(t=>{ State.staleTabs[t] = true; });
     }
     ck("the self-check leaves the identity it booted with", State.me === bootMe);
     /* the FIRST load on any phone has no identity: the chooser must still be the
@@ -9228,6 +9454,96 @@ Store.init();
        mastheadSub(null).indexOf("kept by Selfcheck-Dad-Name and " + WHO_NAME.mom) !== -1);
     WHO_NAME.dad = realDad;
   })();
+
+  /* ============================================================
+     MESSAGES (session 88 4b) — Store methods, tab bar shape, and the
+     printed exhibit. Every check that mutates Store restores it in a
+     finally, exactly like the swap/schedule probes above.
+     ============================================================ */
+  (function(){
+    const beforeMsg = JSON.stringify(Store.messages), beforeSeen = JSON.stringify(Store.messageSeen);
+    const realSave = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      Store.messages = {}; Store.messageSeen = {};
+      ck("putMessage refuses an empty (or whitespace-only) body", Store.putMessage("dad", "   ") === null && Store.allMessages().length === 0);
+      const id = Store.putMessage("dad", "  selfcheck message one  ");
+      ck("putMessage trims and stores the text, stamped by who sent it", !!id && Store.allMessages()[0].text === "selfcheck message one" && Store.allMessages()[0].by === "dad");
+      ck("no Store method named like edit/delete/remove a message exists — messages are permanent",
+         !Object.keys(Store).some(k=>/message/i.test(k) && /(edit|delete|remove)/i.test(k)));
+      ck("markSeen ignores the sender's OWN message", (Store.markSeen("dad", id), Store.seenAt(id) === null));
+      Store.markSeen("mom", id);
+      const firstSeenAt = Store.seenAt(id);
+      ck("markSeen by the OTHER parent records a seen time", firstSeenAt != null);
+      const realNow = Date.now; Date.now = ()=>realNow()+999999;
+      Store.markSeen("mom", id);
+      Date.now = realNow;
+      ck("a second markSeen never overwrites the first (first-seen only)", Store.seenAt(id) === firstSeenAt);
+      ck("unreadCount(dad) is 0 once dad has read mom's — wait, dad SENT this one; unreadCount(mom) drops to 0 once mom has opened it",
+         Store.unreadCount("mom") === 0);
+      const id2 = Store.putMessage("dad", "selfcheck message two");
+      ck("unreadCount(mom) counts an unseen message from dad", Store.unreadCount("mom") === 1);
+      Store.markSeen("mom", id2);
+      ck("unreadCount(mom) drops to 0 after mom opens (marks seen)", Store.unreadCount("mom") === 0);
+      ck("allMessages() is sorted oldest to newest by `at`", (function(){
+        const a = Store.allMessages(); return a.every((m,i)=> i===0 || m.at >= a[i-1].at);
+      })());
+    } finally {
+      Store.saveLocal = realSave; Store.push = realPush;
+      Store.messages = JSON.parse(beforeMsg); Store.messageSeen = JSON.parse(beforeSeen);
+    }
+    ck("selfcheck messages: left no probe message behind", !Store.allMessages().some(m=>/selfcheck message/.test(m.text)));
+  })();
+
+  ck("MIRROR_KEYS carries both new message kinds (mirrored to local storage and pushed the same as every other collection)",
+     Store.MIRROR_KEYS.indexOf("messages") >= 0 && Store.MIRROR_KEYS.indexOf("messageSeen") >= 0);
+
+  if(typeof $ === "function" && document.querySelectorAll){
+    (function(){
+      ck("tab bar: t-messages exists and t-insights does not — Insights left the tab bar (still 5 tabs)",
+         !!$("t-messages") && !$("t-insights") && TABS.length === 5);
+      ck("Insights is still reachable: a button on Record opens it, and setTab('insights') still works",
+         !!$("recordInsightsBtn") && typeof $("recordInsightsBtn").onclick === "function" && (function(){
+           const was = State.tab; setTab("history");
+           $("recordInsightsBtn").onclick();
+           const ok = State.tab === "insights" && $("v-insights").hidden === false;
+           setTab(was); return ok;
+         })());
+      ck("Messages has its own section hue distinct from the other four tabs' --accent", (function(){
+        const was = document.body.getAttribute("data-tab");
+        document.body.setAttribute("data-tab","messages");
+        const a = getComputedStyle(document.body).getPropertyValue("--accent").trim();
+        document.body.setAttribute("data-tab","history");
+        const h = getComputedStyle(document.body).getPropertyValue("--accent").trim();
+        if(was === null) document.body.removeAttribute("data-tab"); else document.body.setAttribute("data-tab", was);
+        return !!a && a !== h;
+      })());
+    })();
+    (function(){
+      const beforeMsg = JSON.stringify(Store.messages), beforeSeen = JSON.stringify(Store.messageSeen), beforeMe = State.me;
+      const realSave = Store.saveLocal, realPush = Store.push;
+      Store.saveLocal = function(){}; Store.push = function(){};
+      try {
+        Store.messages = {}; Store.messageSeen = {};
+        State.me = "mom";
+        Store.putMessage("dad", "selfcheck bubble text");
+        const b = msgBubble(Store.allMessages()[0], "mom");
+        ck("a message bubble carries the sender's NAME, never colour alone",
+           /\bDad\b/.test(b.querySelector(".msgwho").textContent) && /\bdad\b/.test(b.className));
+        renderMessagesPrint();
+        const tbl = $("msgPrintSlot").querySelector("table");
+        ck("the printed messages exhibit is a table with a Seen column and no 'Page' anywhere",
+           !!tbl && /Seen/.test(tbl.querySelector("thead").textContent) && !/Page/.test($("msgPrintSlot").textContent));
+        const mast = document.createElement("div"); fillMasthead(mast, "messages", mastheadRangeText(Store.allMessages().map(m=>m.at)));
+        ck("the printed messages exhibit has a masthead naming the record and both parents",
+           /Messages/.test(mast.textContent) && new RegExp(WHO_NAME.dad).test(mast.textContent) && new RegExp(WHO_NAME.mom).test(mast.textContent));
+      } finally {
+        Store.saveLocal = realSave; Store.push = realPush;
+        Store.messages = JSON.parse(beforeMsg); Store.messageSeen = JSON.parse(beforeSeen); State.me = beforeMe;
+        $("msgPrintSlot").innerHTML = "";
+      }
+    })();
+  }
 
   if(fail.length) console.error("BBL SELF-CHECK FAILED " + fail.length + "/" + ran + ":", fail);
   else console.log("BBL self-check: " + ran + "/" + ran + " checks passed");
