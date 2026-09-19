@@ -30,6 +30,12 @@
      hue, not the sev3 orange-brown and not the event-dot orange: a "?" glyph carries
      the meaning, the colour is a second, non-exclusive cue. */
   --amber:#7A5900; --amber-ink:#3D2E00; --amber-bg:#FBEBC4;
+  /* EVENT DOT (Simon's ruling: "orange dot = an event or other information").
+     Its own clearly-orange token — NOT --sev3, NOT --amber, NOT --danger (the
+     incident "!"). The three cell marks stay distinguishable by GLYPH too
+     (● dot / ! incident / ? pending) for a red-green colour-blind reader,
+     colour is the second cue only. */
+  --evdot:#A63700;
   --primary:#0E1116; --primary-ink:#FFFFFF;
   --scrim:rgba(10,14,18,.5);
   --r:20px; --shadow:0 1px 2px rgba(60,40,10,.05), 0 14px 34px rgba(60,40,10,.08);
@@ -78,6 +84,7 @@
     --dad:#7FA3E8; --mom:#C08BDA;
     --dad-bg:#1B2740; --mom-bg:#2A1B33;
     --amber:#E3B23D; --amber-ink:#FCEFC8; --amber-bg:#4A3800;
+    --evdot:#A66300;
     --primary:#EEF0F5; --primary-ink:#0B0D12;
     --scrim:rgba(0,0,0,.72);
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
@@ -96,6 +103,7 @@
   --dad:#7FA3E8; --mom:#C08BDA;
   --dad-bg:#1B2740; --mom-bg:#2A1B33;
   --amber:#E3B23D; --amber-ink:#FCEFC8; --amber-bg:#4A3800;
+  --evdot:#A66300;
   --primary:#EEF0F5; --primary-ink:#0B0D12;
     --scrim:rgba(0,0,0,.72);
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
@@ -165,11 +173,15 @@ html{scroll-padding-top:76px;scroll-padding-bottom:64px}
 .msgempty{padding:16px 0}
 .msgbubble{max-width:82%;border-radius:14px;padding:9px 12px;display:flex;flex-direction:column;gap:2px}
 .msgbubble.dad{background:var(--dad-bg)} .msgbubble.mom{background:var(--mom-bg)}
-.msgbubble.mine{align-self:flex-end;align-items:flex-end;text-align:right}
+.msgbubble.mine{align-self:flex-end;align-items:flex-end}
 .msgbubble.theirs{align-self:flex-start;align-items:flex-start;text-align:left}
 .msgwho{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
 .msgwho.dad{color:var(--dad)} .msgwho.mom{color:var(--mom)}
-.msgtext{font-size:15px;line-height:1.4;white-space:pre-wrap;color:var(--ink)}
+/* the bubble itself stays right for "mine" (align-self above), but its
+   TEXT is left-aligned — a right-ragged paragraph is hard to read. The
+   sender label and timestamp are short single lines, so align-items:flex-end
+   alone (no text-align) already sits them flush right. */
+.msgtext{font-size:15px;line-height:1.4;white-space:pre-wrap;color:var(--ink);text-align:left;align-self:stretch}
 .msgmeta{font-size:11px;color:var(--muted)}
 .msgcomposer{display:flex;flex-direction:column;gap:8px;margin-top:14px}
 .msgcomposer label{font-size:13px;font-weight:700}
@@ -764,7 +776,7 @@ textarea{border-radius:10px}
 @media (hover:hover) and (pointer:fine){ .dcell:hover{border-color:var(--line-strong)} }
 .dtop{display:flex;align-items:center;justify-content:space-between;width:100%}
 .dnum{font-size:12.5px;font-weight:700;color:var(--ink-2)}
-.epi{font-size:13px;line-height:1;color:var(--sev4);font-weight:700}
+.epi{font-size:13px;line-height:1;color:var(--evdot);font-weight:700}
 /* incident mark ("!") and pending-request mark ("?") — session 88, additions
    beside .epi (the event dot). Three different glyphs, never colour-only. */
 .calbad{font-size:13px;line-height:1;color:var(--danger);font-weight:800;margin-left:2px}
@@ -1050,6 +1062,7 @@ body[data-tab="messages"]{--accent:#9B4F1F;--accent-soft:#F5E6D8}
     --dad:#2C4880; --mom:#653576;
     --dad-bg:#E5ECFA; --mom-bg:#F2E5F5;
     --amber:#7A5900; --amber-ink:#3D2E00; --amber-bg:#FBEBC4;
+    --evdot:#A64500;
     /* PRINT SEVERITY 3 vs 4 (panel 5, print exhibit): the screen ramp's 3/4 step
        read as one smudge once ink replaced a lit screen. Widened here, print-only —
        the screen tokens above are untouched. See the ramp gap self-check. */
@@ -1141,6 +1154,10 @@ body[data-tab="messages"]{--accent:#9B4F1F;--accent-soft:#F5E6D8}
 @media print{
   body.print-messages #v-history{display:none !important}
   body.print-messages #v-messages{display:flex !important}
+  /* the exhibit table (msgPrintSlot) IS the record; the on-screen bubble
+     thread below it is a screen convenience and printed the whole
+     conversation a second time. Table only. */
+  body.print-messages #msgThreadSlot{display:none !important}
 }
 
 /* ---------- reduced motion ----------
@@ -1275,7 +1292,7 @@ body[data-tab="messages"]{--accent:#9B4F1F;--accent-soft:#F5E6D8}
         <div class="aboutbody"><p class="sub">Messages are permanent: neither parent can edit or delete one once it is sent. A
            correction is a new message, same as everything else in this record.</p></div>
       </div>
-      <p class="sub" id="msgPermNote">Messages are permanent, cannot be edited or deleted, and are part of the printed record.</p>
+      <p class="sub no-print" id="msgPermNote">Messages are permanent, cannot be edited or deleted, and are part of the printed record.</p>
       <p class="sub" id="msgDeviceNote" hidden>On this phone only — messages stay on this phone until sharing is set up.</p>
       <div class="printonly pmast" data-mast="messages"></div>
       <div class="printonly" id="msgPrintSlot"></div>
@@ -5511,9 +5528,14 @@ function renderCalendar(){
   nextB.onclick = ()=>{ State.calMonth = shiftYm(ym,1); renderCalendar(); };
   nav.appendChild(prevB); nav.appendChild(todayB); nav.appendChild(nextB);
   hd.appendChild(nav);
-  /* NO SCHEDULE YET: the set-a-schedule card goes ABOVE the grid. Under it, a new
-     parent saw a bare month and the one card that fills it sat below the tab bar. */
-  const liftCustody = !State.paint && !Store.allCustodyPatterns().length;
+  /* NO SCHEDULE YET, or a PROPOSAL PENDING: the custody card goes ABOVE the grid
+     in both cases — it is the pending action, same rule as the amber banner
+     right above it (amber banner still wins the top slot when both are live:
+     it is appended first, this is appended second). Previously a pending
+     proposal only lifted the card when there was no schedule at all yet — a
+     proposal arriving AFTER a schedule already existed still fell to the
+     bottom of the tab, under the month/legend/printed-record block. */
+  const liftCustody = !State.paint && (!Store.allCustodyPatterns().length || !!pendingProposal());
   if(liftCustody){ slot.appendChild(calCustodyPanel()); hd.className = "cal-hd lifted"; }
   slot.appendChild(hd);
   /* the grid was the ONLY way to add an event, and the line saying so sits under it, below the fold */
@@ -8611,6 +8633,57 @@ Store.init();
     }
   })();
 
+  /* PROPOSAL CARD POSITION (fix 5): a pending proposal must render at the TOP
+     of the calendar content — directly under the tab heading, in the same
+     position as the amber swap-request banner — not below the month, legend
+     and printed-record fold. Drives the REAL renderCalendar()/calSlot, per
+     CONVENTIONS.md §8 (test the real render, not a hand-rebuilt copy).
+     Amber precedes the proposal when both are live (amber is a question
+     addressed to you). */
+  if(typeof renderCalendar !== "undefined" && typeof $ !== "undefined" && document.createElement){
+    (function(){
+      const bp = JSON.stringify(Store.custodyPatterns), ba = JSON.stringify(Store.scheduleAccepts);
+      const bsr = JSON.stringify(Store.swapRequests), bsp = JSON.stringify(Store.swapResponses);
+      const bm = Store.mode, beforeMonth = State.calMonth, beforeMe = State.me, beforePaint = State.paint;
+      const realSave = Store.saveLocal, realPush = Store.push;
+      Store.saveLocal = function(){}; Store.push = function(){};
+      try {
+        Store.custodyPatterns = {}; Store.scheduleAccepts = {};
+        Store.swapRequests = {}; Store.swapResponses = {};
+        Store.mode = "sync"; State.me = "dad"; State.paint = null;
+        const cells = new Array(14).fill("dad"); cells[0] = "mom";
+        const id = Store.putCustodyPattern("dad", "custom", "2026-06-01", "2026-06-01", {parentA:"dad",parentB:"mom",sequence:cells}, 2);
+        State.calMonth = "2026-06";
+        renderCalendar();
+        const slot = $("calSlot");
+        const kidsA = Array.from(slot.children);
+        const firstPanelIdx = kidsA.findIndex(n=> n.className && n.className.indexOf("panel") >= 0);
+        ck("calendar: with a proposal pending and NO swap request, the proposal panel is the FIRST child of the calendar content",
+           firstPanelIdx === 0 && /Schedule proposed/.test(kidsA[0].textContent));
+        // now also raise a swap request: amber must still come first, proposal second
+        Store.putSwapRequest("mom", "2026-06-05", "", "requester");
+        renderCalendar();
+        const kidsB = Array.from(slot.children);
+        const amberIdx = kidsB.findIndex(n=> n.className && /\bcalbanner\b/.test(n.className) && /\bamber\b/.test(n.className));
+        const panelIdx = kidsB.findIndex(n=> n.className && n.className.indexOf("panel") >= 0);
+        ck("calendar: when a swap request AND a proposal are both pending, the amber banner precedes the proposal panel",
+           amberIdx === 0 && panelIdx === 1);
+        // sanity: with NOTHING pending, no proposal panel sits above the grid
+        Store.acceptSchedule("mom", id);
+        renderCalendar();
+        const kidsC = Array.from(slot.children);
+        ck("calendar: once accepted, no proposal panel is forced to the top any more",
+           !/Schedule proposed/.test(kidsC[0].textContent));
+      } finally {
+        Store.saveLocal = realSave; Store.push = realPush; Store.mode = bm;
+        Store.custodyPatterns = JSON.parse(bp); Store.scheduleAccepts = JSON.parse(ba);
+        Store.swapRequests = JSON.parse(bsr); Store.swapResponses = JSON.parse(bsp);
+        State.calMonth = beforeMonth; State.me = beforeMe; State.paint = beforePaint;
+        renderCalendar();
+      }
+    })();
+  }
+
   // ---- CUSTODY SCHEDULE UI: logging an exception through the real commit
   // function makes custodyForDate report source "exception" with that
   // parent, and a second logged exception for the same date keeps the first
@@ -9405,6 +9478,86 @@ Store.init();
            !!print.sev3 && !!print.sev4 && gap >= 2.2);
       })();
 
+      /* ---- event-dot token (Simon's ruling 09-18: orange dot = an event or
+         other information). --evdot must exist in light, BOTH dark blocks
+         and print, must be a measurable distinct thing from --danger (the
+         incident "!"), --sev3 and --amber (a true hue gap this tight cannot
+         clear 15deg from all three at once, so "distinct" here is hue
+         gap>=12deg OR relative-luminance gap>=0.15 vs EACH reference — either
+         one alone means a viewer will not mistake the swatches), and it must
+         clear 3:1 against both cell background tokens (--surface/--surface-2)
+         in every palette. Reuses the same tiny L/hue/cr helpers as the amber
+         check above (IIFE-scoped, not shared). */
+      (function(){
+         const lin = c=>{ c/=255; return c<=.03928? c/12.92 : Math.pow((c+.055)/1.055,2.4); };
+         const L = h=>{ let x=h.replace("#",""); if(x.length===3) x=x.replace(/./g,"$&$&");
+           const n=parseInt(x,16); return .2126*lin(n>>16&255)+.7152*lin(n>>8&255)+.0722*lin(n&255); };
+         const hue = h=>{ let x=h.replace("#",""); if(x.length===3) x=x.replace(/./g,"$&$&");
+           const n=parseInt(x,16), r=(n>>16&255)/255, g=(n>>8&255)/255, b=(n&255)/255;
+           const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+           if(d===0) return 0;
+           let hh; if(mx===r) hh=((g-b)/d)%6; else if(mx===g) hh=(b-r)/d+2; else hh=(r-g)/d+4;
+           hh*=60; if(hh<0) hh+=360; return hh; };
+         const cr = (a,b)=>{ const x=L(a), y=L(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+         const hueDist = (h1,h2)=> Math.min(Math.abs(h1-h2), 360-Math.abs(h1-h2));
+         const distinct = (a,b)=> hueDist(hue(a),hue(b)) >= 12 || Math.abs(L(a)-L(b)) >= .15;
+         const readTheme = attr=>{
+           const el = document.documentElement, had = el.getAttribute("data-theme");
+           el.setAttribute("data-theme", attr);
+           const cs = getComputedStyle(el), g = n=>cs.getPropertyValue(n).trim();
+           const out = {evdot:g("--evdot"), danger:g("--danger"), sev3:g("--sev3"), amber:g("--amber"),
+                        surface:g("--surface"), surface2:g("--surface-2")};
+           if(had===null) el.removeAttribute("data-theme"); else el.setAttribute("data-theme", had);
+           return out;
+         };
+         const light = readTheme("light"), dark = readTheme("dark");
+         let print = null, evdotDeclCount = 0;
+         try{
+           for(const ss of (document.styleSheets||[])){
+             let rules; try{ rules = ss.cssRules; }catch(e){ continue; }
+             if(!rules) continue;
+             const walk = list=>{
+               for(const r of list){
+                 if(r.style && r.style.getPropertyValue && r.style.getPropertyValue("--evdot")) evdotDeclCount++;
+                 if(r.media && /print/.test(r.media.mediaText||"") && r.cssRules){
+                   for(const rr of r.cssRules){
+                     if(rr.style && rr.style.getPropertyValue("--evdot")){
+                       print = {evdot:rr.style.getPropertyValue("--evdot").trim(), danger:rr.style.getPropertyValue("--danger").trim(),
+                         sev3:rr.style.getPropertyValue("--sev3").trim(), amber:rr.style.getPropertyValue("--amber").trim(),
+                         surface:"#FFFFFF", surface2:"#FFFFFF"};
+                       evdotDeclCount++;
+                     }
+                   }
+                 } else if(r.cssRules){ walk(r.cssRules); }
+               }
+             };
+             walk(rules);
+           }
+         }catch(e){}
+         if(!print || !print.evdot) print = light;
+         ck("event-dot token: --evdot resolves in light, dark and print", !!(light.evdot && dark.evdot && print.evdot));
+         if(document.styleSheets && document.styleSheets.length) ck("event-dot token: declared in light, BOTH dark blocks and print (4 declaration sites)", evdotDeclCount >= 4);
+         ck("event-dot token: measurably distinct from --danger, --sev3 and --amber in light, dark and print",
+           distinct(light.evdot, light.danger) && distinct(light.evdot, light.sev3) && distinct(light.evdot, light.amber) &&
+           distinct(dark.evdot, dark.danger) && distinct(dark.evdot, dark.sev3) && distinct(dark.evdot, dark.amber) &&
+           distinct(print.evdot, print.danger) && distinct(print.evdot, print.sev3) && distinct(print.evdot, print.amber));
+         ck("event-dot token: >=3:1 against both cell background tokens in light and dark (print exhibit is white)",
+           cr(light.evdot, light.surface) >= 3 && cr(light.evdot, light.surface2) >= 3 &&
+           cr(dark.evdot, dark.surface) >= 3 && cr(dark.evdot, dark.surface2) >= 3 &&
+           cr(print.evdot, "#FFFFFF") >= 3);
+         /* real browser only (GATE=browser): the node stub's getComputedStyle
+            only answers custom-property lookups, not a class rule's `color` —
+            there is no CSS engine to cascade .epi{color:var(--evdot)} for it. */
+         if(document.styleSheets && document.styleSheets.length && document.createElement && document.body){
+           const probe = document.createElement("span"); probe.className = "epi"; document.body.appendChild(probe);
+           const col = getComputedStyle(probe).color; document.body.removeChild(probe);
+           const toRgb = h=>{ let x=h.replace("#",""); if(x.length===3) x=x.replace(/./g,"$&$&");
+             const n=parseInt(x,16); return "rgb("+(n>>16&255)+", "+(n>>8&255)+", "+(n&255)+")"; };
+           ck("event-dot: .epi no longer reskins --sev4 (the old rust-red dot)",
+             col === toRgb(getComputedStyle(document.documentElement).getPropertyValue("--evdot").trim()));
+         }
+      })();
+
       ck("insights type: no chart label is set below the 12px floor of the type scale", (function(){
          const host = document.createElement("div"); host.className = "bar";
          const mk = c=>{ const n = document.createElement("span"); n.className = c; host.appendChild(n); return n; };
@@ -9627,12 +9780,66 @@ Store.init();
         const mast = document.createElement("div"); fillMasthead(mast, "messages", mastheadRangeText(Store.allMessages().map(m=>m.at)));
         ck("the printed messages exhibit has a masthead naming the record and both parents",
            /Messages/.test(mast.textContent) && new RegExp(WHO_NAME.dad).test(mast.textContent) && new RegExp(WHO_NAME.mom).test(mast.textContent));
+        /* PRINT DUPLICATION (fix 1): the exhibit table is the record; the
+           on-screen bubble thread must not print a second copy of the same
+           message text below it. DOM-only half: the message text appears
+           exactly once in the exhibit table itself (renderMessages() also
+           puts it in #msgThreadSlot, which is a SEPARATE on-screen node —
+           counting only inside msgPrintSlot proves the table isn't itself
+           duplicating a row, not that the thread is hidden; the CSS half
+           below proves that). */
+        renderMessages();
+        const needle = "selfcheck bubble text";
+        ck("printed messages exhibit: the message text appears exactly once in the exhibit table",
+           ($("msgPrintSlot").textContent.match(new RegExp(needle,"g")) || []).length === 1);
+        /* real browser only: confirm the CSS actually hides the thread during
+           print-messages (a static parse of the stylesheet text, not a full
+           print-media render — chrome-headless-shell here is never put into
+           print media, so getComputedStyle would still answer for SCREEN).
+           Mutation: delete the rule and this goes red without ever emulating
+           print. */
+        if(document.styleSheets && document.styleSheets.length){
+          let hidesThread = false;
+          const walk = list=>{
+            for(const r of list){
+              if(r.media && /print/.test(r.media.mediaText||"") && r.cssRules){ walk(r.cssRules); }
+              else if(r.selectorText && /print-messages/.test(r.selectorText) && /msgThreadSlot/.test(r.selectorText) &&
+                      r.style && /none/.test(r.style.getPropertyValue("display"))) hidesThread = true;
+            }
+          };
+          try{ for(const ss of document.styleSheets){ let rules; try{ rules = ss.cssRules; }catch(e){ continue; } if(rules) walk(rules); } }catch(e){}
+          ck("print CSS: body.print-messages hides #msgThreadSlot with display:none", hidesThread);
+        }
+        /* DUPLICATED SENTENCE (fix 2): keep only the fuller wording. The
+           on-screen intro (#msgPermNote) must be no-print; the fuller
+           sentence lives in the About box and is untouched. */
+        ck("messages: the on-screen permanence intro is marked no-print",
+           $("msgPermNote").className.indexOf("no-print") >= 0);
+        /* real browser only: confirm the FULLER sentence (the one that must
+           survive on paper) is still there, in the About box that prints. */
+        if(document.querySelector){
+          const about = document.querySelector("#v-messages .aboutbody");
+          ck("messages: the fuller permanence sentence is present in the About box that prints",
+             !!about && /Messages are permanent: neither parent can edit or delete/.test(about.textContent));
+        }
       } finally {
         Store.saveLocal = realSave; Store.push = realPush;
         Store.messages = JSON.parse(beforeMsg); Store.messageSeen = JSON.parse(beforeSeen); State.me = beforeMe;
         $("msgPrintSlot").innerHTML = "";
+        renderMessages();
       }
     })();
+    /* BUBBLE TEXT ALIGNMENT (fix 3): the bubble stays right (align-self), but
+       its TEXT must be left-aligned — real CSS, real browser only. The node
+       stub's getComputedStyle only answers custom-property lookups, so this
+       is skipped rather than false-failing under the harness. */
+    if(document.styleSheets && document.styleSheets.length && document.createElement && document.body){
+      const probe = msgBubble({by:"dad", text:"selfcheck alignment", at:Date.now(), id:"selfcheck-align"}, "dad");
+      document.body.appendChild(probe);
+      const ta = getComputedStyle(probe.querySelector(".msgtext")).textAlign;
+      document.body.removeChild(probe);
+      ck("own message bubble: the TEXT is left-aligned (the bubble itself still sits right)", ta !== "right" && ta !== "end");
+    }
   }
 
   /* an UNREAD message from the other parent, opened: markSeen emits mid-render.
