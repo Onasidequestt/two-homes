@@ -335,7 +335,7 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 .field.missing .chips .chip{border-color:var(--danger)}
 
 .bigbtn{width:100%;padding:16px;border-radius:12px;font-size:17px;font-weight:700;
-        background:var(--accent);color:var(--accent-ink);margin-top:18px;   /* ONE primary colour app-wide: the same teal as Start timing */
+        background:var(--accent);color:var(--accent-ink);margin-top:18px;   /* ONE primary colour app-wide: the same teal as the Log tab's big button */
         transition:filter var(--t-tap) var(--ease-out), border-color var(--t-amb) var(--ease-soft)}
 /* Save stays in reach on a long form. ponytail: 80px is the measured tab-bar height at
    390px; ceiling = a taller bar (larger text setting) overlaps by the difference;
@@ -354,6 +354,8 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
                font-size:11px;line-height:1.5;color:var(--ink-2);background:transparent}
 .pkey b,.plimits b{color:var(--ink)}
 .err{margin-top:12px;font-size:12.5px;color:var(--danger);font-weight:600}
+.fielderr{margin:0 0 8px}
+.whatfield.missing .opt{display:none}   /* flagged: the label, the word STILL NEEDED and the sentence below are enough; the hint made the row wrap in three red columns */
 /* Saving used to be silent: the form simply vanished. This is a real confirmation
    of a real write — it names what was stored, never a generic "done!". */
 .flash{display:flex;align-items:center;gap:9px;padding:13px 14px;border-radius:var(--r);
@@ -475,6 +477,7 @@ textarea{border-radius:10px}
 .pcard{background:var(--surface);border-radius:var(--r);padding:15px 14px;box-shadow:var(--shadow)}
 .pchdr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px}
 .pchdr h3{margin:0;font-size:14.5px;font-weight:700;letter-spacing:-.008em}
+.pccav{margin:0 0 10px;font-size:12px;line-height:1.35;color:var(--ink-2)}
 .n{font-size:11px;color:var(--muted);font-weight:600;flex:none}
 .pcsub{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.5}
 .pcard .pcsub:last-child{margin-bottom:0;margin-top:11px}
@@ -618,7 +621,7 @@ textarea{border-radius:10px}
 .moneybanner .big{font-size:21px;font-weight:700;letter-spacing:-.02em;line-height:1.35}
 .moneybanner .sub2{font-size:12.5px;color:var(--muted);margin-top:5px}
 .eamt{font-size:15px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
-.mtitle{font-size:15px;font-weight:600;color:var(--ink);margin-top:1px}
+.mtitle{font-size:15.5px;font-weight:700;color:var(--ink);letter-spacing:-.015em;margin-top:2px}   /* = .evtitle: one title for every row that carries no severity */
 .splitrow{margin-top:8px}
 .splitrow .chip{text-align:center}
 .receipt-thumb{margin-top:10px;display:flex;align-items:center;gap:10px}
@@ -656,7 +659,7 @@ textarea{border-radius:10px}
 .cal-wd{font-size:9.5px;font-weight:700;letter-spacing:.03em;text-align:center;
         color:var(--faint);text-transform:uppercase}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:4px}
-.dcell{position:relative;min-height:60px;border-radius:9px;background:var(--surface);
+.dcell{position:relative;min-height:64px;border-radius:9px;background:var(--surface);
        border:1px solid var(--line);display:flex;flex-direction:column;
        padding:4px 3px 18px;gap:2px;overflow:hidden;text-align:left;
        transition:background-color var(--t-tap) var(--ease-out)}
@@ -665,10 +668,10 @@ textarea{border-radius:10px}
 .dcell:active{background:var(--surface-2);transition-duration:0s}
 @media (hover:hover) and (pointer:fine){ .dcell:hover{border-color:var(--line-strong)} }
 .dtop{display:flex;align-items:center;justify-content:space-between;width:100%}
-.dnum{font-size:11.5px;font-weight:700;color:var(--ink-2)}
+.dnum{font-size:12.5px;font-weight:700;color:var(--ink-2)}
 .epi{font-size:9px;line-height:1;color:var(--sev4);font-weight:700}
 .dmarks{display:flex;flex-wrap:wrap;gap:2px;width:100%}
-.evtag{font-size:8px;font-weight:700;letter-spacing:.01em;padding:1px 3px;border-radius:3px;
+.evtag{font-size:9.5px;font-weight:700;letter-spacing:.01em;padding:1px 3px;border-radius:3px;
        background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);line-height:1.4}
 .evtag.more{background:none;border:none;color:var(--muted);padding:1px 0}
 /* WHOSE DAY is a LETTER on a tinted band, not the lean of a 5px hatch: a letter
@@ -870,16 +873,16 @@ textarea{border-radius:10px}
       <div id="calSlot"></div>
       <div class="field no-print">
         <div class="qlab">Print custody &amp; swap record</div>
-        <p class="sub">A separate exhibit from the Record below — the custody schedule day by day, every
+        <p class="sub">A separate printed record from the Record below — the custody schedule day by day, every
            swap request with its outcome, and calendar events, for a date range you choose. Private notes
            never print, for either parent.</p>
         <label class="retro-row">
           <span class="retro-lab">From</span>
-          <input type="date" id="custodyPrintFrom" aria-label="Exhibit start date">
+          <input type="date" id="custodyPrintFrom" aria-label="Printed record start date">
         </label>
         <label class="retro-row">
           <span class="retro-lab">To</span>
-          <input type="date" id="custodyPrintTo" aria-label="Exhibit end date">
+          <input type="date" id="custodyPrintTo" aria-label="Printed record end date">
         </label>
       </div>
       <button class="bigbtn ghost no-print" id="custodyPrintBtn">Print custody &amp; swap record</button>
@@ -968,8 +971,8 @@ textarea{border-radius:10px}
   <p class="brand">Two Homes</p>
   <p class="lede">A shared record for a child with two homes — episodes, calendar, custody and expenses.
      Both parents write to it. Nothing is deleted or edited in place, so what it shows is what was logged.</p>
-  <h1>Who is logging on this phone?</h1>
-  <p>Pick the name your entries are stamped with. This is a label, not a sign-in — the app cannot tell who
+  <h1>Which parent are you?</h1>
+  <p class="sub">Your entries carry this name. It is a label, not a sign-in — the app cannot tell who
      is holding the phone. It is saved on this device, so it is asked once.</p>
   <div class="pick">
     <button id="pickDad"><span class="dot dad"></span>Dad</button>
@@ -2573,14 +2576,18 @@ function renderLog(){
   }
 
   if(!State.draft){
+    /* AFTERWARDS IS THE DEFAULT (Simon's ruling 09-18, after four blind panels: both
+       parents read a stopwatch running on a crying child as cold). The big button
+       opens the written form; timing it live is still here, as the quiet link.
+       Class names unchanged: .start is still the one primary button on this tab. */
     const start = el("button","start");
     start.innerHTML = "";
-    start.appendChild(el("span",null,"Start timing"));
-    start.onclick = beginLive;
+    start.appendChild(el("span",null,"Log what happened"));
+    start.onclick = beginRetro;
     slot.appendChild(start);
 
-    const alt = el("button","linkbtn","Log one that already ended");
-    alt.onclick = beginRetro;
+    const alt = el("button","linkbtn","Or time it as it happens");
+    alt.onclick = beginLive;
     slot.appendChild(alt);
 
     slot.appendChild(todayStrip());
@@ -2771,6 +2778,15 @@ function cancelDraft(){
 }
 
 let chipRowSeq = 0;
+/* A blocked Save used to explain itself only in the dock at the bottom of a long
+   form. The sentence now also sits at each unanswered field, and the first one is
+   brought into view, so the parent is never left hunting for what stopped them. */
+function fieldNeed(what){ return el("div","err fielderr","Still needed: " + what + "."); }
+function showFirstMissing(root){
+  const m = root && root.querySelector && root.querySelector(".field.missing");
+  if(m && m.scrollIntoView) m.scrollIntoView({block:"center"});
+  return m || null;
+}
 function chipRow(labelText, required, opts, cur, onPick, missing, toggle, addField, onAdded){
   const f = el("div","field" + (missing ? " missing" : ""));
   const lab = el("div","qlab");
@@ -2786,6 +2802,7 @@ function chipRow(labelText, required, opts, cur, onPick, missing, toggle, addFie
     lab.appendChild(reqTag);
   }
   f.appendChild(lab);
+  if(missing && required) f.appendChild(fieldNeed(labelText.toLowerCase()));
   const c = el("div","chips");
   c.setAttribute("role", toggle ? "group" : "radiogroup");
   c.setAttribute("aria-labelledby", lab.id);
@@ -3076,6 +3093,7 @@ function draftForm(){
   nl.appendChild(noteTag);
   nl.appendChild(el("span","opt","in your words · both parents read this"));
   nf.appendChild(nl);
+  if(nmiss) nf.appendChild(fieldNeed("what happened"));
   const ta = document.createElement("textarea");
   ta.id = "noteBox"; ta.value = d.note; ta.rows = 2;
   ta.placeholder = "What she did, and what was going on. One sentence is plenty.";
@@ -3184,7 +3202,7 @@ function saveDraft(){
   if(!String(d.note||"").trim()) missing.push("what happened");
   if(!d.trig) missing.push("what set it off");
   if(!d.place) missing.push("where");
-  if(missing.length){ d.missing = missing; renderLog(); return; }
+  if(missing.length){ d.missing = missing; renderLog(); showFirstMissing($("logSlot")); return; }
   d.missing = null;
 
   const dur = d.measured
@@ -3328,6 +3346,21 @@ function renameFootnote(entries){
   return box;
 }
 
+/* ONE ROW GRAMMAR (the designer's coherence 4, four blind panels running): every row
+   in Record, Money and the calendar day sheet reads eyebrow (when + one measure) /
+   title / ONE meta line. The meta line is built here and nowhere else: the facts in
+   order, a middle dot between them, and the who-badge LAST. Money used to lead with
+   the badge and put the split in a quoted note; the day sheet gave the badge a line
+   of its own. `facts` are strings or ready-made nodes (the trigger keeps .etrig). */
+function rowMeta(facts, who){
+  const meta = el("div","emeta");
+  facts.filter(f=>f != null && f !== "").forEach((f,i)=>{
+    if(i) meta.appendChild(el("span","msep","·"));
+    meta.appendChild(typeof f === "string" ? el("span",null,f) : f);
+  });
+  if(who) meta.appendChild(el("span","badge "+who, WHO_NAME[who]));
+  return meta;
+}
 function entryRow(e){
   const mine = e.who === State.me;
   const row = el(mine ? "button" : "div", "entry" + (mine ? " mine" : "") + (e.voided ? " voided" : ""));
@@ -3351,12 +3384,7 @@ function entryRow(e){
   const anchor = sevPhrase(e);
   b.appendChild(el("div","etitle a"+(e.sev||0), headlineOf(e)));
 
-  const meta = el("div","emeta");
-  meta.appendChild(el("span","etrig", labelOf(e.trig)));
-  meta.appendChild(el("span",null,"·"));
-  meta.appendChild(el("span",null, labelOf(e.place)));
-  if(e.resp){ meta.appendChild(el("span",null,"·")); meta.appendChild(el("span",null,"ended: "+labelOf(e.resp))); }
-  meta.appendChild(el("span","badge "+e.who, WHO_NAME[e.who]));
+  const meta = rowMeta([el("span","etrig", labelOf(e.trig)), labelOf(e.place), e.resp ? "ended: "+labelOf(e.resp) : null], e.who);
   if(e.edited) meta.appendChild(el("span","badge edited","edited " + e.editCount + (e.editCount===1?" time":" times")));
   if(e.voided) meta.appendChild(el("span","badge","withdrawn"));
   /* One of trig/place/resp resolves through an option that has since been
@@ -3568,11 +3596,19 @@ function commitRevision(e, isVoid){
    `unit` matters because n means a different thing in five of the seven cards —
    a parent with 12 entries could not tell why a card was still locked. */
 /* the one card header, shared by every Insights card */
+/* The caveat used to live in one strip at the top of the tab and in grey under
+   each chart. Four blind panels read a chart BEFORE its caveat ("put the caveat
+   above the chart, not below"). It now sits directly under every card title, and
+   card() goes through here too, so no Insights card can be drawn without it. */
+const CARD_CAVEAT = "Counts what was logged. Not a ranking, and not about one home.";
 function cardHead(title, n){
+  const w = el("div","pchead");
   const hd = el("div","pchdr");
   hd.appendChild(el("h3",null,title));
   if(n != null) hd.appendChild(el("span","n mono", String(n)));
-  return hd;
+  w.appendChild(hd);
+  w.appendChild(el("p","pccav",CARD_CAVEAT));
+  return w;
 }
 function card(title, sub, n, need, unit, bodyFn){
   /* nothing at all behind it: no row, not even a locked one. An empty progress
@@ -3594,10 +3630,7 @@ function card(title, sub, n, need, unit, bodyFn){
     return r;
   }
   const c = el("div","pcard");
-  const hd = el("div","pchdr");
-  hd.appendChild(el("h3",null,title));
-  hd.appendChild(el("span","n mono", String(n)));
-  c.appendChild(hd);
+  c.appendChild(cardHead(title, n));
   /* ONE line that says what the chart shows, above it. The method and its
      caveats follow the chart: they qualify the reading, they are not the reading. */
   const take = el("p","takeaway"); c.appendChild(take);
@@ -3995,12 +4028,8 @@ function moneyRow(e){
     top.appendChild(el("span","eamt", centsToDollars(e.amount)));
     body.appendChild(top);
     body.appendChild(el("div","mtitle", moneyCatLabel(e.cat)));
-    const meta = el("div","emeta");
-    /* ONE who-badge: the pill carries the name only, as it does on every other row; "paid" is plain text beside it */
-    meta.appendChild(el("span","badge "+e.payer, WHO_NAME[e.payer]));
-    meta.appendChild(el("span",null,"paid"));
-    body.appendChild(meta);
-    body.appendChild(el("div","enote", splitSummary(e)));
+    /* same meta line as a Record row: the facts, then the name. The pill carries the name only. */
+    body.appendChild(rowMeta([splitSummary(e), "paid by"], e.payer));
     if(e.desc) body.appendChild(el("div","enote", e.desc));
     if(e.receipt && e.receipt.dataUrl){
       const tw = el("div","receipt-thumb");
@@ -4150,6 +4179,7 @@ function claimForm(){
   al.appendChild(el("span",null,"Amount"));
   al.appendChild(el("span","req" + (amtOk?" ok":""), amtOk ? "✓ ANSWERED" : "REQUIRED"));
   af.appendChild(al);
+  if(d.missing && !amtOk) af.appendChild(fieldNeed("a valid amount"));
   const ain = document.createElement("input");
   ain.type = "text"; ain.inputMode = "decimal"; ain.placeholder = "0.00";
   ain.value = d.amount; ain.setAttribute("aria-labelledby","mAmtLab");
@@ -4291,7 +4321,7 @@ function saveClaim(){
   if(cents == null || cents <= 0) missing.push("a valid amount");
   if(!d.cat) missing.push("category");
   if(!d.payer) missing.push("who paid");
-  if(missing.length){ d.missing = missing; renderMoney(); return; }
+  if(missing.length){ d.missing = missing; renderMoney(); showFirstMissing($("moneySlot")); return; }
   d.missing = null;
   if(bigAmountStops(d, cents)){ renderMoney(); return; }
 
@@ -4338,6 +4368,7 @@ function settleForm(){
   al.appendChild(el("span",null,"Amount"));
   al.appendChild(el("span","req" + (amtOk?" ok":""), amtOk ? "✓ ANSWERED" : "REQUIRED"));
   af.appendChild(al);
+  if(d.missing && !amtOk) af.appendChild(fieldNeed("a valid amount"));
   const ain = document.createElement("input");
   ain.type = "text"; ain.inputMode = "decimal"; ain.placeholder = "0.00"; ain.value = d.amount;
   ain.setAttribute("aria-labelledby","sAmtLab");
@@ -4391,7 +4422,7 @@ function saveSettle(){
   const missing = [];
   if(!d.payer) missing.push("who paid");
   if(cents == null || cents <= 0) missing.push("a valid amount");
-  if(missing.length){ d.missing = missing; renderMoney(); return; }
+  if(missing.length){ d.missing = missing; renderMoney(); showFirstMissing($("moneySlot")); return; }
   d.missing = null;
   if(bigAmountStops(d, cents)){ renderMoney(); return; }
 
@@ -4684,6 +4715,7 @@ function renderCalendar(){
   if(State.calDay) calDrawDaySheet();
 }
 
+const CELL_TAGS = 1;
 function calDayCell(dstr, isToday, evsByDay, episByDay){
   const p = dParts(dstr);
   const evs = evsByDay ? (evsByDay[dstr] || []) : Store.eventsForDay(dstr).filter(e=>!e.voided);
@@ -4702,8 +4734,12 @@ function calDayCell(dstr, isToday, evsByDay, episByDay){
 
   if(evs.length){
     const marks = el("div","dmarks");
-    evs.slice(0,2).forEach(e=>marks.appendChild(el("span","evtag", calTypeLabel(e.type).slice(0,3))));
-    if(evs.length > 2) marks.appendChild(el("span","evtag more", "+" + (evs.length-2)));
+    /* DENSITY at 390px (Simon's ruling 09-18: keep the month grid, no second view). A 50px cell
+       held two 8px tags, a dot and a letter band. It now holds ONE readable tag and a count;
+       the day sheet is where the list lives. ponytail: CELL_TAGS is fixed at 1; if a wider
+       layout ever ships, derive it from the cell's width instead. */
+    evs.slice(0,CELL_TAGS).forEach(e=>marks.appendChild(el("span","evtag", calTypeLabel(e.type).slice(0,3))));
+    if(evs.length > CELL_TAGS) marks.appendChild(el("span","evtag more", "+" + (evs.length-CELL_TAGS)));
     btn.appendChild(marks);
   }
 
@@ -5300,9 +5336,7 @@ function calEventCard(e){
   if(e.voided) top.appendChild(el("span","badge","withdrawn"));
   card.appendChild(top);
   card.appendChild(el("div","evtitle", e.title));
-  const meta = el("div","emeta");
-  if(e.location) meta.appendChild(el("span",null, e.location));
-  meta.appendChild(el("span","badge "+e.who, WHO_NAME[e.who]));
+  const meta = rowMeta([e.location], e.who);
   if(e.edited) meta.appendChild(el("span","badge edited","edited " + e.editCount + (e.editCount===1?" time":" times")));
   card.appendChild(meta);
   if(e.note){
@@ -5365,9 +5399,7 @@ function calEpisodeRow(e){
   top.appendChild(dur);
   row.appendChild(top);
   row.appendChild(el("div","evtitle a"+(e.sev||0), headlineOf(e)));
-  const meta = el("div","emeta");
-  meta.appendChild(el("span","badge "+e.who, WHO_NAME[e.who]));
-  row.appendChild(meta);
+  row.appendChild(rowMeta([el("span","etrig", labelOf(e.trig)), labelOf(e.place)], e.who));
   return row;
 }
 
@@ -5510,7 +5542,7 @@ function renderCustodyPrint(fromStr, toStr){
     hd.appendChild(el("p","sub","Generated " +
       new Date(genAt).toLocaleString(undefined,{dateStyle:"long", timeStyle:"short"}) + "."));
     slot.appendChild(emptyBox("No date range selected",
-      "Choose a From and To date on the Calendar tab, then print again. This exhibit never prints a " +
+      "Choose a From and To date on the Calendar tab, then print again. This printed record never covers a " +
       "range that was not explicitly chosen."));
     return;
   }
@@ -5641,7 +5673,7 @@ function renderCustodyPrint(fromStr, toStr){
   slot.appendChild(evSec);
 
   slot.appendChild(el("p","sub exhibit-foot",
-    "This exhibit is built from the shared record only. Each parent's private notes on calendar " +
+    "This printed record is built from the shared record only. Each parent's private notes on calendar " +
     "events are never included, for either parent, regardless of who prints this page."));
   const lim = el("p","sub plimits"); fillPrintBlock(lim, "Limits of this record.", printLimitsText());
   slot.appendChild(lim);
@@ -7065,6 +7097,14 @@ Store.init();
       const labels = Array.from($("patSlot").querySelectorAll(".val")).map(n=>n.textContent);
       ck("U4: the real Patterns card reads in plain language, not stats notation",
          labels.some(t=>/from 8 timed episodes/.test(t)) && !labels.some(t=>t.indexOf("n=") >= 0));
+      renderTrends();
+      /* top-down only: the gate stub has no parentNode */
+      const all = sel=>Array.from($("patSlot").querySelectorAll(sel)).concat(Array.from($("trendSlot").querySelectorAll(sel)));
+      const wraps = all(".pchead"), cards = all(".pcard");
+      ck("every Insights card says 'Not a ranking' DIRECTLY under its title, before any chart",
+         wraps.length >= 4 && all(".pchdr").length === wraps.length &&
+         wraps.every(w=>!!w.children[0] && !!w.children[1] && w.children[0].className === "pchdr" && w.children[1].className === "pccav" && /Not a ranking/.test(w.children[1].textContent)) &&
+         cards.length >= 1 && cards.every(c=>!!c.children[0] && c.children[0].className === "pchead"));
     } finally {
       Store.entries = JSON.parse(beforeEn);
     }
@@ -7371,7 +7411,16 @@ Store.init();
       ck("tried-before never splits by parent", !/Dad|Mom/.test(respHint("no").textContent));
 
       // the form: what-happened is first-class and the backdate control exists
-      State.me = "dad"; beginRetro();
+      State.me = "dad";
+      (function(){
+        State.draft = null; if(State.tick){ clearInterval(State.tick); State.tick = null; } renderLog();
+        const big = $("logSlot").querySelector(".start"), link = Array.from($("logSlot").querySelectorAll(".linkbtn")).filter(b=>/time it/i.test(b.textContent))[0];
+        ck("the Log tab's big button reads 'Log what happened' and the timer is the small link", !!big && /Log what happened/.test(big.textContent) && !/tim/i.test(big.textContent) && !!link);
+        if(big) big.onclick();
+        ck("tapping the big button opens the WRITTEN form: no stopwatch is started", !!State.draft && State.draft.measured === false && !State.tick && !!$("whenT"));
+        State.draft = null; renderLog();
+      })();
+      beginRetro();
       const f = $("logSlot");
       const labs = Array.from(f.querySelectorAll(".qlab")).map(n=>n.textContent);
       ck("What happened comes before the severity question", labs.length > 1 && /^What happened/.test(labs[0]) && /How far it went/.test(labs[1]));
@@ -7397,6 +7446,17 @@ Store.init();
          Store.allEntries().length === nBefore && !!State.draft && (State.draft.missing||[]).indexOf("what happened") >= 0 &&
          /Still needed: what happened/.test($("logSlot").textContent));
       if(!State.draft) beginRetro();   /* a wrongly accepted save closed the form: the ck above is already red, do not crash on top of it */
+      (function(){
+        const wf = $("logSlot").querySelector(".whatfield"), fe = wf && wf.querySelector(".fielderr"), tb = wf && wf.querySelector("textarea");
+        ck("a blocked save says 'Still needed: what happened' INSIDE that field, above its box",
+           !!fe && !!tb && /Still needed: what happened/.test(fe.textContent) &&
+           Array.prototype.indexOf.call(wf.children, fe) < Array.prototype.indexOf.call(wf.children, tb));
+        State.draft.trig = null; saveDraft();
+        ck("and an unanswered chip question says so at its own label, not only at the bottom",
+           Array.from($("logSlot").querySelectorAll(".field.missing .fielderr")).some(n=>/Still needed: trigger/.test(n.textContent)));
+        ck("showFirstMissing finds the FIRST unanswered field, which is What happened",
+           (function(){ const m = showFirstMissing($("logSlot")); return !!m && /whatfield/.test(m.className); })());
+      })();
       Object.assign(State.draft, {whenT:"09:15", trig:"no", place:"home", sev:null, note:"selfcheck nosev: threw her cup"}); saveDraft();
       const ns = Store.allEntries().filter(e=>e.note === "selfcheck nosev: threw her cup")[0];
       ck("an entry saves with NO severity, stored as null, and the confirmation does not invent one",
@@ -7408,6 +7468,24 @@ Store.init();
         ck("with no severity the row's headline is the parent's own words, said once, and the badge shows a dash",
            r.querySelector(".etitle").textContent === "selfcheck nosev: threw her cup" && r.querySelectorAll(".enote").length === 0 &&
            r.querySelector(".stripe").textContent === "–" && /no severity given/.test(r.getAttribute("aria-label")) && clean(r));
+        (function(){
+          /* built from rows the app really draws; read top-down (the stub has no parentNode) */
+          const ex = {id:"sc-row", kind:"expense", who:"dad", payer:"mom", amount:8751, dadCents:4375, momCents:4376, splitPct:50, cat:"activities", date:Date.now(), desc:"selfcheck row grammar"};
+          const rows = {"Record":entryRow(ns), "Money":moneyRow(ex), "day sheet":calEpisodeRow(ns)};
+          const bad = Object.keys(rows).filter(k=>{
+            const metas = rows[k].querySelectorAll(".emeta"), m = metas[0], kids = m ? Array.from(m.children) : [];
+            const who = kids.map((n,i)=>/\bbadge (dad|mom)\b/.test(n.className) ? i : -1).filter(i=>i >= 0);
+            const facts = kids.map((n,i)=>/\bbadge\b|\bmsep\b/.test(n.className) ? -1 : i).filter(i=>i >= 0);
+            return !(who.length === 1 && facts.length >= 1 && facts.every(i=>i < who[0]) && !/\bbadge\b/.test(kids[0].className));
+          });
+          ck("a busy calendar day shows ONE event tag and a '+2' count, never a stack of tiny tags", (function(){
+            const d = "2026-03-04", cell = calDayCell(d, false, {[d]:[{type:"medical"},{type:"school"},{type:"activity"}]}, {});
+            const tags = Array.from(cell.querySelectorAll(".evtag"));
+            return tags.length === 2 && /\bmore\b/.test(tags[1].className) && tags[1].textContent === "+2"; })());
+          ck("ONE row grammar: in Record, Money and the day sheet the facts come first and the who-badge is LAST on the meta line", bad.length === 0 ? true : (console.log("row grammar broken in: " + bad.join(", ")), false));
+          ck("a Money row states the split ON its meta line, not in a quoted note", /Dad \$43\.75 · Mom \$43\.76/.test(rows["Money"].querySelector(".emeta").textContent) &&
+             Array.from(rows["Money"].querySelectorAll(".enote")).every(n=>!/\$43\.75/.test(n.textContent)));
+        })();
         ck("the calendar's episode row reads the same headline", calEpisodeRow(ns).querySelector(".evtitle").textContent === "selfcheck nosev: threw her cup" && clean(calEpisodeRow(ns)));
         ck("the Today strip and the Insights tab draw an unrated entry without inventing a number",
            (function(){ try{ const t = todayStrip(); renderTrends(); return clean(t) && !/worst was 0|worst severity 0|-Infinity/.test(t.textContent + $("v-insights").textContent); }catch(e){ return false; } })());
@@ -7445,6 +7523,11 @@ Store.init();
       });
       ck("the Record key decodes all five severity numbers and the padlock",
          SEV.every(s=>printKeyText("record").indexOf(s.n + " " + s.anchor) >= 0) && /🔒/.test(printKeyText("record")));
+      ck("the front door asks 'Which parent are you?' and never says entries are 'stamped'",
+         /Which parent are you\?/.test($("gate").textContent) && !/stamped with/i.test($("gate").textContent));
+      /* view by view, never document.body: the body's text includes this script, comments and all */
+      ck("no screen or printed page calls itself an 'exhibit'",
+         ["gate","v-log","v-calendar","v-money","v-history","v-insights","v-custodyprint"].every(id=>!!$(id) && $(id).textContent.length > 20 && !/exhibit/i.test($(id).textContent)));
       ck("one primary colour: Save and Start timing share a background", (function(){
          const a = document.createElement("button"); a.className = "bigbtn"; const b = document.createElement("button"); b.className = "start";
          document.body.appendChild(a); document.body.appendChild(b);
