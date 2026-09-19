@@ -800,6 +800,26 @@ textarea{border-radius:10px}
 .dband.none{height:0}
 .dcell.painted{border-color:var(--ink);border-width:2px}
 .dcell.today .dnum{background:var(--accent);color:var(--accent-ink);border-radius:999px;min-width:18px;text-align:center;padding:1px 4px}
+/* ---------- DATE PICKER (commit B) ----------
+   The trigger sits beside whichever field it belongs to; the field itself
+   is untouched (still a real typed date input, still whatever width its
+   own layout gave it) so a typed date and a picked one visibly agree in
+   the SAME box. min-width:0 lets the input shrink in a flex/label row
+   instead of pushing the trigger off a 390px screen. */
+.dp-wrap{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.dp-wrap input[type="date"]{flex:1;min-width:0}
+.dp-trigger{flex:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--line);
+     background:var(--surface);color:var(--ink-2);display:flex;align-items:center;justify-content:center;
+     transition:background-color var(--t-tap) var(--ease-out)}
+.dp-trigger svg{width:19px;height:19px}
+.dp-trigger:active{background:var(--surface-2)}
+@media (hover:hover) and (pointer:fine){ .dp-trigger:hover{border-color:var(--accent)} }
+/* the sheet reuses .cal-nav/.cal-wds/.cal-grid/.dcell/.dband as-is; only the
+   cell itself needs a focus ring (a month grid cell is never keyboard-
+   focused on Calendar — a mouse/touch tap opens the day sheet there — but
+   here arrow keys move real focus across the grid). */
+.dp-cell:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.dp-grid{margin-bottom:4px}
 .cal-sum{display:flex;flex-wrap:wrap;gap:4px 18px;align-items:baseline;margin-top:12px;padding:12px 14px;font-size:14px;color:var(--ink-2);
          border-radius:var(--r);background:var(--surface);box-shadow:var(--shadow)}
 .cal-sum b{font-weight:800;font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-right:3px}
@@ -1224,11 +1244,17 @@ body[data-tab="messages"]{--accent:#9B4F1F;--accent-soft:#F5E6D8}
              never print, for either parent.</p>
           <label class="retro-row">
             <span class="retro-lab">From</span>
-            <input type="date" id="custodyPrintFrom" aria-label="Printed record start date">
+            <div class="dp-wrap">
+              <input type="date" id="custodyPrintFrom" aria-label="Printed record start date">
+              <button type="button" class="dp-trigger" id="custodyPrintFromPick" aria-label="Pick a date"><span class="ico" data-ico="calendar" aria-hidden="true"></span></button>
+            </div>
           </label>
           <label class="retro-row">
             <span class="retro-lab">To</span>
-            <input type="date" id="custodyPrintTo" aria-label="Printed record end date">
+            <div class="dp-wrap">
+              <input type="date" id="custodyPrintTo" aria-label="Printed record end date">
+              <button type="button" class="dp-trigger" id="custodyPrintToPick" aria-label="Pick a date"><span class="ico" data-ico="calendar" aria-hidden="true"></span></button>
+            </div>
           </label>
         </div>
       </div>
@@ -1385,6 +1411,13 @@ body[data-tab="messages"]{--accent:#9B4F1F;--accent-soft:#F5E6D8}
 
 <div class="scrim" id="calScrim" hidden><div class="sheet" id="calSheetEl" role="dialog" aria-modal="true"
      aria-labelledby="calSheetTitle" tabindex="-1"></div></div>
+
+<!-- DATE PICKER (commit B) — ONE shared bottom sheet behind every date field
+     (Money claim/settlement, calendar event, log "when", custody print range).
+     Same scrim/sheet pattern as the two above, own ids so none of the three
+     ever fights another for State. -->
+<div class="scrim" id="dpScrim" hidden><div class="sheet" id="dpSheetEl" role="dialog" aria-modal="true"
+     aria-labelledby="dpSheetTitle" tabindex="-1"></div></div>
 
 <script>
 "use strict";
@@ -3789,7 +3822,7 @@ function draftForm(){
     dayRow.appendChild(ob);
     din.oninput = ()=>{ if(din.value && din.value <= todayS){ d.whenD = din.value; refreshNote(); } };
     wl.appendChild(dayRow);
-    wl.appendChild(din);
+    wl.appendChild(dpAttach(din));
     const w1 = el("label","retro-row");
     w1.appendChild(el("span","retro-lab","Started at"));
     const tin = document.createElement("input");
@@ -5042,7 +5075,7 @@ function claimForm(){
   din.type = "date"; din.value = d.dateStr; din.max = dayOf(Date.now());
   din.setAttribute("aria-label","Date of the claim");
   din.oninput = ()=>{ d.dateStr = din.value; };
-  df.appendChild(din);
+  df.appendChild(dpAttach(din));
   wrap.appendChild(df);
 
   wrap.appendChild(chipRow("Category", true, MONEY_CATEGORIES, d.cat,
@@ -5253,7 +5286,7 @@ function settleForm(){
   din.type = "date"; din.value = d.dateStr; din.max = dayOf(Date.now());
   din.setAttribute("aria-label","Date of the settlement");
   din.oninput = ()=>{ d.dateStr = din.value; };
-  df.appendChild(din);
+  df.appendChild(dpAttach(din));
   wrap.appendChild(df);
 
   const nf = el("div","field");
@@ -5716,6 +5749,155 @@ function calPaintBand(btn, band, dstr, cst){
   btn.classList.toggle("painted", !!pending);
   /* the filled day wears the colour of the parent it is going to, the same blue/purple as the band and the chip */
   btn.classList.toggle("pdad", pending === "dad"); btn.classList.toggle("pmom", pending === "mom");
+}
+
+/* ============================================================
+   DATE PICKER (commit B) — ONE shared bottom-sheet component behind every
+   date field (Money claim/settlement, calendar event, log "when", and the
+   two custody print range fields). dpDayCell reuses calPaintBand — the
+   SAME function the real month grid uses to paint the dad/mom band — so a
+   picked date looks exactly like it does on Calendar, without duplicating
+   that logic. No event dot / incident / amber marks here: those are
+   Calendar-specific, not date-field concerns.
+   The <input type=date> stays the source of truth: dpOpen seeds the grid
+   from its current value, dpPick writes back through that SAME input and
+   fires a real "input" event, so typing and picking can never disagree.
+   ============================================================ */
+function dpDayCell(dstr, isToday){
+  const cst = custodyForDate(dstr);
+  const btn = el("button","dcell dp-cell" + (isToday ? " today" : ""));
+  btn.type = "button"; btn.dataset.date = dstr; btn.tabIndex = -1;
+  const top = el("div","dtop");
+  top.appendChild(el("span","dnum", String(+dstr.slice(8,10))));
+  btn.appendChild(top);
+  const band = el("span","dband"); band.setAttribute("aria-hidden","true");
+  btn.appendChild(band);
+  calPaintBand(btn, band, dstr, cst);
+  const parts = [friendlyDay(dstr)];
+  if(isToday) parts.push("today");
+  if(cst.parent) parts.push(WHO_NAME[cst.parent] + "'s custody day");
+  btn.setAttribute("aria-label", parts.join(", "));
+  btn.onclick = ()=>dpPick(dstr);
+  return btn;
+}
+function dpAttach(din){
+  const wrap = el("div","dp-wrap");
+  const btn = el("button","dp-trigger"); btn.type = "button";
+  btn.setAttribute("aria-label","Pick a date");
+  btn.appendChild(ico("calendar"));
+  btn.onclick = ()=>dpOpen(din);
+  wrap.appendChild(din);
+  wrap.appendChild(btn);
+  return wrap;
+}
+let dpSheetT = null;
+function dpOpen(input){
+  const seed = (input.value && /^\d{4}-\d{2}-\d{2}$/.test(input.value)) ? input.value : dayOf(Date.now());
+  State.datePicker = {input, month: seed.slice(0,7), focus: seed};
+  State.dpReturnTo = document.activeElement;
+  const sc = $("dpScrim");
+  clearTimeout(dpSheetT);
+  sc.classList.remove("closing");
+  sc.hidden = false;
+  void sc.offsetWidth;
+  sc.classList.add("opening");
+  $("app").setAttribute("inert","");
+  /* the sheet is UNHIDDEN before drawing (not after, like the other two
+     sheets) because dpDraw() itself focuses the matching day cell — a
+     browser refuses to focus an element still inside a hidden ancestor,
+     and arrow-key nav needs focus to land ON a grid cell (grid.onkeydown
+     only sees keydowns that bubble UP from a focused descendant). */
+  dpDraw();
+}
+function dpClose(){
+  const sc = $("dpScrim");
+  if(sc.hidden || sc.classList.contains("closing")) return;
+  sc.classList.remove("opening");
+  sc.classList.add("closing");
+  const returnTo = State.dpReturnTo;
+  State.datePicker = null; State.dpReturnTo = null;
+  $("app").removeAttribute("inert");
+  clearTimeout(dpSheetT);
+  dpSheetT = setTimeout(()=>{ sc.hidden = true; sc.classList.remove("closing"); }, ms("--t-exit"));
+  if(returnTo && returnTo.focus) returnTo.focus();
+}
+function dpPick(dstr){
+  const dp = State.datePicker; if(!dp) return;
+  const input = dp.input;
+  const min = input.getAttribute("min"), max = input.getAttribute("max");
+  if((min && dstr < min) || (max && dstr > max)) return;
+  input.value = dstr;
+  if(typeof Event === "function") input.dispatchEvent(new Event("input", {bubbles:true}));
+  else if(typeof input.oninput === "function") input.oninput();
+  dpClose();
+}
+function dpFocusCell(grid, dp, ni, cells){
+  if(ni < 0 || ni >= cells.length) return;
+  cells.forEach(c=>c.tabIndex = -1);
+  cells[ni].tabIndex = 0;
+  cells[ni].focus();
+  dp.focus = cells[ni].dataset.date;
+}
+function dpGridKey(e){
+  const dp = State.datePicker; if(!dp) return;
+  const grid = $("dpGrid"); if(!grid) return;
+  const cells = Array.from(grid.querySelectorAll(".dp-cell"));
+  let idx = cells.indexOf(document.activeElement);
+  if(idx === -1) idx = cells.findIndex(c=>c.dataset.date === dp.focus);
+  if(e.key === "ArrowRight"){ e.preventDefault(); dpFocusCell(grid, dp, idx+1, cells); }
+  else if(e.key === "ArrowLeft"){ e.preventDefault(); dpFocusCell(grid, dp, idx-1, cells); }
+  /* ponytail: month-crossing up/down arrow nav (a day off the visible grid
+     jumping to the next/previous month) is not built — the ceiling here is
+     "arrow keys move by day within the open month"; upgrade path is to
+     detect an out-of-range index, call dpDraw() on the adjacent month, and
+     refocus the matching date. */
+  else if(e.key === "ArrowDown"){ e.preventDefault(); dpFocusCell(grid, dp, idx+7, cells); }
+  else if(e.key === "ArrowUp"){ e.preventDefault(); dpFocusCell(grid, dp, idx-7, cells); }
+  else if(e.key === "Enter"){ const c = cells[idx]; if(c){ e.preventDefault(); dpPick(c.dataset.date); } }
+};
+function dpDraw(){
+  const dp = State.datePicker; const s = $("dpSheetEl"); if(!s || !dp) return;
+  s.innerHTML = "";
+  const hd = el("div","sheethd");
+  const l = el("div");
+  const moDate = new Date(Date.UTC(+dp.month.slice(0,4), +dp.month.slice(5,7)-1, 1));
+  const ht = el("h3",null, moDate.toLocaleDateString(undefined,{month:"long",year:"numeric",timeZone:"UTC"}));
+  ht.id = "dpSheetTitle";
+  l.appendChild(ht);
+  hd.appendChild(l);
+  const x = el("button","x","×"); x.type = "button"; x.setAttribute("aria-label","Close"); x.onclick = dpClose;
+  hd.appendChild(x);
+  s.appendChild(hd);
+
+  const nav = el("div","cal-nav dp-nav");
+  const prevB = el("button",null,"‹"); prevB.type = "button"; prevB.setAttribute("aria-label","Previous month");
+  prevB.onclick = ()=>{ dp.month = shiftYm(dp.month,-1); dpDraw(); };
+  const todayB = el("button","cal-today","Today"); todayB.type = "button"; todayB.setAttribute("aria-label","Jump to this month");
+  todayB.onclick = ()=>{ const t = dayOf(Date.now()); dp.month = t.slice(0,7); dp.focus = t; dpDraw(); };
+  const nextB = el("button",null,"›"); nextB.type = "button"; nextB.setAttribute("aria-label","Next month");
+  nextB.onclick = ()=>{ dp.month = shiftYm(dp.month,1); dpDraw(); };
+  nav.appendChild(prevB); nav.appendChild(todayB); nav.appendChild(nextB);
+  s.appendChild(nav);
+
+  const wds = el("div","cal-wds");
+  ["S","M","T","W","T","F","S"].forEach(w=>{ const sp = el("span","cal-wd",w); sp.setAttribute("aria-hidden","true"); wds.appendChild(sp); });
+  s.appendChild(wds);
+
+  const days = monthDays(dp.month);
+  const lead = weekdayOf(days[0]);
+  const grid = el("div","cal-grid dp-grid"); grid.id = "dpGrid";
+  grid.setAttribute("role","grid"); grid.setAttribute("aria-label","Choose a date");
+  grid.onkeydown = dpGridKey;
+  for(let i=0;i<lead;i++){ const pad = el("div","dcell out"); pad.setAttribute("aria-hidden","true"); grid.appendChild(pad); }
+  const today = dayOf(Date.now());
+  days.forEach(dstr=>grid.appendChild(dpDayCell(dstr, dstr===today)));
+  s.appendChild(grid);
+
+  const wantFocus = dp.focus && dp.focus.slice(0,7) === dp.month ? dp.focus : today.slice(0,7) === dp.month ? today : days[0];
+  const cells = Array.from(grid.querySelectorAll(".dp-cell"));
+  cells.forEach(c=>c.tabIndex = c.dataset.date === wantFocus ? 0 : -1);
+  const toFocus = grid.querySelector('[data-date="' + wantFocus + '"]');
+  if(toFocus) toFocus.focus(); else s.focus();
 }
 
 /* ============================================================
@@ -6729,7 +6911,7 @@ function calEventForm(existing){
   din.type = "date"; din.value = d.date;
   din.setAttribute("aria-label","Event date");
   din.oninput = ()=>{ d.date = din.value; };
-  drow.appendChild(din);
+  drow.appendChild(dpAttach(din));
   df.appendChild(drow);
   const trow = el("label","retro-row");
   trow.appendChild(el("span","retro-lab","Time"));
@@ -7075,6 +7257,8 @@ $("msgPrintBtn").onclick = ()=>{
   $("custodyPrintFrom").value = addDaysStr(today, -30);
   $("custodyPrintTo").value = today;
 })();
+$("custodyPrintFromPick").onclick = ()=>dpOpen($("custodyPrintFrom"));
+$("custodyPrintToPick").onclick = ()=>dpOpen($("custodyPrintTo"));
 $("custodyPrintBtn").onclick = ()=>{
   renderCustodyPrint($("custodyPrintFrom").value, $("custodyPrintTo").value);
   document.body.classList.add("print-custody");
@@ -7087,9 +7271,11 @@ window.addEventListener("afterprint", ()=>{
 });
 $("scrim").onclick = (ev)=>{ if(ev.target === $("scrim")) closeSheet(); };
 $("calScrim").onclick = (ev)=>{ if(ev.target === $("calScrim")) calCloseDay(); };
+$("dpScrim").onclick = (ev)=>{ if(ev.target === $("dpScrim")) dpClose(); };
 document.addEventListener("keydown", e=>{
   if(e.key !== "Escape") return;
-  if(!$("scrim").hidden) closeSheet();
+  if(!$("dpScrim").hidden) dpClose();
+  else if(!$("scrim").hidden) closeSheet();
   else if(!$("calScrim").hidden) calCloseDay();
 });
 window.addEventListener("online", ()=>Store.flushOutbox());
@@ -8760,6 +8946,100 @@ Store.init();
     ck("selfcheck custody UI: left no renderCalendar-probe pattern behind",
        !Store.allCustodyPatterns().some(p=>p.anchorDate==="2026-02-02"));
   })();
+
+  /* ============================================================
+     DATE PICKER (commit B) — the shared bottom sheet behind every date
+     field. Mechanics (open/pick/close/keyboard) need real focus and real
+     CSS, so this whole block is browser-only, same guard as the CSS/DOM
+     checks above. Structural wiring (does field X actually carry a
+     dp-trigger) is DOM-only and could run under node, but every field
+     builder it calls (claimForm/settleForm/etc.) lives behind the SAME
+     document.querySelectorAll guard as the rest of this file's real-DOM
+     checks, so it is grouped here rather than split across two guards.
+     ============================================================ */
+  if(typeof dpOpen === "function" && document.styleSheets && document.styleSheets.length && document.createElement && document.body){
+    (function(){
+      const input = document.createElement("input");
+      input.type = "date"; input.id = "selfcheck-dp-input";
+      document.body.appendChild(input);
+      let firedInput = false;
+      input.addEventListener("input", ()=>{ firedInput = true; });
+      const beforeDp = State.datePicker, beforeReturn = State.dpReturnTo;
+      try {
+        input.focus();
+        dpOpen(input);
+        const grid = $("dpGrid");
+        ck("date picker: opening from a field draws a month grid of day cells",
+           !!grid && grid.querySelectorAll(".dp-cell").length >= 28);
+        const today = dayOf(Date.now());
+        dpPick(today);
+        ck("date picker: picking a day fills the FIELD it was opened from, fires a real input event, and closes",
+           input.value === today && firedInput && State.datePicker === null && $("dpScrim").classList.contains("closing"));
+
+        input.value = ""; firedInput = false;
+        dpOpen(input);
+        const active1 = document.activeElement;
+        ck("date picker: a grid day cell has real keyboard focus once open (not the sheet shell)",
+           !!active1 && active1.classList && active1.classList.contains("dp-cell"));
+        const startDate = active1.dataset.date;
+        active1.dispatchEvent(new KeyboardEvent("keydown", {key:"ArrowRight", bubbles:true, cancelable:true}));
+        ck("date picker: ArrowRight moves focus to the next day",
+           document.activeElement !== active1 && document.activeElement.dataset.date === addDaysStr(startDate, 1));
+        document.activeElement.dispatchEvent(new KeyboardEvent("keydown", {key:"Enter", bubbles:true, cancelable:true}));
+        ck("date picker: Enter picks the focused day — typed and picked paths agree on the same field",
+           input.value === addDaysStr(startDate, 1) && State.datePicker === null);
+
+        dpOpen(input);
+        document.dispatchEvent(new KeyboardEvent("keydown", {key:"Escape", bubbles:true, cancelable:true}));
+        ck("date picker: Escape closes the sheet and returns focus to the field it opened from",
+           $("dpScrim").classList.contains("closing") && document.activeElement === input);
+
+        /* min/max on the underlying input are still honoured — a picker
+           cannot pick a day the typed field itself would reject. */
+        input.value = ""; input.max = today;
+        dpOpen(input);
+        const future = addDaysStr(today, 5);
+        dpPick(future);
+        ck("date picker: a day past the field's own max is refused, same as typing would be",
+           input.value !== future && State.datePicker !== null);
+        dpClose();
+        input.removeAttribute("max");
+      } finally {
+        State.datePicker = beforeDp; State.dpReturnTo = beforeReturn;
+        $("dpScrim").hidden = true; $("dpScrim").classList.remove("opening","closing");
+        $("app").removeAttribute("inert");
+        input.remove();
+      }
+    })();
+
+    /* structural: every named field actually carries the shared trigger. */
+    (function(){
+      const beforeMoneyDraft = State.moneyDraft, beforeSettleDraft = State.settleDraft;
+      try {
+        State.moneyDraft = {amount:"12.00", dateStr:dayOf(Date.now()), cat:"medical", payer:"dad", desc:"", missing:null};
+        ck("date picker: the Money claim-date field carries a dp-trigger",
+           claimForm().querySelectorAll(".dp-wrap .dp-trigger").length === 1);
+        State.settleDraft = {payer:"dad", amount:"5.00", amount0:"5.00", dateStr:dayOf(Date.now()), note:"", missing:null};
+        ck("date picker: the Money settlement-date field carries a dp-trigger",
+           settleForm().querySelectorAll(".dp-wrap .dp-trigger").length === 1);
+      } finally {
+        State.moneyDraft = beforeMoneyDraft; State.settleDraft = beforeSettleDraft;
+      }
+      if(typeof calBlankDraft === "function" && typeof calEventForm === "function"){
+        const before = State.calAdding;
+        try {
+          State.calAdding = calBlankDraft(dayOf(Date.now()));
+          ck("date picker: the calendar event-date field carries a dp-trigger",
+             calEventForm(null).querySelectorAll(".dp-wrap .dp-trigger").length === 1);
+        } finally { State.calAdding = before; }
+      }
+      ck("date picker: both custody print range fields (From/To) carry a dp-trigger",
+         !!$("custodyPrintFromPick") && !!$("custodyPrintToPick") &&
+         $("custodyPrintFromPick").className.indexOf("dp-trigger") >= 0 &&
+         $("custodyPrintToPick").className.indexOf("dp-trigger") >= 0 &&
+         typeof $("custodyPrintFromPick").onclick === "function" && typeof $("custodyPrintToPick").onclick === "function");
+    })();
+  }
 
   // ---- 2026-09-18: custom split, assign-by-tapping, backdated entries, the
   // severity descriptions, the tried-before readout. Pure functions first.
