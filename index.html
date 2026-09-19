@@ -648,6 +648,9 @@ textarea{border-radius:10px}
 .moneybanner{background:var(--surface);border-radius:var(--r);padding:18px 16px;box-shadow:var(--shadow);text-align:center}
 .moneybanner .big{font-size:21px;font-weight:700;letter-spacing:-.02em;line-height:1.35}
 .nm{font-weight:700} .nm.dad{color:var(--dad)} .nm.mom{color:var(--mom)}
+/* "Who paid" and every other Dad/Mom choice: the chosen chip is that parent's colour, not the section's */
+.chip[data-k="dad"][aria-pressed="true"]{background:var(--dad);border-color:var(--dad)}
+.chip[data-k="mom"][aria-pressed="true"]{background:var(--mom);border-color:var(--mom)}
 .moneybanner .sub2{font-size:12.5px;color:var(--muted);margin-top:5px}
 .eamt{font-size:15px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .mtitle{font-size:15.5px;font-weight:700;color:var(--ink);letter-spacing:-.015em;margin-top:2px}   /* = .evtitle: one title for every row that carries no severity */
@@ -753,6 +756,7 @@ textarea{border-radius:10px}
 .sheet .daylist{border:1px solid var(--line)}
 .evtitle{font-size:15.5px;font-weight:700;color:var(--ink);letter-spacing:-.015em;margin-top:2px}
 .calev.voided .evtitle{text-decoration:line-through}
+.calswap.voided .sub:not(.swapgone){text-decoration:line-through;color:var(--muted)}
 .calev.voided{opacity:.85}
 .privnote{margin-top:10px;padding:10px 11px;border-radius:10px;background:var(--surface-2);
           border:1px dashed var(--line-strong)}
@@ -1040,7 +1044,7 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
       <div class="whoami"><span class="dot" id="meDot"></span><span id="meName"></span><button type="button" class="linkbtn switchme" id="switchMe">Switch</button></div>
     </div>
     <div class="syncline" role="status"><span class="syncdot" id="syncDot"></span><span id="syncMsg">Connecting…</span></div>
-    <div class="storebanner" id="storeBanner" role="alert" hidden><span class="ico" data-ico="warn"></span><div><b>Not saved: this phone is out of storage</b><span>Your last change is on screen only. Delete a receipt photo, or free up space on the phone, then save again.</span></div></div>
+    <div class="storebanner" id="storeBanner" role="alert" hidden><span class="ico" data-ico="warn"></span><div><b>Not saved: this phone is out of storage</b><span id="storeBannerMsg"></span><button type="button" class="linkbtn" id="storeBannerGo" hidden>Go to the claim with the photo</button></div></div>
     <button type="button" class="timerpill" id="timerPill" hidden><span class="livedot" aria-hidden="true"></span><span id="timerPillText"></span></button>
   </header>
 
@@ -2312,6 +2316,13 @@ const Store = {
   respondToSwap(requestId, who, decision, note, direction){
     const req = this.allSwapRequests().find(r=>r.id===requestId);
     if(!req) return;
+    /* WITHDRAWING A REQUEST (Simon's ruling 09-18 night): the requester answers their OWN
+       request with decision "withdraw". Same append-only shape as every other answer, so
+       no new API and nothing is deleted; the row stays, struck through. Only the requester
+       may withdraw, only while unanswered, and a withdrawn request can no longer be answered. */
+    const prior = this.swapWithResponse().find(r=>r.id===requestId).response;
+    if(prior) return;
+    if(decision === "withdraw" && who !== req.by) return;
     const doc = this.swapResponses[who] || {who, items:{}};
     doc.items = Object.assign({}, doc.items);
     const wants = req.wantsCustody || direction || null;
@@ -2337,7 +2348,11 @@ const Store = {
   },
   swapWithResponse(){
     const resp = {};
-    this.allSwapResponses().forEach(r=>{ resp[r.requestId] = r; });
+    /* ponytail: two phones offline can both answer (one withdraws, one accepts). An accept has
+       already written its custody exception, so the OTHER parent's answer always beats a
+       withdrawal and the row agrees with the calendar. Ceiling: the requester briefly saw
+       "Withdrawn" before sync. Upgrade path: a server-side first-write-wins on the request id. */
+    this.allSwapResponses().forEach(r=>{ if(!resp[r.requestId] || resp[r.requestId].decision === "withdraw") resp[r.requestId] = r; });
     return this.allSwapRequests().map(r=>Object.assign({}, r, {response: resp[r.id]||null}))
       .sort((a,b)=>b.at-a.at);
   }
@@ -2727,7 +2742,12 @@ function renderSync(){
   const sb = $("storeBanner"); if(sb) sb.hidden = !Store.storageError;
   if(Store.storageError){
     d.className = "syncdot danger";
-    m.textContent = "Not saved — this device's storage is full. Delete a receipt photo or free up space, then try again.";
+    /* the header names the state ONCE; the banner below carries the way out. It used to repeat the banner
+       word for word, and told a parent on the Record tab to delete a receipt photo that tab never has. */
+    m.textContent = "Not saved — this phone's storage is full";
+    const st = storageAdvice(), msg = $("storeBannerMsg"), go = $("storeBannerGo");
+    if(msg) msg.textContent = st.text;
+    if(go){ go.hidden = !st.photo; go.onclick = ()=>setTab("money"); }
     return;
   }
   /* An unsent entry outranks the connection state. mode flips to "sync" the
@@ -3152,6 +3172,7 @@ function chipRow(labelText, required, opts, cur, onPick, missing, toggle, addFie
   if(missing) c.setAttribute("aria-invalid","true");
   opts.forEach(([k,v])=>{
     const b = el("button","chip",v);
+    b.setAttribute("data-k", String(k));   /* lets a Dad/Mom chip wear its parent colour when chosen */
     b.setAttribute("aria-pressed", String(cur===k));
     b.onclick = ()=>{
       /* read the LIVE attribute: after an in-place flip with no re-render the
@@ -4392,6 +4413,14 @@ function renderMoney(){
 /* WHO IS WHO, IN COLOUR (Simon 09-18): Dad is blue and Mom is purple on the calendar and the
    badges, and Money wrote both names in plain ink. One helper colours every "Dad"/"Mom" in a
    money sentence; the words themselves do not change, so print and screen readers are as before. */
+/* What a parent can actually DO about a full phone. A saved receipt cannot be deleted (the record is
+   append-only), so the photo is only named when one is attached to the claim being typed right now. */
+function storageAdvice(){
+  const photo = !!(State.moneyDraft && State.moneyDraft.receipt);
+  return {photo, text: photo
+    ? "Your last change is on screen only. The receipt photo on the claim you are typing is the likely cause: remove the photo and save again, or free up space on this phone."
+    : "Your last change is on screen only. Free up space on this phone (old photos, unused apps), then save again. Everything saved before this is still here."};
+}
 function paintNames(node, text){
   String(text).split(/\b(Dad|Mom)\b/).forEach(part=>{
     if(part === WHO_NAME.dad || part === WHO_NAME.mom) node.appendChild(el("span","nm " + (part === WHO_NAME.dad ? "dad" : "mom"), part));
@@ -4414,7 +4443,7 @@ function moneyRow(e){
   if(e.kind === "settlement"){
     top.appendChild(el("span","badge settlebadge","Settlement"));
     body.appendChild(top);
-    body.appendChild(el("div","mtitle",
+    body.appendChild(paintNames(el("div","mtitle"),
       WHO_NAME[e.payer] + " paid " + WHO_NAME[e.payer==="dad"?"mom":"dad"] + " " + centsToDollars(e.amount)));
     if(e.note) body.appendChild(el("div","enote", e.note));
   } else {
@@ -5915,6 +5944,7 @@ function calSwapSection(dstr){
    the responder's own words; the outcome word stays the flat "Declined". */
 function swapOutcomeText(r){
   if(!r.response) return "Awaiting response";
+  if(r.response.decision === "withdraw") return "Withdrawn by " + WHO_NAME[r.by] + " before an answer";
   const word = r.response.decision === "accept" ? "Accepted" : "Declined";
   const note = (r.response.note || "").trim();
   return note ? word + ". Reason given: “" + note + "”" : word;
@@ -5937,6 +5967,26 @@ function swapDeclineControl(r, act, direction){
   back.onclick = ()=>{ State.calDeclineOpen = null; calDrawDaySheet(); };
   box.appendChild(inp); box.appendChild(no); box.appendChild(back);
   return box;
+}
+
+/* The requester's way out of a pending request: two taps, in place, red because it leaves a mark. */
+function swapWithdrawControl(r){
+  const wrap = el("div","discardwrap");
+  const c = el("button","linkbtn danger-link","Withdraw request"); c.type = "button";
+  c.onclick = ()=>{
+    wrap.innerHTML = "";
+    const box = el("div","confirmbox"); box.setAttribute("role","group"); box.setAttribute("aria-label","Withdraw this request?");
+    box.appendChild(el("p",null,"Withdraw this request? It stays in the record, struck through, and " + WHO_NAME[otherOf(r.by)] + " can no longer answer it."));
+    const act = el("div","confirmact");
+    const yes = el("button","cyes","Withdraw it"); yes.type = "button";
+    yes.onclick = ()=>{ Store.respondToSwap(r.id, State.me, "withdraw"); calDrawDaySheet(); };
+    const no = el("button","cno","Keep it"); no.type = "button";
+    no.onclick = ()=>{ wrap.innerHTML = ""; wrap.appendChild(c); };
+    act.appendChild(no); act.appendChild(yes); box.appendChild(act);
+    wrap.appendChild(box);
+  };
+  wrap.appendChild(c);
+  return wrap;
 }
 
 function calSwapRow(r){
@@ -5982,7 +6032,12 @@ function calSwapRow(r){
       }
     } else {
       row.appendChild(el("p","sub","Waiting on " + WHO_NAME[otherOf(r.by)] + "."));
+      row.appendChild(swapWithdrawControl(r));
     }
+  } else if(r.response.decision === "withdraw"){
+    row.className += " voided";
+    row.appendChild(el("p","sub swapgone", swapOutcomeText(r) + " · " +
+      new Date(r.response.at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})));
   } else {
     const verdict = r.response.decision === "accept" ? "Accepted" : "Declined";
     row.appendChild(el("p","sub", verdict + " by " + WHO_NAME[r.response.by] + " · " +
@@ -6099,6 +6154,7 @@ function renderCustodyPrint(fromStr, toStr){
     const tbody = document.createElement("tbody");
     swaps.sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
       const tr = document.createElement("tr");
+      if(r.response && r.response.decision === "withdraw") tr.className = "exhibit-voided";
       const outcome = swapOutcomeText(r);
       [
         friendlyExhibitDate(r.date),
@@ -7399,6 +7455,16 @@ Store.init();
       ck("storage full: a banner is up while the write is failing, and down once it is not",
          bannerUp && $("storeBanner").hidden === true);
       Store.storageError = heldErr;   /* put it back: the next check must see a REAL error get cleared */
+      (function(){
+        const wasDraft = State.moneyDraft, texts = [];
+        State.moneyDraft = null; renderSync(); texts.push($("storeBannerMsg").textContent, String($("storeBannerGo").hidden));
+        State.moneyDraft = {receipt:{dataUrl:"x"}}; renderSync(); texts.push($("storeBannerMsg").textContent, String($("storeBannerGo").hidden));
+        State.moneyDraft = wasDraft;
+        ck("storage full: a receipt photo is named, with a way to it, ONLY while one is attached to the claim being typed",
+           !/receipt/.test(texts[0]) && texts[1] === "true" && /remove the photo/.test(texts[2]) && texts[3] === "false");
+        ck("storage full: the header states it once and leaves the way out to the banner",
+           $("syncMsg").textContent.indexOf("free up") < 0 && /storage is full/.test($("syncMsg").textContent));
+      })();
       localStorage.setItem = function(){};  // simulates a write that now succeeds, without
                                              // touching the REAL mirror during a self-check
       Store.saveLocal();
@@ -7697,6 +7763,34 @@ Store.init();
       })();
       ck("a declined swap is never editorialised as \"refused\" or \"wouldn't\"", !/refused|wouldn.t/i.test(text));
       ck("an UNANSWERED swap request appears, stated as awaiting response", /Awaiting response/.test(text));
+      (function(){   /* withdrawing a pending swap request (ruling 09-18 night). idPending is dad's, unanswered. */
+        const wasMe = State.me, find = ()=>Store.swapWithResponse().find(x=>x.id===idPending);
+        const btns = n=>Array.from(n.querySelectorAll("button")).map(b=>b.textContent);
+        State.me = "dad"; const mine = btns(calSwapRow(find()));
+        State.me = "mom"; const theirs = btns(calSwapRow(find()));
+        ck("swap withdraw: only the parent who asked is offered 'Withdraw request'",
+           mine.indexOf("Withdraw request") >= 0 && theirs.indexOf("Withdraw request") < 0 && theirs.indexOf("Accept") >= 0);
+        Store.respondToSwap(idPending, "mom", "withdraw");
+        ck("swap withdraw: the other parent cannot withdraw a request that is not theirs", !find().response);
+        Store.respondToSwap(idPending, "dad", "withdraw");
+        const excBefore = Store.allCustodyExceptions().length;
+        Store.respondToSwap(idPending, "mom", "accept");
+        ck("swap withdraw: a withdrawn request cannot be answered afterwards, and moves no custody",
+           find().response.decision === "withdraw" && Store.allCustodyExceptions().length === excBefore);
+        const row = calSwapRow(find());
+        ck("swap withdraw: the row stays, struck through, says who withdrew it, and offers no Accept",
+           /voided/.test(row.className) && /Withdrawn by Dad before an answer/.test(row.textContent) && btns(row).indexOf("Accept") < 0);
+        renderCustodyPrint("2026-09-01", "2026-09-10");
+        const pslot = $("custodyPrintSlot");
+        ck("swap withdraw: the printed record keeps the request, struck through, with the outcome worded once",
+           Array.from(pslot.querySelectorAll("tr.exhibit-voided")).some(tr=>/Withdrawn by Dad before an answer/.test(tr.textContent)));
+        /* both phones answered offline: the accept wrote custody, so it must win the row */
+        Store.swapResponses.mom = {who:"mom", items:Object.assign({}, (Store.swapResponses.mom||{}).items, {[idPending]:{decision:"accept", note:"", at:Date.now(), by:"mom", direction:"requester"}})};
+        const both = Store.swapResponses, order = ks=>{ const o = {}; ks.forEach(k=>{ o[k] = both[k]; }); Store.swapResponses = o; return find().response.decision; };
+        const seenOrders = [order(["dad","mom"]), order(["mom","dad"])];   /* whichever doc is read first */
+        ck("swap withdraw: if both phones answered, the other parent's answer beats the withdrawal", seenOrders.join() === "accept,accept");
+        State.me = wasMe;
+      })();
       ck("a withdrawn event still appears in the exhibit, never omitted", text.indexOf("Soccer game") >= 0);
       ck("the withdrawn event's row is marked struck-through (exhibit-voided) and its Status cell says Withdrawn",
          slot.querySelectorAll("tr.exhibit-voided").length > 0 && /Withdrawn/.test(text));
@@ -8105,6 +8199,16 @@ Store.init();
            ck("money colours: every Dad is .nm.dad and every Mom is .nm.mom, and the sentence is unchanged",
               nm.length === 2 && /mom/.test(nm[0].className) && nm[0].textContent === "Mom" && /dad/.test(nm[1].className) &&
               n.textContent.replace(/\s+/g,"") === "Tosettle:$50.50,MomtoDad.");   /* the node stub pads child text; a browser does not */
+         })();
+         (function(){
+           const wasMe = State.me; State.me = "dad";
+           const r = moneyRow({id:"sc_set", kind:"settlement", who:"dad", payer:"mom", amount:9525, date:Date.now(), note:"", created:Date.now(), revs:[]});
+           State.me = wasMe;
+           const nm = Array.from(r.querySelectorAll(".mtitle .nm")).map(n=>n.className.replace("nm ","") + ":" + n.textContent).join();
+           ck("money colours: a settlement row names both parents in their colours", nm === "mom:Mom,dad:Dad");
+           const row = chipRow("Who paid", true, WHO_OPTS, "mom", ()=>{});
+           const ks = Array.from(row.querySelectorAll(".chip")).map(b=>b.getAttribute("data-k") + "=" + b.getAttribute("aria-pressed")).join();
+           ck("money colours: a Dad/Mom chip carries its parent key so the chosen one takes that parent's colour", ks === "dad=false,mom=true");
          })();
          ck("calendar: a line under the grid says a day can be tapped", !!$("calHint") && /Tap any day/.test($("calHint").textContent));
          ck("empty calendar: the schedule card is drawn once, not twice",
