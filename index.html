@@ -10,10 +10,10 @@
 :root{
   color-scheme:light dark;
 
-  --paper:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF1F4; --sunk:#E4EAEF;
-  --ink:#151A21; --ink-2:#3C4753; --muted:#5D6874; --faint:#636F7D;
-  --line:#DCE3E9; --line-strong:#6F879D;
-  --accent:#2C6E75; --accent-ink:#FFFFFF; --accent-soft:#DCEAEB;
+  --paper:#F3F4F7; --surface:#FFFFFF; --surface-2:#ECEEF3; --sunk:#E3E6EC;
+  --ink:#0E1116; --ink-2:#2E3440; --muted:#5B6372; --faint:#5B6372;
+  --line:#E2E5EB; --line-strong:#8A92A3;
+  --accent:#3B4CCA; --accent-ink:#FFFFFF; --accent-soft:#E4E7FA;
   --sev1:#EFC9AE; --sev2:#E0A377; --sev3:#CE7A4B; --sev4:#B0512C; --sev5:#8A2F1C;
   --sev1-edge:#BF7A46; --sev2-edge:#B9703F; --sev3-edge:#A0552C; --sev4-edge:#8A3C1E; --sev5-edge:#6B2214;
   /* ink for the NUMBER printed on each severity badge, solved per rung so the
@@ -22,8 +22,9 @@
   --sev1-ink:#1A0C04; --sev2-ink:#1A0C04; --sev3-ink:#1A0C04; --sev4-ink:#FFFFFF; --sev5-ink:#FFFFFF;
   --good:#2F6F4F; --warn:#886918; --danger:#9B3025;
   --dad:#3A5FA8; --mom:#7A4090;
+  --primary:#0E1116; --primary-ink:#FFFFFF;
   --scrim:rgba(10,14,18,.5);
-  --r:14px; --shadow:0 1px 2px rgba(21,26,33,.06), 0 4px 14px rgba(21,26,33,.05);
+  --r:20px; --shadow:0 1px 2px rgba(14,17,22,.05), 0 12px 32px rgba(14,17,22,.07);
 
   /* ---------- MOTION SCALE — the only place a duration or curve is written ----------
      Two classes of change, deliberately different lengths:
@@ -53,31 +54,33 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
-    --paper:#101419; --surface:#171D24; --surface-2:#1E252D; --sunk:#0C1014;
-    --ink:#EAEFF4; --ink-2:#C3CDD6; --muted:#93A0AD; --faint:#808C9A;
-    --line:#28313A; --line-strong:#65788B;
-    --accent:#63B3B8; --accent-ink:#0C1014; --accent-soft:#1B3033;
+    --paper:#0B0D12; --surface:#151922; --surface-2:#1D222D; --sunk:#07090D;
+    --ink:#EEF0F5; --ink-2:#C6CBD6; --muted:#969EAE; --faint:#8A92A2;
+    --line:#272D3A; --line-strong:#6A7386;
+    --accent:#8F9BFF; --accent-ink:#0B0D12; --accent-soft:#1F2447;
     --sev1:#57392C; --sev2:#7C4F38; --sev3:#B65A4E; --sev4:#D08355; --sev5:#F5A078;
     --sev1-edge:#8D6555; --sev2-edge:#A8755A; --sev3-edge:#CE7A6E; --sev4-edge:#E09668; --sev5-edge:#F9B393;
     --sev1-ink:#FFFFFF; --sev2-ink:#FFFFFF; --sev3-ink:#FFFFFF; --sev4-ink:#1A0C04; --sev5-ink:#1A0C04;
     --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
     --dad:#7FA3E8; --mom:#C08BDA;
+    --primary:#EEF0F5; --primary-ink:#0B0D12;
     --scrim:rgba(0,0,0,.72);
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --paper:#101419; --surface:#171D24; --surface-2:#1E252D; --sunk:#0C1014;
-  --ink:#EAEFF4; --ink-2:#C3CDD6; --muted:#93A0AD; --faint:#808C9A;
-  --line:#28313A; --line-strong:#65788B;
-  --accent:#63B3B8; --accent-ink:#0C1014; --accent-soft:#1B3033;
+  --paper:#0B0D12; --surface:#151922; --surface-2:#1D222D; --sunk:#07090D;
+  --ink:#EEF0F5; --ink-2:#C6CBD6; --muted:#969EAE; --faint:#8A92A2;
+  --line:#272D3A; --line-strong:#6A7386;
+  --accent:#8F9BFF; --accent-ink:#0B0D12; --accent-soft:#1F2447;
   --sev1:#57392C; --sev2:#7C4F38; --sev3:#B65A4E; --sev4:#D08355; --sev5:#F5A078;
   --sev1-edge:#8D6555; --sev2-edge:#A8755A; --sev3-edge:#CE7A6E; --sev4-edge:#E09668; --sev5-edge:#F9B393;
   --sev1-ink:#FFFFFF; --sev2-ink:#FFFFFF; --sev3-ink:#FFFFFF; --sev4-ink:#1A0C04; --sev5-ink:#1A0C04;
   --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
   --dad:#7FA3E8; --mom:#C08BDA;
-  --scrim:rgba(0,0,0,.72);
+  --primary:#EEF0F5; --primary-ink:#0B0D12;
+    --scrim:rgba(0,0,0,.72);
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
 }
 
@@ -131,7 +134,7 @@ html{scroll-padding-top:76px;scroll-padding-bottom:64px}
 /* U7: the bottom nav — tapped more than almost anything else in the app — had
    no :active of its own either, found by the same sweep as .x above. */
 .tab:active{opacity:.6;transition-duration:0s}
-.tab .cnt{font-size:10.5px;font-weight:500;color:inherit;opacity:.75;
+.tab .cnt{min-height:1.2em;font-size:10.5px;font-weight:500;color:inherit;opacity:.75;
      transition:color var(--t-amb) var(--ease-soft)}
 
 main{flex:1;padding:16px 16px 26px;display:flex;flex-direction:column;gap:22px}
@@ -150,6 +153,15 @@ main{flex:1;padding:16px 16px 26px;display:flex;flex-direction:column;gap:22px}
 .panel{background:var(--surface);border-radius:14px;padding:16px 15px;box-shadow:var(--shadow)}
 .eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin:0 0 8px}
 h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text-wrap:balance}
+/* ---------- "How this works": the tab's explainer, one tap away ----------
+   Every tab opened with a full grey paragraph on every visit, above the thing the
+   parent came to do. It is folded by default; print always shows it (the printed
+   record is unchanged). .shut is a class, not <details>: print CSS cannot open a
+   closed <details>. */
+.about .aboutbody{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.about.shut .aboutbody{display:none}
+.aboutbtn{margin-top:0;padding:4px 0}
+/* print always shows the body: see the main @media print block */
 .sub{font-size:14px;color:var(--muted);margin:0;line-height:1.45}
 
 /* ---------- daily card ---------- */
@@ -751,6 +763,44 @@ textarea{border-radius:10px}
    paper at 1.16:1 — a near-blank page, for the one artifact a mediator reads.
    Re-declaring the light values here is not a theme-only definition: every
    token's primary value still lives in the bare :root above. */
+/* =====================================================================
+   SYSTEM C "Modern" (Simon's pick 09-18). ONE system, tokens only:
+   type 12 / 13 / 15 / 17 / 22 / 34 · space 4 / 8 / 12 / 16 / 20 / 28 · radius 12 (control) / 20 (surface) / 999 (chip)
+   one card (.panel = .pcard = .moneybanner = .daylist), one chip, buttons: primary (ink) > ghost > link.
+   Placed AFTER the component rules and BEFORE print, so it wins on screen and print still wins on paper.
+   ===================================================================== */
+.brand{font-size:22px;font-weight:800;letter-spacing:-.04em}
+.sec{font-size:34px;font-weight:800;letter-spacing:-.045em;line-height:1.05;margin:4px 0 4px}
+.hdr{border-bottom:0;background:color-mix(in srgb, var(--paper) 86%, transparent)}
+.eyebrow{font-size:12px;letter-spacing:.08em}
+.sub{font-size:15px}
+.panel,.pcard,.moneybanner{border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+.daily{background:var(--accent-soft);border-left:0;border-radius:var(--r);padding:20px}
+.daily h3{font-size:17px;letter-spacing:-.02em}
+.start,.bigbtn{background:var(--primary);color:var(--primary-ink)}
+.start{border-radius:var(--r);padding:22px;font-size:19px;font-weight:700;letter-spacing:-.02em;box-shadow:var(--shadow)}
+.bigbtn{border-radius:16px;letter-spacing:-.015em}
+.bigbtn.ghost{background:var(--surface);color:var(--ink);border:0;box-shadow:0 0 0 1px var(--line), var(--shadow)}
+.bigbtn:disabled{background:var(--surface-2);color:var(--muted);box-shadow:none}
+.chip{border:0;box-shadow:0 0 0 1px var(--line);padding:10px 14px;font-size:14px;font-weight:600}
+.chip[aria-pressed="true"]{box-shadow:none}
+.chip.add{box-shadow:none;border:1px dashed var(--accent)}
+.field.missing .chips .chip{box-shadow:0 0 0 1.5px var(--danger)}
+.tabs{margin:0 12px 12px;border:0;border-radius:24px;bottom:12px;background:var(--surface);
+      box-shadow:0 0 0 1px var(--line), 0 10px 30px rgba(14,17,22,.16);padding-bottom:0}
+.tab{padding:10px 2px 9px;font-size:11px;font-weight:600}
+.tab svg{width:22px;height:22px}
+.tab[aria-selected="true"]{color:var(--ink)}
+.tab[aria-selected="true"] svg{color:var(--accent)}
+.dayhdr .d{font-size:17px;font-weight:800;letter-spacing:-.03em}
+.stripe{border-radius:12px;border:0}
+.sheet{border-radius:24px 24px 0 0}
+.note-strip{border-radius:16px;font-size:13px}
+textarea,input[type="number"],input[type="time"],input[type="date"],input[type="text"]{border-radius:12px;border-color:var(--line)}
+.savedock{bottom:calc(92px + env(safe-area-inset-bottom))}
+.gate{min-height:100vh;justify-content:center;padding:28px 20px}
+.gate .brand{font-size:34px;letter-spacing:-.045em;color:var(--ink)}
+
 @media print{
   /* listed three ways on purpose: the two dark selectors below are (0,2,0)
      and a bare :root (0,1,0) loses to them — a dark-mode phone printed a
@@ -767,6 +817,7 @@ textarea{border-radius:10px}
     --shadow:none;
   }
   .tabs,.start,.linkbtn,.bigbtn,.scrim,.no-print,.whoami,.syncline{display:none !important}
+  .about.shut .aboutbody{display:flex !important}
   body{background:#fff;font-size:11pt}
   .app{max-width:none}
   /* the header carries the only title on the page — it was hidden, so the
@@ -864,11 +915,13 @@ textarea{border-radius:10px}
 
     <!-- ============ CALENDAR ============ -->
     <section class="view" id="v-calendar" role="tabpanel" aria-labelledby="t-calendar" tabindex="0" hidden>
-      <div>
+      <div class="about shut">
         <h2 class="sec">Calendar</h2>
-        <p class="sub">Events are visible to both parents. Any private note you add to an event is visible
+        <button type="button" class="linkbtn aboutbtn" aria-expanded="false">How this works</button>
+        <div class="aboutbody"><p class="sub">Events are visible to both parents. Any private note you add to an event is visible
            only to you — it is never sent to the other parent's device. The letter along the bottom of each
-           date is who has her that day.</p>
+           date is who has her that day.</p></div>
+        
       </div>
       <div id="calSlot"></div>
       <div class="field no-print">
@@ -890,11 +943,13 @@ textarea{border-radius:10px}
 
     <!-- ============ MONEY ============ -->
     <section class="view" id="v-money" role="tabpanel" aria-labelledby="t-money" tabindex="0" hidden>
-      <div>
+      <div class="about shut">
         <h2 class="sec">Money</h2>
-        <p class="sub">Each expense is split between you — 50/50 by default, adjustable per claim. Nothing is deleted or overwritten: a
+        <button type="button" class="linkbtn aboutbtn" aria-expanded="false">How this works</button>
+        <div class="aboutbody"><p class="sub">Each expense is split between you — 50/50 by default, adjustable per claim. Nothing is deleted or overwritten: a
            withdrawn claim stays visible, struck through, and a settlement is added to the record, never
-           edited into an old total.</p>
+           edited into an old total.</p></div>
+        
       </div>
       <div class="note-strip">
         <b>This is a balance, not a scoreboard.</b> The number below is what is owed, worked out from the
@@ -909,13 +964,14 @@ textarea{border-radius:10px}
 
     <!-- ============ HISTORY (Record) ============ -->
     <section class="view" id="v-history" role="tabpanel" aria-labelledby="t-history" tabindex="0" hidden>
-      <div>
+      <div class="about shut">
         <h2 class="sec">The record</h2>
-        <p class="sub">Nothing is deleted or overwritten: an edit is kept as a revision, and a withdrawn entry
+        <button type="button" class="linkbtn aboutbtn" aria-expanded="false">How this works</button>
+        <div class="aboutbody"><p class="sub">Nothing is deleted or overwritten: an edit is kept as a revision, and a withdrawn entry
            stays visible, struck through. Each entry carries the name chosen on the device that wrote it —
            the app cannot verify who typed it.</p>
+        <p class="sub"><b>est</b> beside a length means it was entered afterwards from memory, not timed. A lock marks an entry the other parent wrote — only they can revise it.</p></div>
         <p class="sub" id="limitsLine" hidden></p>
-        <p class="sub"><b>est</b> beside a length means it was entered afterwards from memory, not timed. A lock marks an entry the other parent wrote — only they can revise it.</p>
       </div>
       <p class="sub printonly" id="recordCover"></p>
       <p class="sub printonly pkey" data-k="record"></p>
@@ -931,10 +987,12 @@ textarea{border-radius:10px}
          like"; the no-parent-comparison caveat is shared by both and sits
          once, up top, verbatim from the old Patterns tab. ============ -->
     <section class="view" id="v-insights" role="tabpanel" aria-labelledby="t-insights" tabindex="0" hidden>
-      <div>
+      <div class="about shut">
         <h2 class="sec">Insights</h2>
-        <p class="sub">How much is being recorded over time, and the shapes in the record as a whole. Each
-           card below stays locked until a count here would mean more than chance.</p>
+        <button type="button" class="linkbtn aboutbtn" aria-expanded="false">How this works</button>
+        <div class="aboutbody"><p class="sub">How much is being recorded over time, and the shapes in the record as a whole. Each
+           card below stays locked until a count here would mean more than chance.</p></div>
+        
       </div>
       <div class="note-strip">
         <b>This log does not rank the two homes.</b> The two parents log different amounts, and that gap
@@ -4346,8 +4404,16 @@ function saveClaim(){
 }
 
 /* ---- record a settlement ---- */
+/* The balance card one tap above already names the transfer; the form opens holding it,
+   so nobody re-types $162.76 from memory. Editable: a part-payment is still a settlement. */
+function settlePrefill(cents, me){
+  if(!cents) return {payer:me, amount:""};
+  const c = Math.abs(cents);
+  return {payer: cents > 0 ? "mom" : "dad", amount: Math.floor(c/100) + "." + String(c%100).padStart(2,"0")};
+}
 function beginSettle(){
-  State.settleDraft = {payer:State.me, amount:"", dateStr:dayOf(Date.now()), note:"", missing:null};
+  const pre = settlePrefill(ledgerBalance(Store.allExpenses().filter(c=>!c.voided), Store.allSettlements().filter(s=>!s.voided)), State.me);
+  State.settleDraft = {payer:pre.payer, amount:pre.amount, dateStr:dayOf(Date.now()), note:"", missing:null};
   renderMoney();
 }
 function cancelSettle(){ State.settleDraft = null; renderMoney(); }
@@ -5298,7 +5364,6 @@ function calDrawDaySheet(){
   s.appendChild(hd);
 
   if(State.calAdding){ s.appendChild(calEventForm(null)); return; }
-  s.appendChild(calCustodyExceptionSection(dstr));
   if(State.calEditingEvent){
     const ev = Store.allEvents().find(e=>e.id === State.calEditingEvent.id);
     if(ev){ s.appendChild(calEventForm(ev)); return; }
@@ -5314,6 +5379,8 @@ function calDrawDaySheet(){
   const addBtn = el("button","bigbtn ghost","+ Add an event");
   addBtn.onclick = ()=>{ State.calAdding = calBlankDraft(dstr); calDrawDaySheet(); };
   s.appendChild(addBtn);
+  /* adding an event is what most taps on a day are for: it leads, custody changes follow */
+  s.appendChild(calCustodyExceptionSection(dstr));
 
   const epis = episodesForDay(dstr);
   if(epis.length){
@@ -5873,21 +5940,21 @@ function renderTab(name){
   if(fn) fn();
   State.staleTabs[name] = false;
 }
+/* A zero under a tab read as a broken counter to a first-time eye ("Money 0" beside a full
+   Calendar). A count appears once there is something to count; nothing is an honest nothing. */
+function tabCountLabel(n, suffix){ return n > 0 ? n + (suffix||"") : ""; }
 function updateTabCounts(){
   const all = Store.allEntries().filter(e=>!e.voided);
   const today = dayOf(Date.now());
-  $("cnt-log").textContent = String(all.filter(e=>dayOf(e.start)===today).length);
-  $("cnt-history").textContent = String(all.length);
-  /* U3: one badge for the merged Insights tab — the more complete of the two
-     old counts (entries AND daily cards, matching what Trends' own coverage
-     card counts as "recorded"). */
+  $("cnt-log").textContent = tabCountLabel(all.filter(e=>dayOf(e.start)===today).length, " today");
+  $("cnt-history").textContent = tabCountLabel(all.length);
   const recDays = new Set(all.map(e=>dayOf(e.start)).concat(Store.allDayCards().map(c=>c.date))).size;
-  $("cnt-insights").textContent = recDays + "d";
+  $("cnt-insights").textContent = tabCountLabel(recDays, " days");
   const liveMoney = Store.allExpenses().filter(e=>!e.voided).length + Store.allSettlements().filter(e=>!e.voided).length;
-  $("cnt-money").textContent = String(liveMoney);
+  $("cnt-money").textContent = tabCountLabel(liveMoney);
   const evAll = Store.allEvents().filter(e=>!e.voided);
   const thisMonthEvs = evAll.filter(e=>e.date.slice(0,7) === dayOf(Date.now()).slice(0,7)).length;
-  $("cnt-calendar").textContent = thisMonthEvs + " this mo";
+  $("cnt-calendar").textContent = tabCountLabel(thisMonthEvs, " this mo");
 }
 function renderAll(){
   if(!State.me) return;
@@ -5912,6 +5979,20 @@ TABS.forEach(t=>{
   $("t-"+t).onkeydown = tabKey;
 });
 $("printBtn").onclick = ()=>window.print();
+/* top-down only: the gate stub has no parentNode */
+function toggleAbout(box, btn){
+  const open = box.className.indexOf("shut") >= 0;
+  box.className = open ? "about" : "about shut";
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  btn.textContent = open ? "Hide this" : "How this works";
+}
+function wireAbout(){
+  if(!document.querySelectorAll) return;
+  document.querySelectorAll(".about").forEach(box=>{
+    const b = box.querySelector(".aboutbtn"); if(b) b.onclick = ()=>toggleAbout(box, b);
+  });
+}
+wireAbout();
 $("moneyPrintBtn").onclick = ()=>{ document.body.classList.add("print-money"); window.print(); };
 /* Sensible default range (last 30 days through today) so the exhibit is
    never printed with an accidentally-empty range on a first tap; the
@@ -6600,6 +6681,13 @@ Store.init();
        balanceSentence(0, false).toLowerCase().indexOf("settled") === -1);
     ck("a real zero balance after real claims says Settled",
        balanceSentence(0, true) === "Settled — nothing outstanding.");
+    ck("a tab shows a count only once there is something to count, never a bare zero",
+       tabCountLabel(0) === "" && tabCountLabel(0," this mo") === "" && tabCountLabel(5) === "5" && tabCountLabel(3," this mo") === "3 this mo");
+    ck("the settlement form opens holding the balance: who pays and the exact amount, empty when nothing is owed",
+       settlePrefill(16276,"dad").payer === "mom" && settlePrefill(16276,"dad").amount === "162.76" &&
+       settlePrefill(-105,"mom").payer === "dad" && settlePrefill(-105,"mom").amount === "1.05" &&
+       settlePrefill(0,"mom").payer === "mom" && settlePrefill(0,"mom").amount === "" &&
+       dollarsToCents(settlePrefill(16276,"dad").amount) === 16276);
     ck("a nonzero balance names the transfer that settles it and its direction, never who is owed or a spend comparison",
        balanceSentence(5050, true) === "To settle: $50.50, Mom to Dad." &&
        balanceSentence(-150, true) === "To settle: $1.50, Dad to Mom." && !/owed/.test(balanceSentence(5050,true)));
@@ -7525,6 +7613,14 @@ Store.init();
          SEV.every(s=>printKeyText("record").indexOf(s.n + " " + s.anchor) >= 0) && /🔒/.test(printKeyText("record")));
       ck("the front door asks 'Which parent are you?' and never says entries are 'stamped'",
          /Which parent are you\?/.test($("gate").textContent) && !/stamped with/i.test($("gate").textContent));
+      ck("each tab's explainer is folded behind 'How this works', one tap opens it and a second folds it again", (function(){
+         return ["v-calendar","v-money","v-history","v-insights"].every(id=>{
+           const box = $(id).querySelector(".about"), b = box && box.querySelector(".aboutbtn"), body = box && box.querySelector(".aboutbody");
+           if(!box || !b || !body || body.textContent.length < 40) return false;
+           const shut0 = /shut/.test(box.className) && getComputedStyle(body).display === "none";
+           b.onclick(); const open1 = !/shut/.test(box.className) && getComputedStyle(body).display !== "none" && b.getAttribute("aria-expanded") === "true";
+           b.onclick(); return shut0 && open1 && /shut/.test(box.className) && b.getAttribute("aria-expanded") === "false";
+         }); })());
       /* view by view, never document.body: the body's text includes this script, comments and all */
       ck("no screen or printed page calls itself an 'exhibit'",
          ["gate","v-log","v-calendar","v-money","v-history","v-insights","v-custodyprint"].every(id=>!!$(id) && $(id).textContent.length > 20 && !/exhibit/i.test($(id).textContent)));
