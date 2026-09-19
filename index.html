@@ -82,7 +82,7 @@
     --sev1-ink:#FFFFFF; --sev2-ink:#FFFFFF; --sev3-ink:#FFFFFF; --sev4-ink:#1A0C04; --sev5-ink:#1A0C04;
     --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
     --dad:#7FA3E8; --mom:#C08BDA;
-    --dad-bg:#1B2740; --mom-bg:#2A1B33;
+    --dad-bg:#22346B; --mom-bg:#4A2663;
     --amber:#E3B23D; --amber-ink:#FCEFC8; --amber-bg:#4A3800;
     --evdot:#A66300;
     --primary:#EEF0F5; --primary-ink:#0B0D12;
@@ -101,7 +101,7 @@
   --sev1-ink:#FFFFFF; --sev2-ink:#FFFFFF; --sev3-ink:#FFFFFF; --sev4-ink:#1A0C04; --sev5-ink:#1A0C04;
   --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
   --dad:#7FA3E8; --mom:#C08BDA;
-  --dad-bg:#1B2740; --mom-bg:#2A1B33;
+  --dad-bg:#22346B; --mom-bg:#4A2663;
   --amber:#E3B23D; --amber-ink:#FCEFC8; --amber-bg:#4A3800;
   --evdot:#A66300;
   --primary:#EEF0F5; --primary-ink:#0B0D12;
@@ -333,6 +333,12 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 /* the destructive link used to begin at the exact pixel the Save button ended,
    so a thumb overshooting Save discarded a just-logged entry */
 .linkbtn.danger-link{color:var(--danger);margin-top:10px}
+/* the amber request banner is ONE tappable control carrying a whole sentence, so
+   .linkbtn's underline ran the full width and nothing marked the action — panel 9,
+   two critics: "the Answer link is styled like a plain help link". The banner stays
+   one big thumb target; only the verb is underlined. Session 88. */
+.linkbtn.bannerask{text-decoration:none;text-align:left;flex:1}
+.linkbtn.bannerask .askdo{text-decoration:underline;text-underline-offset:3px}
 .sevhint{display:block;font-size:11.5px;color:var(--muted);margin-top:6px}
 #freshDetails{margin-top:10px}
 #freshDetails>summary{color:var(--accent);font-size:13px;font-weight:600;text-decoration:underline;
@@ -5689,7 +5695,9 @@ function calAmberBanner(){
   if(r.by === State.me){
     banner.appendChild(el("span",null,"Waiting on " + WHO_NAME[otherOf(r.by)] + " to answer your request to change " + friendlyDay(r.date) + "."));
   } else {
-    const b = el("button","linkbtn", WHO_NAME[r.by] + " asks to change " + friendlyDay(r.date) + " — Answer");
+    const b = el("button","linkbtn bannerask");
+    b.appendChild(el("span",null, WHO_NAME[r.by] + " asks to change " + friendlyDay(r.date) + " — "));
+    b.appendChild(el("span","askdo","Answer"));
     b.onclick = ()=>{ calOpenDay(r.date); };
     banner.appendChild(b);
   }
@@ -8854,6 +8862,15 @@ Store.init();
         const panelIdx = kidsB.findIndex(n=> n.className && n.className.indexOf("panel") >= 0);
         ck("calendar: when a swap request AND a proposal are both pending, the amber banner precedes the proposal panel",
            amberIdx === 0 && panelIdx === 1);
+        /* the sentence and the verb must be SEPARATE elements or .linkbtn's
+           underline runs the whole width and nothing marks the tap target
+           (panel 9, critics A and C). The CSS half is proved under GATE=browser. */
+        const amberBtn = amberIdx >= 0
+          ? Array.from(kidsB[amberIdx].children).find(n=>/\blinkbtn\b/.test(n.className||"")) : null;
+        const askKids = amberBtn ? Array.from(amberBtn.children) : [];
+        ck("the amber banner's action word is its own element, so only 'Answer' can carry the underline",
+           !!amberBtn && askKids.length === 2 && /\baskdo\b/.test(askKids[1].className||"")
+           && (askKids[1].textContent||"").trim() === "Answer");
         // sanity: with NOTHING pending, no proposal panel sits above the grid
         Store.acceptSchedule("mom", id);
         renderCalendar();
@@ -9489,6 +9506,21 @@ Store.init();
          return !!ca && !!cb && ca !== cb;
       })());
 
+      /* ---- the amber banner marks its ACTION, not its whole sentence ---- */
+      /* real browser only (GATE=browser): the stub's getComputedStyle exposes
+         only getPropertyValue, so textDecorationLine is undefined there. Two
+         panel-9 critics read the banner as a plain help link because .linkbtn
+         underlines everything it holds and the banner holds a sentence. */
+      ck("the amber request banner underlines only the word 'Answer', not the whole sentence", (function(){
+         const b = document.createElement("button"); b.className = "linkbtn bannerask";
+         const lead = document.createElement("span"); lead.textContent = "Mom asks to change Saturday — ";
+         const verb = document.createElement("span"); verb.className = "askdo"; verb.textContent = "Answer";
+         b.appendChild(lead); b.appendChild(verb); document.body.appendChild(b);
+         const whole = getComputedStyle(b).textDecorationLine, act = getComputedStyle(verb).textDecorationLine;
+         b.remove();
+         return whole === "none" && act === "underline";
+      })());
+
       /* ---- the caveats fold; the per-card caveat stays (Simon 09-18) ---- */
       ck("the 'not a scoreboard' and 'does not rank' caveats live inside the fold, not as grey strips", (function(){
          const m = $("v-money"), i = $("v-insights");
@@ -9640,7 +9672,7 @@ Store.init();
            const el = document.documentElement, had = el.getAttribute("data-theme");
            el.setAttribute("data-theme", attr);
            const cs = getComputedStyle(el), g = n=>cs.getPropertyValue(n).trim();
-           const out = {dad:g("--dad"), mom:g("--mom"), dadBg:g("--dad-bg"), momBg:g("--mom-bg")};
+           const out = {dad:g("--dad"), mom:g("--mom"), dadBg:g("--dad-bg"), momBg:g("--mom-bg"), surface:g("--surface")};
            if(had===null) el.removeAttribute("data-theme"); else el.setAttribute("data-theme", had);
            return out;
          };
@@ -9675,6 +9707,17 @@ Store.init();
            cr(light.dad, light.dadBg) >= 4.5 && cr(light.mom, light.momBg) >= 4.5 &&
            cr(dark.dad, dark.dadBg) >= 4.5 && cr(dark.mom, dark.momBg) >= 4.5 &&
            cr(print.dad, print.dadBg) >= 4.5 && cr(print.mom, print.momBg) >= 4.5);
+         /* The ink check above passed all along while the CHIP itself was
+            invisible: in dark, --mom-bg sat at 1.09 against --surface and
+            --dad-bg at 1.18, so a designer critic read both as "muddy
+            near-greys" (panel 9). A tint must separate from the paper it sits
+            on, not only from its own text. Dark and light get different floors
+            on purpose: a light tint on near-white is legitimately faint and
+            carries its hue at low luminance difference, while on a dark ground
+            the same ratio is a grey smear. Session 88. */
+         ck("parent colours: the --dad-bg/--mom-bg chip separates from --surface in both themes (dark >=1.35, light >=1.1)",
+           cr(dark.dadBg, dark.surface) >= 1.35 && cr(dark.momBg, dark.surface) >= 1.35 &&
+           cr(light.dadBg, light.surface) >= 1.1 && cr(light.momBg, light.surface) >= 1.1);
       })();
 
       /* ---- amber token (session 88 4a): --amber/--amber-ink/--amber-bg must
