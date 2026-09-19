@@ -940,7 +940,6 @@ textarea,input[type="number"],input[type="time"],input[type="date"],input[type="
 .gate .pick #pickDad{background:color-mix(in srgb, var(--dad) 9%, var(--surface));box-shadow:0 0 0 1.5px color-mix(in srgb, var(--dad) 45%, var(--line)), var(--shadow)}
 .gate .pick #pickMom{background:color-mix(in srgb, var(--mom) 9%, var(--surface));box-shadow:0 0 0 1.5px color-mix(in srgb, var(--mom) 45%, var(--line)), var(--shadow)}
 .gate .gatefoot{font-size:13px;color:var(--muted);margin-top:14px;line-height:1.5}
-.whoami .switchme{padding:0;font-size:12.5px;font-weight:600;margin-left:8px}
 
 /* ---------- SECTION COLOUR on WARM PAPER (Simon's pick 09-18 night, options shown as shots) ----------
    Five panels held Beautiful at 5-6: "every screen is the same white card and black button".
@@ -1090,7 +1089,7 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
   <header class="hdr">
     <div class="hdr-row">
       <h1 class="brand">Two Homes</h1>
-      <div class="whoami"><span class="dot" id="meDot"></span><span id="meName"></span><button type="button" class="linkbtn switchme" id="switchMe">Switch</button></div>
+      <div class="whoami"><span class="dot" id="meDot"></span><span id="meName"></span></div>
     </div>
     <div class="syncline" role="status"><span class="syncdot" id="syncDot"></span><span id="syncMsg">Connecting…</span></div>
     <div class="storebanner" id="storeBanner" role="alert" hidden><span class="ico" data-ico="warn"></span><div><b>Not saved: this phone is out of storage</b><span id="storeBannerMsg"></span><button type="button" class="linkbtn" id="storeBannerGo" hidden>Go to the claim with the photo</button></div></div>
@@ -1239,12 +1238,21 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
   <h1>Which parent are you?</h1>
   <p class="sub">Your entries carry this name. It is a label, not a sign-in — the app cannot tell who
      is holding the phone. It is saved on this device, so it is asked once.</p>
-  <div class="pick">
+  <div class="pick" id="gatePick">
     <button id="pickDad"><span class="ico" data-ico="person"></span><span>Dad</span><span class="pickdot"><span class="dot dad"></span>you log as Dad</span></button>
     <button id="pickMom"><span class="ico" data-ico="person"></span><span>Mom</span><span class="pickdot"><span class="dot mom"></span>you log as Mom</span></button>
   </div>
-  <p class="gatefoot">Picked the wrong one? "Switch" beside the name at the top of the app brings this
-     screen back. Nothing already logged is changed or lost.</p>
+  <p class="gatefoot" id="gatePickFoot">This is asked once per phone. "Start fresh on this phone" (under More,
+     on the Record tab) is the only way to be asked again.</p>
+  <!-- Identity lock (session 88): a second, explicit step before the pick is
+       written and locked. bbl.meLocked then makes it stick — see bootIdentity. -->
+  <div class="confirmbox" id="gateConfirm" role="group" hidden>
+    <p id="gateConfirmText"></p>
+    <div class="confirmact">
+      <button type="button" class="cno" id="gateConfirmBack">Back</button>
+      <button type="button" class="cyes" id="gateConfirmYes">Confirm</button>
+    </div>
+  </div>
 </div>
 
 <div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"
@@ -1832,14 +1840,28 @@ const Store = {
                 "custodyPatterns","custodyExceptions","swapRequests","swapResponses","handovers"],
   /* START FRESH — device mode ONLY. There the phone's own storage is the whole record,
      so emptying it is honest. In any shared mode the record is append-only on a server
-     and both parents rely on it: a local wipe would only pretend, so this refuses.
-     Keeps bbl.me (which parent this phone is). `ls` is a parameter so the self-check
-     can run the real logic against a fake store and never near a real record. */
+     and both parents rely on it: a local wipe would only pretend, so this refuses and
+     touches nothing — identity included.
+     Session 88 (identity lock): device mode now ALSO clears bbl.me and bbl.meLocked, so
+     "start fresh" really is the one door back to the chooser, not a record wipe that
+     leaves the phone stuck as whoever it was. `ls` is a parameter so the self-check can
+     run the real logic against a fake store and never near a real record. */
   startFresh(ls){
     if(this.mode !== "device") return false;
     ls = ls || localStorage;
-    try { ["bbl.mirror","bbl.outbox",this.CLEANUP_KEY].forEach(k=>ls.removeItem(k)); } catch(e){ return false; }
+    try { ["bbl.mirror","bbl.outbox",this.CLEANUP_KEY,"bbl.me","bbl.meLocked"].forEach(k=>ls.removeItem(k)); } catch(e){ return false; }
     this.MIRROR_KEYS.forEach(k=>{ this[k] = {}; });
+    this.emit();
+    return true;
+  },
+  /* FORGET IDENTITY — the shared-mode counterpart to startFresh. The record lives on
+     the server, so there is nothing honest to wipe locally; this only forgets which
+     parent this phone is (bbl.me + bbl.meLocked). The cached local mirror and outbox
+     are left alone — they're a read cache of the shared record, not this phone's own
+     data, and clearing them would just cost a re-sync for no honesty gained. */
+  forgetIdentity(ls){
+    ls = ls || localStorage;
+    try { ["bbl.me","bbl.meLocked"].forEach(k=>ls.removeItem(k)); } catch(e){ return false; }
     this.emit();
     return true;
   },
@@ -2612,6 +2634,7 @@ function friendlyExhibitDate(dstr){
    ============================================================ */
 const State = {
   me:null,
+  pickPending:null, // "dad"|"mom" while the gate confirm step is open, cleared on Confirm/Back
   tab:"log",
   draft:null,      // {start, end, sev, trig, place, resp, note, measured}
   flash:null,      // transient "what was just saved" confirmation
@@ -2619,7 +2642,6 @@ const State = {
   editing:null,
   handoverDraft:null, handoverFlash:null,
   freshAsk:false,  /* is the "Start fresh" confirm open. Outside the DOM: renderSync redraws the slot on every emit */
-  freshDone:false,
   showVoided:{},   /* day -> is its withdrawn group open. Outside the DOM, because
                       renderHistory rebuilds its whole subtree on every echo. */
   staleTabs:{},    /* U2: tabname -> "a store echo landed while this tab was in the
@@ -2654,9 +2676,20 @@ const State = {
 /* ============================================================
    IDENTITY — personal links (#dad / #mom), remembered per device
    ============================================================ */
+/* IDENTITY LOCK (session 88, Simon's ruling): once a phone has been confirmed
+   as a parent, bbl.meLocked="1" makes that stick — a #dad/#mom link handed to
+   the wrong phone, or a stale bookmark, can no longer flip who this phone is.
+   A FRESH profile (no lock yet — this is exactly the state the shipped gates
+   and session_0918/probe.py boot into) still reads the hash as it always has,
+   and picking still does not set the lock by itself: only the confirm step
+   below does that. No PIN either way (Simon's ruling 09-18: the name is a
+   label, not a sign-in, and a PIN would promise an identity this app cannot
+   verify). */
 function bootIdentity(){
+  let locked = false;
+  try{ locked = localStorage.getItem("bbl.meLocked") === "1"; }catch(e){}
   const h = (location.hash||"").replace("#","").toLowerCase().trim();
-  if(h==="dad"||h==="mom"){
+  if((h==="dad"||h==="mom") && !locked){
     State.me = h;
     try{ localStorage.setItem("bbl.me", h); }catch(e){}
   } else {
@@ -2664,18 +2697,43 @@ function bootIdentity(){
   }
   if(State.me){ showApp(); } else { $("gate").hidden = false; }
 }
-function chooseMe(who){
+/* Pick -> confirm -> lock. Nothing is written to bbl.me until Confirm; Back
+   returns to the plain pick with nothing touched. */
+function askConfirmMe(who){
+  State.pickPending = who;
+  $("gatePick").hidden = true;
+  $("gatePickFoot").hidden = true;
+  const box = $("gateConfirm");
+  $("gateConfirmText").textContent = "You are " + WHO_NAME[who] + " on this phone. This cannot be changed.";
+  box.hidden = false;
+}
+function backFromConfirmMe(){
+  State.pickPending = null;
+  $("gateConfirm").hidden = true;
+  $("gatePick").hidden = false;
+  $("gatePickFoot").hidden = false;
+}
+function confirmMe(){
+  const who = State.pickPending; if(who !== "dad" && who !== "mom") return;
   State.me = who;
-  try{ localStorage.setItem("bbl.me", who); }catch(e){}
+  try{ localStorage.setItem("bbl.me", who); localStorage.setItem("bbl.meLocked", "1"); }catch(e){}
+  State.pickPending = null;
+  $("gateConfirm").hidden = true;
+  $("gatePick").hidden = false;
+  $("gatePickFoot").hidden = false;
   $("gate").hidden = true;
   showApp();
   if(Store.hosted){ Store.hosted.since = 0; Store.hosted.poll(); }   /* private notes are per-parent: pull again as this one */
 }
-/* Re-open the chooser without changing anything. Deliberately does NOT clear
-   bbl.me: if the screen is dismissed by a reload, the device is still the
-   parent it was. chooseMe() is the only writer of that key. */
+/* Re-open the chooser. The ONLY caller is the "Start fresh on this phone"
+   flow (renderFresh) — there is no other entry point left in the app, so
+   this never runs without bbl.me/bbl.meLocked already having been cleared
+   (or, in shared mode, forgotten) by that flow first. */
 function openChooser(){
   $("app").hidden = true;
+  $("gateConfirm").hidden = true;
+  $("gatePick").hidden = false;
+  $("gatePickFoot").hidden = false;
   $("gate").hidden = false;
 }
 function showApp(){
@@ -2719,28 +2777,41 @@ function printKeyText(kind){
 function fillPrintBlock(n, head, text){
   n.innerHTML = ""; n.appendChild(el("b", null, head + " ")); n.appendChild(el("span", null, text));
 }
-/* "Start fresh on this phone": drawn ONLY in device mode (see Store.startFresh). Two steps,
-   red, because it is the one action in the app that really erases. */
+/* "Start fresh on this phone" — the ONLY way left in the app to choose again
+   (session 88: switchMe and openChooser's other entry points are gone). Two
+   steps either way, red, because both really change what this phone is.
+   Device mode erases the record too (Store.startFresh); shared mode only
+   forgets which parent this phone is and drops its local copy — the record
+   lives on the server and this action never touches it (Store.forgetIdentity),
+   which is exactly what its wording says. */
 function renderFresh(){
   const slot = $("freshSlot"); if(!slot) return;
   slot.innerHTML = "";
-  slot.hidden = Store.mode !== "device";
-  if(slot.hidden){ State.freshAsk = false; return; }
-  if(State.freshDone){ const f = el("p","flash","This phone is now empty. Nothing from before is left on it."); f.setAttribute("role","status"); slot.appendChild(f); }
+  slot.hidden = false;
+  const device = Store.mode === "device";
   if(!State.freshAsk){
     const b = el("button","danger-btn","Start fresh on this phone");
-    b.onclick = ()=>{ State.freshAsk = true; State.freshDone = false; renderFresh(); };
+    b.onclick = ()=>{ State.freshAsk = true; renderFresh(); };
     slot.appendChild(b);
-    slot.appendChild(el("p","sub","For trying the app out. Available only because this copy is not shared with the other parent."));
+    slot.appendChild(el("p","sub", device
+      ? "Erases everything saved on this phone and asks who this phone is again."
+      : "Forgets which parent this phone is, and this phone's local copy of the record. The shared record kept on the server is untouched."));
     return;
   }
   const box = el("div","confirmbox"); box.setAttribute("role","group");
-  box.appendChild(el("p",null,"Erase everything saved on this phone? Every entry, event, expense, schedule and note recorded here is removed and cannot be brought back. This phone stays set as " + WHO_NAME[State.me] + "."));
+  box.appendChild(el("p",null, device
+    ? "Erase everything saved on this phone and forget which parent it is? Every entry, event, expense, schedule and note recorded here is removed and cannot be brought back. You'll be asked to pick again."
+    : "Forget which parent this phone is, and this phone's local copy of the record? The shared record on the server is untouched — the other phone, and this one after picking again, still has everything in it."));
   const act = el("div","confirmact");
   const no = el("button","cno","Keep everything");
   no.onclick = ()=>{ State.freshAsk = false; renderFresh(); };
-  const yes = el("button","cyes","Erase and start fresh"); yes.className += " small";   /* red card, red button (ramp-check reads the pair); only the weight drops */
-  yes.onclick = ()=>{ State.freshAsk = false; State.freshDone = Store.startFresh(); renderFresh(); };
+  const yes = el("button","cyes", device ? "Erase and start fresh" : "Forget and start fresh"); yes.className += " small";   /* red card, red button (ramp-check reads the pair); only the weight drops */
+  yes.onclick = ()=>{
+    State.freshAsk = false;
+    if(device) Store.startFresh(); else Store.forgetIdentity();
+    State.me = null;
+    openChooser();
+  };
   act.appendChild(no); act.appendChild(yes); box.appendChild(act);
   slot.appendChild(box);
 }
@@ -6578,8 +6649,10 @@ function renderAll(){
   updateTabCounts();
 }
 
-$("pickDad").onclick = ()=>chooseMe("dad");
-$("pickMom").onclick = ()=>chooseMe("mom");
+$("pickDad").onclick = ()=>askConfirmMe("dad");
+$("pickMom").onclick = ()=>askConfirmMe("mom");
+$("gateConfirmBack").onclick = backFromConfirmMe;
+$("gateConfirmYes").onclick = confirmMe;
 TABS.forEach(t=>{
   $("t-"+t).onclick = ()=>setTab(t);
   $("t-"+t).onkeydown = tabKey;
@@ -6600,11 +6673,6 @@ function wireAbout(){
 }
 wireAbout();
 paintIcons();
-/* Switch parent. No PIN (Simon's ruling 09-18: the name is a label, not a
-   sign-in, and a PIN would promise an identity this app cannot verify). It
-   re-opens the chooser and NOTHING else: bbl.me is only rewritten when a
-   parent is picked, and no entry is touched either way. */
-$("switchMe").onclick = openChooser;
 $("moneyPrintBtn").onclick = ()=>{ document.body.classList.add("print-money"); window.print(); };
 /* Sensible default range (last 30 days through today) so the exhibit is
    never printed with an accidentally-empty range on a first tap; the
@@ -7387,24 +7455,41 @@ Store.init();
       ck("start fresh empties the mirror, the outbox and the cleanup mark, and every collection in memory",
          ok === true && !("bbl.mirror" in ls.d) && !("bbl.outbox" in ls.d) && !("bbl.cleanupV1" in ls.d) &&
          Store.MIRROR_KEYS.every(k=>Object.keys(f[k]).length === 0) && f.emitted === 1);
-      ck("start fresh keeps which parent this phone is", ls.d["bbl.me"] === "mom");
-      ck("start fresh refuses in every mode where the record is or may be shared",
+      ck("start fresh in device mode also clears identity (bbl.me and the lock) so it re-chooses honestly",
+         !("bbl.me" in ls.d) && !("bbl.meLocked" in ls.d));
+      ck("start fresh refuses in every mode where the record is or may be shared, and touches nothing there",
          ["sync","local","needkey","connecting"].every(m=>{ const l = mkLs(), g = mkStore(m);
-           return Store.startFresh.call(g, l) === false && Object.keys(l.d).length === 4 && Object.keys(g.entries).length === 1 && g.emitted === 0; }));
+           return Store.startFresh.call(g, l) === false && Object.keys(l.d).length === 4 && l.d["bbl.me"] === "mom" && Object.keys(g.entries).length === 1 && g.emitted === 0; }));
       ck("every collection saveLocal writes is one start fresh clears", (function(){
          const src = Store.saveLocal.toString() + Store.loadLocal.toString();
          return /MIRROR_KEYS/.test(Store.saveLocal.toString()) && /MIRROR_KEYS/.test(Store.loadLocal.toString()) && !/this\.entries\b/.test(src); })());
-      const realMode = Store.mode, ask = State.freshAsk, done = State.freshDone;
+      /* forgetIdentity: the shared-mode counterpart. It never touches the
+         record (no MIRROR_KEYS write, no server call) — only the two
+         identity keys — because the server copy is the source of truth and
+         this phone's cached mirror is just a read cache of it. */
+      (function(){
+         const l = mkLs(); l.d["bbl.mirror"] = "{\"entries\":{\"a\":1}}";
+         const g = {mode:"sync", emitted:0, emit(){ this.emitted++; }};
+         Store.forgetIdentity.call(g, l);
+         ck("forget identity (shared mode) clears bbl.me and the lock, and leaves the cached record alone",
+            !("bbl.me" in l.d) && !("bbl.meLocked" in l.d) && l.d["bbl.mirror"] === "{\"entries\":{\"a\":1}}");
+      })();
+      const realMode = Store.mode, ask = State.freshAsk;
       try {
         const slot = $("freshSlot");
-        Store.mode = "sync"; State.freshAsk = true; renderFresh();
-        ck("the start fresh control is not drawn when the record is shared", !!slot && slot.hidden === true && slot.children.length === 0);
-        Store.mode = "device"; State.freshAsk = false; State.freshDone = false; renderFresh();
+        Store.mode = "sync"; State.freshAsk = false; renderFresh();
+        ck("in shared mode: one button, worded so the server record is plainly untouched",
+           !!slot && slot.hidden === false && slot.querySelectorAll(".danger-btn").length === 1 &&
+           /server/i.test(slot.textContent) && /untouched/i.test(slot.textContent));
+        Store.mode = "device"; State.freshAsk = false; renderFresh();
         ck("on this phone only: one button, and one tap erases nothing", slot.hidden === false && slot.querySelectorAll(".danger-btn").length === 1 && slot.querySelectorAll(".cyes").length === 0);
         State.freshAsk = true; renderFresh();
         ck("the second step is the red confirm, with a way back", slot.querySelectorAll(".confirmbox").length === 1 && !/affirm/.test(slot.querySelectorAll(".confirmbox")[0].className) && slot.querySelectorAll(".cno").length === 1 && slot.querySelectorAll(".cyes").length === 1 && !/affirm/.test(slot.querySelectorAll(".cyes")[0].className) && /small/.test(slot.querySelectorAll(".cyes")[0].className));
-      } finally { Store.mode = realMode; State.freshAsk = ask; State.freshDone = done; renderFresh(); }
+        Store.mode = "sync"; State.freshAsk = true; renderFresh();
+        ck("shared mode's second step names what is forgotten, not the record", slot.querySelectorAll(".confirmbox").length === 1 && /forget/i.test(slot.textContent) && /server/i.test(slot.textContent));
+      } finally { Store.mode = realMode; State.freshAsk = ask; renderFresh(); }
     })();
+    ck("no element with id switchMe exists — the chooser has exactly one door, Start fresh", !$("switchMe"));
     ck("the who-badge on a money row is the bare name, the same pill every other row uses", (function(){
        const r = moneyRow({id:"sc_m", kind:"expense", who:"dad", payer:"dad", amount:1000, dadCents:500, momCents:500, splitPct:50, cat:"other", at:1, revs:[]});
        const b = r.querySelectorAll(".badge.dad"); return b.length === 1 && b[0].textContent === "Dad"; })());
@@ -8606,20 +8691,69 @@ Store.init();
            !!f.querySelector("#custodyPrintFrom");
       })());
 
-      /* ---- switching parent: visible, and it changes nothing ---- */
-      ck("the header offers a visible way to switch parent, and using it writes nothing", (function(){
-         const b = $("switchMe"); if(!b) return false;
-         const me = State.me, n = Store.allEntries().length, key = localStorage.getItem("bbl.me");
-         /* restore what was THERE, never a guess at it: this used to force the app
-            visible afterwards, so a phone with no parent chosen yet (every first
-            load) was left showing an empty app with the chooser hidden. */
+      /* ---- identity lock: the header is a label, and a locked phone ignores a foreign hash ---- */
+      ck("the header shows who this phone is as a plain label, not a button", (function(){
+         const w = document.querySelector(".whoami");
+         return !!w && w.querySelector("#meName") && w.querySelector("#meDot") &&
+           !w.querySelector("button") && !w.querySelector("a");
+      })());
+      ck("identity lock: a locked phone ignores a #dad/#mom hash that differs from bbl.me, and sets no back door", (function(){
+         const me0 = State.me, h0 = location.hash;
+         const ls0 = localStorage.getItem("bbl.me"), lk0 = localStorage.getItem("bbl.meLocked");
          const g0 = $("gate").hidden, a0 = $("app").hidden;
-         b.onclick();
-         const shown = $("gate").hidden === false && $("app").hidden === true &&
-                       /Which parent are you\?/.test($("gate").textContent);
-         $("gate").hidden = g0; $("app").hidden = a0;
-         return shown && State.me === me && Store.allEntries().length === n &&
-                localStorage.getItem("bbl.me") === key;
+         try{
+           localStorage.setItem("bbl.me", "mom"); localStorage.setItem("bbl.meLocked", "1");
+           location.hash = "#dad";
+           State.me = null;
+           bootIdentity();
+           const heldIt = State.me === "mom" && localStorage.getItem("bbl.me") === "mom";
+           return heldIt;
+         } finally {
+           State.me = me0; location.hash = h0;
+           if(ls0===null) localStorage.removeItem("bbl.me"); else localStorage.setItem("bbl.me", ls0);
+           if(lk0===null) localStorage.removeItem("bbl.meLocked"); else localStorage.setItem("bbl.meLocked", lk0);
+           $("gate").hidden = g0; $("app").hidden = a0;
+         }
+      })());
+      ck("identity lock: an unlocked (fresh) profile still takes the hash, exactly as before, and does not itself set the lock", (function(){
+         const me0 = State.me, h0 = location.hash;
+         const ls0 = localStorage.getItem("bbl.me"), lk0 = localStorage.getItem("bbl.meLocked");
+         const g0 = $("gate").hidden, a0 = $("app").hidden;
+         try{
+           localStorage.removeItem("bbl.me"); localStorage.removeItem("bbl.meLocked");
+           location.hash = "#dad";
+           State.me = null;
+           bootIdentity();
+           return State.me === "dad" && localStorage.getItem("bbl.me") === "dad" && localStorage.getItem("bbl.meLocked") !== "1";
+         } finally {
+           State.me = me0; location.hash = h0;
+           if(ls0===null) localStorage.removeItem("bbl.me"); else localStorage.setItem("bbl.me", ls0);
+           if(lk0===null) localStorage.removeItem("bbl.meLocked"); else localStorage.setItem("bbl.meLocked", lk0);
+           $("gate").hidden = g0; $("app").hidden = a0;
+         }
+      })());
+      ck("the gate confirm step sets the lock, and Back leaves it unset", (function(){
+         const me0 = State.me, pp0 = State.pickPending;
+         const ls0 = localStorage.getItem("bbl.me"), lk0 = localStorage.getItem("bbl.meLocked");
+         const gp0 = $("gatePick").hidden, gc0 = $("gateConfirm").hidden, gf0 = $("gatePickFoot").hidden;
+         const a0 = $("app").hidden, g0 = $("gate").hidden;
+         try{
+           localStorage.removeItem("bbl.me"); localStorage.removeItem("bbl.meLocked");
+           askConfirmMe("mom");
+           const askedRight = $("gatePick").hidden === true && $("gateConfirm").hidden === false &&
+             /You are Mom on this phone\. This cannot be changed\./.test($("gateConfirmText").textContent);
+           backFromConfirmMe();
+           const backLeftUnlocked = $("gatePick").hidden === false && $("gateConfirm").hidden === true && localStorage.getItem("bbl.meLocked") !== "1";
+           askConfirmMe("mom"); confirmMe();
+           const confirmedLocked = State.me === "mom" && localStorage.getItem("bbl.me") === "mom" && localStorage.getItem("bbl.meLocked") === "1";
+           return askedRight && backLeftUnlocked && confirmedLocked;
+         } finally {
+           State.me = me0; State.pickPending = pp0;
+           if(ls0===null) localStorage.removeItem("bbl.me"); else localStorage.setItem("bbl.me", ls0);
+           if(lk0===null) localStorage.removeItem("bbl.meLocked"); else localStorage.setItem("bbl.meLocked", lk0);
+           $("gatePick").hidden = gp0; $("gateConfirm").hidden = gc0; $("gatePickFoot").hidden = gf0;
+           $("app").hidden = a0; $("gate").hidden = g0;
+         }
       })());
 
       /* ---- a checkpoint reads differently from a withdrawal ---- */
