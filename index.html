@@ -6850,13 +6850,18 @@ function msgBubble(m, me){
 }
 function renderMessages(){
   const slot = $("msgThreadSlot"); if(!slot) return;
+  /* opening the tab marks the OTHER parent's messages seen — markSeen already
+     ignores our own and never overwrites an earlier seen record.
+     ORDER MATTERS (session 88): markSeen emits, and the change listener calls
+     renderMessages again. Marking AFTER the slot was cleared let that nested
+     render fill the slot, then this outer one appended a SECOND copy of the whole
+     thread — every parent opening an unread message saw it doubled. So: mark
+     first, clear and draw last. */
+  if(State.me) Store.allMessages().filter(m=>m.by !== State.me).forEach(m=>Store.markSeen(State.me, m.id));
   slot.innerHTML = "";
   const device = Store.mode === "device";
   const dn = $("msgDeviceNote"); if(dn) dn.hidden = !device;
   const all = Store.allMessages();
-  /* opening the tab marks the OTHER parent's messages seen — markSeen already
-     ignores our own and never overwrites an earlier seen record. */
-  if(State.me) all.filter(m=>m.by !== State.me).forEach(m=>Store.markSeen(State.me, m.id));
   if(!all.length){
     slot.appendChild(el("p","sub msgempty", "No messages yet. " + (device
       ? "A message you write stays on this phone until sharing is set up."
@@ -9629,6 +9634,40 @@ Store.init();
       }
     })();
   }
+
+  /* an UNREAD message from the other parent, opened: markSeen emits mid-render.
+     The thread must still be drawn exactly ONCE. Emit is left REAL on purpose —
+     stubbing it is what let the doubled thread through. */
+  (function(){
+    const beforeMsg = JSON.stringify(Store.messages), beforeSeen = JSON.stringify(Store.messageSeen), beforeMe = State.me;
+    const beforeTab = State.tab;
+    const realSave = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      /* Two conditions, both required, and getting either wrong makes this check
+         unable to fail: (1) the messages must arrive while the parent is looking
+         somewhere ELSE, or putMessage's own emit renders Messages and marks them
+         seen on the spot, leaving nothing unseen to re-render; (2) the draw must
+         then happen with Messages ACTIVE, because renderAll renders only the
+         active tab. That is exactly the real case: unread arrives, parent opens
+         the tab. */
+      Store.messages = {}; Store.messageSeen = {}; State.me = "mom"; State.tab = "log";
+      Store.putMessage("dad", "selfcheck unread one"); Store.putMessage("dad", "selfcheck unread two");
+      ck("a message arriving while another tab is open stays unread (the setup this check needs)",
+         Store.unreadCount("mom") === 2);
+      State.tab = "messages";
+      renderMessages();
+      const slot = $("msgThreadSlot");
+      const threads = Array.from(slot.children).filter(n=>/msgthread/.test(n.className||""));
+      ck("opening an unread message draws the thread exactly once (markSeen re-renders mid-draw)",
+         threads.length === 1 && Array.from(threads[0].children).length === 2);
+    } finally {
+      Store.saveLocal = realSave; Store.push = realPush;
+      Store.messages = JSON.parse(beforeMsg); Store.messageSeen = JSON.parse(beforeSeen); State.me = beforeMe;
+      State.tab = beforeTab;
+      renderMessages();
+    }
+  })();
 
   /* LAST, after every probe above has restored Store/State: the probes seed messages,
      swaps and entries, and a badge painted mid-probe used to outlive the restore — a
