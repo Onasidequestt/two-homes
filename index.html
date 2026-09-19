@@ -26,6 +26,10 @@
      color-mix, so a self-check can parse+contrast them at load. Text in
      --dad/--mom on these backgrounds clears 4.5:1 in every palette. */
   --dad-bg:#E5ECFA; --mom-bg:#F2E5F5;
+  /* AMBER — pending change-request marker (session 88). Deliberately a gold/mustard
+     hue, not the sev3 orange-brown and not the event-dot orange: a "?" glyph carries
+     the meaning, the colour is a second, non-exclusive cue. */
+  --amber:#7A5900; --amber-ink:#3D2E00; --amber-bg:#FBEBC4;
   --primary:#0E1116; --primary-ink:#FFFFFF;
   --scrim:rgba(10,14,18,.5);
   --r:20px; --shadow:0 1px 2px rgba(60,40,10,.05), 0 14px 34px rgba(60,40,10,.08);
@@ -73,6 +77,7 @@
     --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
     --dad:#7FA3E8; --mom:#C08BDA;
     --dad-bg:#1B2740; --mom-bg:#2A1B33;
+    --amber:#E3B23D; --amber-ink:#FCEFC8; --amber-bg:#4A3800;
     --primary:#EEF0F5; --primary-ink:#0B0D12;
     --scrim:rgba(0,0,0,.72);
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
@@ -90,6 +95,7 @@
   --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
   --dad:#7FA3E8; --mom:#C08BDA;
   --dad-bg:#1B2740; --mom-bg:#2A1B33;
+  --amber:#E3B23D; --amber-ink:#FCEFC8; --amber-bg:#4A3800;
   --primary:#EEF0F5; --primary-ink:#0B0D12;
     --scrim:rgba(0,0,0,.72);
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
@@ -136,6 +142,14 @@ html{scroll-padding-top:76px;scroll-padding-bottom:64px}
 .storebanner .ico{width:20px;height:20px;color:var(--danger);flex:none;margin-top:1px}
 .storebanner b{display:block;font-size:13.5px;font-weight:700;line-height:1.3}
 .storebanner span{display:block;font-size:12.5px;color:var(--ink-2);line-height:1.45;margin-top:2px}
+/* the pending change-request banner atop Calendar (session 88) — amber, never
+   colour-only: the "?" glyph and the sentence both carry it */
+.calbanner.amber{margin-bottom:10px;display:flex;gap:8px;align-items:center;padding:10px 12px;border-radius:10px;
+     background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber-ink)}
+.calbanner.amber .calamber{font-size:15px}
+.calbanner.amber .linkbtn{color:var(--amber-ink);text-decoration:underline;font-weight:700}
+.ambertab{margin-left:4px;font-size:11px;font-weight:800;color:var(--amber);background:var(--amber-bg);
+     border-radius:999px;min-width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;padding:0 3px}
 /* a running timer follows the parent to every tab: it lives in the sticky header */
 .timerpill{margin-top:8px;width:100%;display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;
      border:1px solid var(--accent);background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;text-align:left}
@@ -730,6 +744,11 @@ textarea{border-radius:10px}
 .dtop{display:flex;align-items:center;justify-content:space-between;width:100%}
 .dnum{font-size:12.5px;font-weight:700;color:var(--ink-2)}
 .epi{font-size:13px;line-height:1;color:var(--sev4);font-weight:700}
+/* incident mark ("!") and pending-request mark ("?") — session 88, additions
+   beside .epi (the event dot). Three different glyphs, never colour-only. */
+.calbad{font-size:13px;line-height:1;color:var(--danger);font-weight:800;margin-left:2px}
+.calamber{font-size:13px;line-height:1;color:var(--amber);font-weight:800;margin-left:2px}
+.dcell.amber{background:var(--amber-bg);border-color:var(--amber)}
 .dmarks{display:flex;flex-wrap:wrap;gap:2px;width:100%}
 .evtag{font-size:9.5px;font-weight:700;letter-spacing:.01em;padding:1px 3px;border-radius:3px;
        background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);line-height:1.4}
@@ -773,7 +792,23 @@ textarea{border-radius:10px}
 .seqday.mom{background:color-mix(in srgb, var(--mom) 17%, var(--surface))} .seqday.mom b{color:var(--mom)}
 .seqday:active{background:var(--surface-2);transition-duration:0s}
 .splitin{width:100%;font-size:18px;letter-spacing:.04em}
+/* TAP-ONLY 14-CELL SCHEDULE EDITOR (session 88) — two weeks of Mon..Sun, one
+   cell per weekday. --dad-bg/--mom-bg carry the tint, --dad/--mom the ink and
+   the initial/name, so the cell is never colour-only. */
+.wkwrap{margin-top:10px}
+.wklabel{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 4px}
+.wklabel:first-child{margin-top:0}
+.wkgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.wkcell{min-height:52px;border-radius:9px;border:1.5px dashed var(--line-strong);background:var(--surface);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+        font-size:11px;color:var(--muted);font-weight:600;transition:background-color var(--t-tap) var(--ease-out)}
+.wkcell b{font-size:15px;font-weight:800;line-height:1}
+.wkcell.dad{background:var(--dad-bg);border-color:var(--dad);border-style:solid;color:var(--dad)}
+.wkcell.mom{background:var(--mom-bg);border-color:var(--mom);border-style:solid;color:var(--mom)}
+button.wkcell:active{background:var(--surface-2);transition-duration:0s}
 .calev,.calepi,.calswap{margin-top:10px}
+/* calepi now carries the same severity .stripe badge entryRow uses (session 88) */
+.calepi{display:flex;gap:12px;align-items:flex-start}
 /* ONE card grammar: inside a .daylist these are rows of one grouped surface with
    hairlines between, exactly like .entry in Record and Money — not floating cards. */
 .sheet .daylist{margin-top:8px}
@@ -986,6 +1021,7 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
     --accent:#1F4F54; --warn:#886918; --danger:#9B3025;
     --dad:#2C4880; --mom:#653576;
     --dad-bg:#E5ECFA; --mom-bg:#F2E5F5;
+    --amber:#7A5900; --amber-ink:#3D2E00; --amber-bg:#FBEBC4;
     --sev1:#EFC9AE; --sev2:#E0A377; --sev3:#CE7A4B; --sev4:#B0512C; --sev5:#8A2F1C;
     --sev1-edge:#BF7A46; --sev2-edge:#B9703F; --sev3-edge:#A0552C; --sev4-edge:#8A3C1E; --sev5-edge:#6B2214;
     --sev1-ink:#1A0C04; --sev2-ink:#1A0C04; --sev3-ink:#1A0C04; --sev4-ink:#FFFFFF; --sev5-ink:#FFFFFF;
@@ -1217,7 +1253,7 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
 
   <nav class="tabs" role="tablist" aria-label="Views">
     <button class="tab" role="tab" id="t-log" aria-controls="v-log" aria-selected="true" tabindex="0"><span class="ico" data-ico="log"></span><span>Log</span><span class="cnt" id="cnt-log">—</span></button>
-    <button class="tab" role="tab" id="t-calendar" aria-controls="v-calendar" aria-selected="false" tabindex="-1"><span class="ico" data-ico="calendar"></span><span>Calendar</span><span class="cnt" id="cnt-calendar">—</span></button>
+    <button class="tab" role="tab" id="t-calendar" aria-controls="v-calendar" aria-selected="false" tabindex="-1"><span class="ico" data-ico="calendar"></span><span>Calendar</span><span class="cnt" id="cnt-calendar">—</span><span class="ambertab" id="ambTabDot" hidden aria-hidden="true">?</span></button>
     <button class="tab" role="tab" id="t-money" aria-controls="v-money" aria-selected="false" tabindex="-1"><span class="ico" data-ico="money"></span><span>Money</span><span class="cnt" id="cnt-money">—</span></button>
     <button class="tab" role="tab" id="t-history" aria-controls="v-history" aria-selected="false" tabindex="-1"><span class="ico" data-ico="record"></span><span>Record</span><span class="cnt" id="cnt-history">—</span></button>
     <button class="tab" role="tab" id="t-insights" aria-controls="v-insights" aria-selected="false" tabindex="-1"><span class="ico" data-ico="insights"></span><span>Insights</span><span class="cnt" id="cnt-insights">—</span></button>
@@ -1720,6 +1756,7 @@ const Store = {
   handovers:{},          // <ym>__<who> -> {who, month, items:{id:note}}   each parent writes only their own
   swapRequests:{},       // who -> {who, items:{id:request}}
   swapResponses:{},      // who -> {who, items:{requestId:response}}
+  scheduleAccepts:{},    // who -> {who, items:{id:{id,patternId,at,by}}}  append-only, one accept per who per tap
   storageError:null,     // {at,message} set by saveLocal() when the local write
                           // failed (quota, etc), cleared the next time one succeeds
 
@@ -1820,7 +1857,7 @@ const Store = {
         err  => { this.mode = "local"; this.loadLocal(); this.emit(); }
       );
       /* calendar collections — same mergeDoc/saveLocal/emit wiring as above */
-      ["calEvents","calNotes","custodyPatterns","custodyExceptions","swapRequests","swapResponses","handovers"].forEach(kind=>{
+      ["calEvents","calNotes","custodyPatterns","custodyExceptions","swapRequests","swapResponses","handovers","scheduleAccepts"].forEach(kind=>{
         db.collection(kind).onSnapshot(
           snap => { snap.docs.forEach(d=>{ this.mergeDoc(this[kind], d.id, d.data()||{}); });
                     this.saveLocal(); this.emit(); },
@@ -1837,7 +1874,8 @@ const Store = {
   /* every collection the mirror holds, in ONE list: loadLocal, saveLocal and startFresh
      all read it, so a new collection cannot be saved yet survive a reset. */
   MIRROR_KEYS: ["entries","days","options","expenses","settlements","calEvents","calNotes",
-                "custodyPatterns","custodyExceptions","swapRequests","swapResponses","handovers"],
+                "custodyPatterns","custodyExceptions","swapRequests","swapResponses","handovers",
+                "scheduleAccepts"],
   /* START FRESH — device mode ONLY. There the phone's own storage is the whole record,
      so emptying it is honest. In any shared mode the record is append-only on a server
      and both parents rely on it: a local wipe would only pretend, so this refuses and
@@ -2287,11 +2325,18 @@ const Store = {
   /* ---- custody pattern: a pure insert, never an edit — a correction is a
           new pattern with its own effectiveFrom, exactly like an entry
           revision layers on top instead of overwriting. ---- */
-  putCustodyPattern(who, patternType, anchorDate, effectiveFrom, definition){
+  /* `v` is a trailing, OPTIONAL argument (session 88): v:2 marks a pattern made
+     by the new tap-only 14-cell editor, which — in shared mode — governs only
+     once the OTHER parent accepts it (see activeCustodyPattern/patternGoverns).
+     Omitted entirely for a legacy caller, so an old pattern's shape and every
+     existing call site are untouched. */
+  putCustodyPattern(who, patternType, anchorDate, effectiveFrom, definition, v){
     const id = "pat_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
     const doc = this.custodyPatterns[who] || {who, items:{}};
     doc.items = Object.assign({}, doc.items);
-    doc.items[id] = {id, patternType, anchorDate, effectiveFrom, definition, at:Date.now(), by:who};
+    const rec = {id, patternType, anchorDate, effectiveFrom, definition, at:Date.now(), by:who};
+    if(v != null) rec.v = v;
+    doc.items[id] = rec;
     this.custodyPatterns[who] = doc;
     this.saveLocal(); this.emit();
     this.push("custodyPatterns", who);
@@ -2300,6 +2345,26 @@ const Store = {
   allCustodyPatterns(){
     const out = [];
     Object.values(this.custodyPatterns).forEach(doc=>Object.values(doc.items||{}).forEach(p=>out.push(p)));
+    return out;
+  },
+  /* SCHEDULE ACCEPTS — the other parent's ONE tap that turns a v:2 proposal into
+     the governing schedule (see patternGoverns). Append-only like every other
+     collection here: accepting twice just writes a second, harmless record —
+     nothing is ever a toggle in this app. Per-who doc, same shape family as
+     custodyExceptions/handovers. */
+  acceptSchedule(who, patternId){
+    const id = "acc_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    const doc = this.scheduleAccepts[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    doc.items[id] = {id, patternId, at:Date.now(), by:who};
+    this.scheduleAccepts[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("scheduleAccepts", who);
+    return id;
+  },
+  allScheduleAccepts(){
+    const out = [];
+    Object.values(this.scheduleAccepts).forEach(doc=>Object.values(doc.items||{}).forEach(a=>out.push(a)));
     return out;
   },
   /* Append-only, same guarantee as every other collection: a second accepted
@@ -2554,9 +2619,33 @@ function resolveException(dstr){
   });
   return hit;
 }
+/* SHARED SCHEDULE (session 88): a pattern made by the old repeating-schedule
+   form or the removed presets/custom-split UI has no `v` field at all and is
+   GRANDFATHERED — it governs exactly as it always did, newest-effectiveFrom
+   wins, no accept required. A v:2 pattern (the new tap-only 14-cell editor)
+   is a PROPOSAL until the OTHER parent accepts it once — accepting your own
+   proposal never counts, see the `a.by !== p.by` guard below. Device-only
+   mode has no other phone to ask, so it governs at once; Store.mode is the
+   same signal calCustodyPanel already reads for "shared vs local copy". */
+function patternGoverns(p){
+  if(!p) return false;
+  if(p.v !== 2) return true;                 // legacy: grandfathered as agreed
+  if(Store.mode === "device") return true;    // nobody else to accept
+  return Store.allScheduleAccepts().some(a=>a.patternId === p.id && a.by !== p.by);
+}
+/* The newest v:2 pattern that does NOT yet govern — the live proposal shown
+   to both parents (waiting / accept-once). Only ever meaningful in shared
+   mode: in device mode patternGoverns() is always true, so there is never a
+   pending proposal to find. */
+function pendingProposal(){
+  const props = Store.allCustodyPatterns().filter(p=>p.v === 2 && !patternGoverns(p));
+  if(!props.length) return null;
+  props.sort((a,b)=>b.at-a.at);
+  return props[0];
+}
 function activeCustodyPattern(dstr){
   let hit = null;
-  Store.allCustodyPatterns().filter(p=>p.effectiveFrom <= dstr).forEach(p=>{
+  Store.allCustodyPatterns().filter(p=>p.effectiveFrom <= dstr && patternGoverns(p)).forEach(p=>{
     if(!hit || p.effectiveFrom > hit.effectiveFrom ||
        (p.effectiveFrom === hit.effectiveFrom && p.at > hit.at)) hit = p;
   });
@@ -5260,6 +5349,9 @@ function renderCalendar(){
   if(!State.calMonth) State.calMonth = dayOf(Date.now()).slice(0,7);
   const ym = State.calMonth;
 
+  const amberBanner = calAmberBanner();
+  if(amberBanner) slot.appendChild(amberBanner);
+
   const hd = el("div","cal-hd");
   const moDate = new Date(Date.UTC(+ym.slice(0,4), +ym.slice(5,7)-1, 1));
   hd.appendChild(el("span","cal-mo", moDate.toLocaleDateString(undefined,{month:"long",year:"numeric",timeZone:"UTC"})));
@@ -5341,7 +5433,11 @@ function renderCalendar(){
   kitem(kb("mom","M"), "Mom’s day");
   kitem(kb("dad exception","D*"), "* changed that day");
   const kd = el("span","epi","●"); kd.setAttribute("aria-hidden","true");
-  kitem(kd, "something recorded that day — tap it to see what");
+  kitem(kd, "an event, or other information, that day");
+  const kbad = el("span","calbad","!"); kbad.setAttribute("aria-hidden","true");
+  kitem(kbad, "bad behaviour was logged that day");
+  const kamb = el("span","calamber","?"); kamb.setAttribute("aria-hidden","true");
+  kitem(kamb, "a change is requested for that day — tap to answer");
   slot.appendChild(key);
 
   const pb = el("div","paintbar"); pb.id = "paintBar"; pb.hidden = true;
@@ -5353,32 +5449,73 @@ function renderCalendar(){
   if(State.calDay) calDrawDaySheet();
 }
 
-/* Simon's ruling 09-18 (direction3 option B): ONE dot per day, tap to open — not
-   every tag shown in the cell. hasDayDot() is the pure decision (a day with
-   ANYTHING — an event or a Record entry — gets exactly one dot; a day with
-   neither gets none), kept separate from the DOM so the self-check can assert
-   the count without a browser. The dot is a GLYPH ("●"), not a bare colour
-   swap (§5 of CONVENTIONS.md): its presence/absence IS the signal, so it
-   never needs a second hue to be told apart from "nothing". Real per-day
+/* Simon's ruling 09-18 (direction3 option B: ONE dot per day) was AMENDED the
+   same night (calendar day marks): a cell now carries up to THREE distinct
+   marks, each its own GLYPH so none of them is colour-only —
+     ● orange dot   — an event, or other information, that day (hasEventDot)
+     !  red mark    — bad behaviour was logged that day (hasIncidentMark)
+     ?  amber mark  — a change request is pending for that day (pendingSwapForDay)
+   A day can show the dot AND "!" together; that is the one deliberate amendment
+   to "one dot per day" (a day never shows two of the SAME mark, or a "?" once
+   the request is answered). Kept as pure functions, apart from the DOM, so the
+   self-check can assert the combinations without a browser. Real per-day
    detail (what and how many) lives in the button's aria-label, not in the
-   dot — no font-size:0 hack, the text is genuinely read by AT. */
-function hasDayDot(evs, epis){
-  return !!((evs && evs.length) || (epis && epis.length));
+   marks themselves — no font-size:0 hack, the text is genuinely read by AT. */
+function hasEventDot(evs){ return !!(evs && evs.length); }
+function hasIncidentMark(epis){ return !!(epis && epis.length); }
+function pendingSwapForDay(dstr){
+  return Store.swapWithResponse().find(r=>r.date === dstr && !r.response) || null;
+}
+/* every unanswered change request, earliest date first — feeds the tab badge
+   and the Calendar banner below, so the two can never disagree about count. */
+function pendingSwapRequests(){
+  return Store.swapWithResponse().filter(r=>!r.response).sort((a,b)=> a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+}
+/* THE AMBER BANNER (Simon's ruling 09-18 night): names the day and who is
+   asking, and reuses the exact same swap flow — tapping it just opens that
+   day's sheet, where Accept/Decline (or, for the requester, Withdraw) already
+   live. Never colour-only: the "?" glyph and the words both carry it. */
+function calAmberBanner(){
+  const pend = pendingSwapRequests();
+  if(!pend.length) return null;
+  const r = pend[0];
+  const banner = el("div","calbanner amber");
+  banner.id = "calAmberBanner";
+  banner.setAttribute("role","status");
+  const mark = el("span","calamber","?"); mark.setAttribute("aria-hidden","true");
+  banner.appendChild(mark);
+  if(r.by === State.me){
+    banner.appendChild(el("span",null,"Waiting on " + WHO_NAME[otherOf(r.by)] + " to answer your request to change " + friendlyDay(r.date) + "."));
+  } else {
+    const b = el("button","linkbtn", WHO_NAME[r.by] + " asks to change " + friendlyDay(r.date) + " — Answer");
+    b.onclick = ()=>{ calOpenDay(r.date); };
+    banner.appendChild(b);
+  }
+  return banner;
 }
 function calDayCell(dstr, isToday, evsByDay, episByDay){
   const p = dParts(dstr);
   const evs = evsByDay ? (evsByDay[dstr] || []) : Store.eventsForDay(dstr).filter(e=>!e.voided);
   const epis = episByDay ? (episByDay[dstr] || []) : episodesForDay(dstr);
   const cst = custodyForDate(dstr);
-  const btn = el("button","dcell" + (isToday ? " today" : ""));
+  const pendingSwap = pendingSwapForDay(dstr);
+  const btn = el("button","dcell" + (isToday ? " today" : "") + (pendingSwap ? " amber" : ""));
   btn.type = "button";
 
   const top = el("div","dtop");
   top.appendChild(el("span","dnum", String(p.d)));
   const epi = el("span","epi","●");
   epi.setAttribute("aria-hidden","true");
-  if(!hasDayDot(evs, epis)) epi.hidden = true;
+  if(!hasEventDot(evs)) epi.hidden = true;
   top.appendChild(epi);
+  const bad = el("span","calbad","!");
+  bad.setAttribute("aria-hidden","true");
+  if(!hasIncidentMark(epis)) bad.hidden = true;
+  top.appendChild(bad);
+  const amb = el("span","calamber","?");
+  amb.setAttribute("aria-hidden","true");
+  if(!pendingSwap) amb.hidden = true;
+  top.appendChild(amb);
   btn.appendChild(top);
 
   const band = el("span","dband");
@@ -5392,6 +5529,7 @@ function calDayCell(dstr, isToday, evsByDay, episByDay){
     : "No custody schedule set");
   if(evs.length) parts.push(evs.length + (evs.length===1 ? " event" : " events"));
   if(epis.length) parts.push(epis.length + (epis.length===1 ? " entry" : " entries") + " recorded that day");
+  if(pendingSwap) parts.push("a change is requested for this day");
   btn.setAttribute("aria-label", parts.join(". "));
   /* in assign mode a tap assigns; otherwise it opens the day */
   btn.onclick = ()=>{ if(State.paint) calPaintTap(btn, band, dstr); else calOpenDay(dstr); };
@@ -5564,10 +5702,6 @@ function custodyPatternLine(pat, minor){
   return box;
 }
 
-function blankCustodyDraft(){
-  return {patternType:null, parentPick:null, startDate:dayOf(Date.now()), missing:null, dateMissing:false, confirming:false,
-          splitText:"", sequence:null};
-}
 /* "5-2", "4 3", "2,2,5,5" -> the repeating day-by-day sequence, first parent first.
    Runs alternate parents. An EVEN number of runs repeats as typed (5-2: the
    first parent always has the five). An ODD number cannot alternate back onto
@@ -5601,179 +5735,132 @@ function sequenceRuns(seq){
   (seq||[]).forEach(w=>{ const last = runs[runs.length-1]; if(last && last.who === w) last.n++; else runs.push({who:w, n:1}); });
   return runs;
 }
-function customSequenceField(d){
-  const f = el("div","field" + (d.missing && d.seqMissing ? " missing" : ""));
-  const lab = el("div","qlab"); lab.id = "splitLab";
-  lab.appendChild(el("span",null,"Days in a row"));
-  const tag = el("span","req" + (d.sequence ? " ok" : ""), d.sequence ? "✓ ANSWERED" : "REQUIRED");
-  lab.appendChild(tag);
-  f.appendChild(lab);
-  const inp = document.createElement("input");
-  inp.type = "text"; inp.id = "splitText"; inp.className = "splitin"; inp.inputMode = "numeric"; inp.maxLength = 40;
-  inp.placeholder = "5-2"; inp.value = d.splitText || "";
-  inp.setAttribute("aria-labelledby","splitLab");
-  const strip = el("div","seqstrip"); strip.id = "seqStrip";
-  const help = el("p","sub"); help.id = "seqHelp";
-  const draw = ()=>{
-    strip.innerHTML = "";
-    tag.className = "req" + (d.sequence ? " ok" : ""); tag.textContent = d.sequence ? "✓ ANSWERED" : "REQUIRED";
-    if(!d.parentPick){ help.textContent = "Choose who has her first, above, and the days appear here."; return; }
-    if(!d.sequence){ help.textContent = d.splitText ? "Use numbers from 1 to 31, up to " + CUSTOM_MAX_CYCLE + " days in all." : (d.splitOther ? "Type the numbers, like 6-1 or 3-3-4-4." : "Pick a split. The numbers are days in a row, starting with whoever has her first."); return; }
-    d.sequence.forEach((w,i)=>{
-      const b = el("button","seqday " + w); b.type = "button";
-      const ds = addDaysStr(d.startDate, i);
-      b.appendChild(el("span",null, ["Su","Mo","Tu","We","Th","Fr","Sa"][weekdayOf(ds)]));
-      b.appendChild(el("b",null, WHO_NAME[w].charAt(0)));
-      b.setAttribute("aria-label","Day " + (i+1) + ", " + friendlyDay(ds) + ": " + WHO_NAME[w] + ". Tap to switch.");
-      b.onclick = ()=>{ d.sequence = d.sequence.slice(); d.sequence[i] = otherOf(d.sequence[i]); d.confirming = false; draw(); };
-      strip.appendChild(b);
-    });
-    const rc = sequenceRecap(d.sequence);
-    help.textContent = rc.runs + ", then it repeats. " + rc.totals + " Tap any day to switch it.";
-  };
-  inp.oninput = ()=>{ d.splitText = inp.value; d.sequence = d.parentPick ? parseSplit(d.splitText, d.parentPick) : null; d.confirming = false; draw(); };
-  /* CHIPS are the way in; typing is the fallback behind "Other". One mechanism
-     on screen at a time — the typed box used to sit above the chips as an equal. */
-  const QUICK = ["5-2","4-3","2-2-5-5","3-4-4-3"];
-  const typed = !!d.splitOther || (!!d.splitText && QUICK.indexOf(d.splitText) < 0);
-  const quick = el("div","chips"); quick.setAttribute("role","group"); quick.setAttribute("aria-labelledby","splitLab");
-  QUICK.concat(["Other…"]).forEach(q=>{
-    const other = q === "Other…";
-    const b = el("button","chip",q); b.type = "button";
-    b.setAttribute("aria-pressed", String(other ? typed : (!typed && d.splitText === q)));
-    b.onclick = ()=>{
-      press(quick, b);
-      d.splitOther = other; inp.hidden = !other;
-      if(other){ inp.value = ""; inp.oninput(); inp.focus(); }
-      else { inp.value = q; inp.oninput(); }
-    };
-    quick.appendChild(b);
-  });
-  f.appendChild(quick);
-  inp.hidden = !typed; inp.style.marginTop = "8px";
-  f.appendChild(inp);
-  f.appendChild(strip);
-  f.appendChild(help);
-  draw();
-  return f;
+/* ============================================================
+   TAP-ONLY SHARED SCHEDULE (session 88) — replaces the repeating-schedule
+   form, the QUICK presets and the custom-split picker. A 14-cell two-week
+   WEEKDAY pattern (Mon..Sun x2): tap a cell to cycle it Dad -> Mom -> Dad. It
+   starts unset, and Save is disabled until all 14 cells are set. Saved as an
+   ordinary custodyPatterns "custom" insert (buildSequence/resolvePatternParent
+   already read that shape) plus the new v:2 marker, which is what makes it a
+   PROPOSAL rather than an instant change in shared mode — see
+   patternGoverns()/pendingProposal() above and the panel below.
+   ============================================================ */
+const WEEKDAY_NAMES = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+function blankScheduleDraft(){ return {cells: new Array(14).fill(null)}; }
+/* the Monday on or before a date — the schedule's own anchor is always a
+   Monday, so week 1 / week 2 line up with the labels a parent actually reads */
+function mondayOnOrBefore(dstr){
+  const wd = weekdayOf(dstr);
+  if(wd == null) return dstr;
+  const back = wd === 0 ? 6 : wd - 1;
+  return addDaysStr(dstr, -back);
 }
-
-function custodyForm(){
+function scheduleAnchorMonday(){ return mondayOnOrBefore(dayOf(Date.now())); }
+/* the read-only version of the same grid — used for a pending proposal's
+   "Accept this schedule" banner, where nothing on it is tappable */
+function scheduleGrid(d, readOnly){
+  const wrap = el("div","wkwrap");
+  [0,1].forEach(week=>{
+    wrap.appendChild(el("p","wklabel","Week " + (week+1)));
+    const grid = el("div","wkgrid");
+    grid.setAttribute("role","group");
+    grid.setAttribute("aria-label","Week " + (week+1));
+    for(let i=0;i<7;i++){
+      const idx = week*7+i;
+      const w = d.cells[idx];
+      const b = el(readOnly ? "div" : "button", "wkcell" + (w ? " "+w : ""));
+      if(!readOnly) b.type = "button";
+      b.appendChild(el("span",null, WEEKDAY_NAMES[i].slice(0,2)));
+      b.appendChild(el("b",null, w ? WHO_NAME[w].charAt(0) : "–"));
+      if(!readOnly){
+        b.setAttribute("aria-pressed", String(!!w));
+        b.setAttribute("aria-label", WEEKDAY_NAMES[i] + " week " + (week+1) + ": " + (w ? WHO_NAME[w] : "not set"));
+        b.onclick = ()=>{
+          d.cells = d.cells.slice();
+          d.cells[idx] = d.cells[idx] == null ? "dad" : (d.cells[idx] === "dad" ? "mom" : "dad");
+          renderCalendar();
+        };
+      } else {
+        b.setAttribute("aria-label", WEEKDAY_NAMES[i] + " week " + (week+1) + ": " + (w ? WHO_NAME[w] : "not set"));
+      }
+      grid.appendChild(b);
+    }
+    wrap.appendChild(grid);
+  });
+  return wrap;
+}
+function scheduleForm(){
   const d = State.custodyDraft;
   const wrap = el("div");
   wrap.appendChild(el("p","eyebrow","Set the custody schedule"));
-
-  wrap.appendChild(chipRow("Pattern", true,
-    [["week","Week on / week off"],["223","2-2-3"],["weekend-alt","Alternating weekends"],["custom","Custom split"]],
-    d.patternType, v=>{ d.patternType=v; renderCalendar(); }, d.missing && !d.patternType, false, null, null));
-
-  const parentLabel = d.patternType === "weekend-alt" ? "Who has her on weekdays" : "Who has her first";
-  wrap.appendChild(chipRow(parentLabel, true, [["dad","Dad"],["mom","Mom"]],
-    d.parentPick, v=>{ d.parentPick=v;
-      if(d.patternType === "custom"){ d.sequence = parseSplit(d.splitText, v); renderCalendar(); }
-      else if(d.missing) renderCalendar(); }, d.missing && !d.parentPick, false, null, null));
-
-  if(d.patternType === "custom") wrap.appendChild(customSequenceField(d));
-
-  const df = el("div","field" + (d.missing && d.dateMissing ? " missing" : ""));
-  const lab = el("div","qlab"); lab.id = "custStartLab";
-  lab.appendChild(el("span",null,"Starts on"));
-  lab.appendChild(el("span","req ok","✓ ANSWERED"));
-  df.appendChild(lab);
-  const din = document.createElement("input");
-  din.type = "date"; din.value = d.startDate;
-  din.setAttribute("aria-labelledby","custStartLab");
-  din.oninput = ()=>{ d.startDate = din.value; if(d.patternType === "custom") renderCalendar(); };
-  df.appendChild(din);
-  if(d.patternType === "223") df.appendChild(el("p","sub","Must be a Monday — the 2-2-3 pattern is anchored on one."));
-  wrap.appendChild(df);
-
-  if(d.patternType && d.parentPick && d.patternType !== "custom"){
-    const other = otherOf(d.parentPick);
-    const def = d.patternType === "weekend-alt" ? {primary:d.parentPick, other:other} : {parentA:d.parentPick, parentB:other};
-    wrap.appendChild(el("p","sub", custodyPatternSummary(d.patternType, def, d.startDate).text));
-  }
-
-  if(d.missing && d.missing.length){
-    const e = el("div","err","Still needed: " + d.missing.join(", ") + ".");
+  wrap.appendChild(el("p","sub","Tap each day to set who has her — Dad, then Mom, then Dad again. " +
+    "It repeats every two weeks from " + friendlyExhibitDate(scheduleAnchorMonday()) + "."));
+  wrap.appendChild(scheduleGrid(d, false));
+  const left = d.cells.filter(w=>w==null).length;
+  if(left){
+    const e = el("div","err","Still needed: " + left + (left===1 ? " day" : " days") + " (Dad or Mom).");
     e.setAttribute("role","alert");
     wrap.appendChild(e);
   }
-
-  if(d.confirming){
-    wrap.appendChild(custodyConfirmBox());
-  } else {
-    const save = el("button","bigbtn","Set schedule");
-    save.onclick = attemptCustodySave;
-    wrap.appendChild(save);
-  }
+  const save = el("button","bigbtn", left ? left + (left===1 ? " day" : " days") + " left" : "Save schedule");
+  save.id = "scheduleSaveBtn";
+  save.disabled = !!left;
+  save.setAttribute("aria-disabled", String(!!left));
+  save.onclick = ()=>{ if(!left) commitScheduleSave(); };
+  wrap.appendChild(save);
   const cancel = el("button","linkbtn danger-link","Cancel");
   cancel.onclick = ()=>{ State.custodyDraft = null; renderCalendar(); };
   wrap.appendChild(cancel);
   return wrap;
 }
-
-function attemptCustodySave(){
+function commitScheduleSave(){
   const d = State.custodyDraft;
-  const missing = [];
-  if(!d.patternType) missing.push("a pattern");
-  if(!d.parentPick) missing.push(d.patternType === "weekend-alt" ? "who has weekdays" : "who has her first");
-  d.dateMissing = false;
-  if(d.patternType === "223" && d.startDate && weekdayOf(d.startDate) !== 1){
-    d.dateMissing = true;
-    missing.push("a Monday start date for 2-2-3");
-  }
-  d.seqMissing = false;
-  if(d.patternType === "custom" && !(d.sequence && d.sequence.length)){ d.seqMissing = true; missing.push("the days in a row"); }
-  if(!d.startDate) missing.push("a start date");
-  if(missing.length){ d.missing = missing; d.confirming = false; renderCalendar(); return; }
-  d.missing = null;
-  d.confirming = true;
-  renderCalendar();
-}
-
-function custodyConfirmBox(){
-  const d = State.custodyDraft;
-  const box = el("div","confirmbox affirm");
-  box.setAttribute("role","group");
-  box.appendChild(el("p",null,"Set this schedule from " + friendlyExhibitDate(d.startDate) +
-    "? Both parents will see it on every date from then on. It can be replaced later, and this one stays on the record."));
-  const act = el("div","confirmact");
-  const no = el("button","cno","Not yet");
-  no.onclick = ()=>{ d.confirming = false; renderCalendar(); };
-  const yes = el("button","cyes affirm","Set schedule");
-  yes.onclick = commitCustodySave;
-  act.appendChild(no); act.appendChild(yes);
-  box.appendChild(act);
-  return box;
-}
-
-function commitCustodySave(){
-  const d = State.custodyDraft;
-  const other = otherOf(d.parentPick);
-  const def = d.patternType === "weekend-alt" ? {primary:d.parentPick, other:other}
-            : d.patternType === "custom" ? {parentA:d.parentPick, parentB:other, sequence:d.sequence.slice()}
-            : {parentA:d.parentPick, parentB:other};
-  Store.putCustodyPattern(State.me, d.patternType, d.startDate, d.startDate, def);
+  const anchor = scheduleAnchorMonday();
+  const today = dayOf(Date.now());
+  const def = {parentA:"dad", parentB:"mom", sequence:d.cells.slice()};
+  const id = Store.putCustodyPattern(State.me, "custom", anchor, today, def, 2);
   State.custodyDraft = null;
-  State.custodyFlash = "Schedule set · " + patternTypeLabel(d.patternType) + " · from " + friendlyExhibitDate(d.startDate);
+  /* device mode has nobody to ask, so the same save that is a PROPOSAL in
+     shared mode governs at once here — patternGoverns() is the one place
+     that decision is made; this only picks the honest word for the flash. */
+  const governs = patternGoverns({id, v:2, by:State.me});
+  State.custodyFlash = (governs ? "Schedule set" : "Schedule proposed — waiting for " + WHO_NAME[otherOf(State.me)]) +
+    " · from " + friendlyExhibitDate(today);
   clearTimeout(custodyFlashT);
   custodyFlashT = setTimeout(()=>{ State.custodyFlash = null; if(!State.custodyDraft) renderCalendar(); }, 6000);
   renderAll();
 }
-
-/* The two custody paths (a repeating pattern vs tapping individual days) sit
-   side by side as buttons but were never named as alternatives — a parent
-   could tap either without knowing the other existed or why it might fit
-   better. One quiet line, shown wherever both buttons are reachable. */
-function custodyPathsHint(){
-  return el("p","sub custodyhint","A repeating pattern covers the usual week going forward. Tapping days is for "
-    + "one-off weeks or exceptions — either can be used any time, and using one does not rule out the other.");
+/* Read-only preview of a pattern's 14 cells, for the proposal banners below —
+   built straight from its OWN sequence, so it can never show a different
+   pattern than the one about to be accepted. Falls back to a plain summary
+   line for a legacy (non-custom) pattern type, which never reaches these
+   banners in practice (only a v:2 save ever proposes), but this keeps the
+   function honest for any shape it is handed. */
+function schedulePreview(pat){
+  if(pat.patternType === "custom" && pat.definition && pat.definition.sequence && pat.definition.sequence.length === 14){
+    return scheduleGrid({cells:pat.definition.sequence}, true);
+  }
+  return el("p","sub", custodyPatternSummary(pat.patternType, pat.definition, pat.effectiveFrom).text);
 }
-function paintEntryButton(){
-  const b = el("button","bigbtn ghost","Assign days by tapping");
-  b.onclick = ()=>{ State.paint = {parent:null, days:{}, confirming:false, nudge:false}; State.calDay = null; renderCalendar(); window.scrollTo(0,0); };
-  return b;
+/* The banner shown for a live v:2 proposal — one of two shapes, depending on
+   who is looking: the proposer waits, the other parent accepts once. Accept
+   reuses the exact record (Store.acceptSchedule) the design doc specifies;
+   there is no second flow, exactly like "Ask to change this day" reuses the
+   swap API rather than inventing its own. */
+function scheduleProposalBox(prop){
+  const box = el("div","panel");
+  box.appendChild(el("p","eyebrow","Schedule proposed"));
+  box.appendChild(schedulePreview(prop));
+  if(prop.by === State.me){
+    box.appendChild(el("p","sub","Waiting for " + WHO_NAME[otherOf(State.me)] + " to accept."));
+  } else {
+    box.appendChild(el("p","sub", WHO_NAME[prop.by] + " proposed this schedule, from " + friendlyExhibitDate(prop.effectiveFrom) + "."));
+    const yes = el("button","bigbtn affirm","Accept this schedule");
+    yes.id = "scheduleAcceptBtn";
+    yes.onclick = ()=>{ Store.acceptSchedule(State.me, prop.id); renderAll(); };
+    box.appendChild(yes);
+  }
+  return box;
 }
 function calCustodyPanel(){
   const wrap = el("div","panel");
@@ -5788,55 +5875,58 @@ function calCustodyPanel(){
   }
 
   if(State.custodyDraft){
-    wrap.appendChild(custodyForm());
+    wrap.appendChild(scheduleForm());
     return wrap;
   }
 
-  const pats = Store.allCustodyPatterns();
-  if(!pats.length){
+  const today = dayOf(Date.now());
+  const cur = activeCustodyPattern(today);
+  const prop = pendingProposal();
+
+  if(!cur){
     /* "both will see it" used to be said no matter what the header's sync line claimed —
        on device mode nothing leaves this phone, so the two sentences disagreed. Same test
        as renderSync's header line and the Log-tab handover flash (line ~3013). */
     const shared = Store.mode !== "device";
+    if(prop){
+      wrap.appendChild(scheduleProposalBox(prop));
+      return wrap;
+    }
     wrap.appendChild(emptyBox("No custody schedule set",
-      "Set a repeating schedule, or tap the dates one by one. Either parent can do it" +
+      "Tap out who has her each day of a two-week pattern. Either parent can do it" +
       (shared ? ", and both will see it." : "; this copy is not shared with the other parent."),"sched"));
     const b = el("button","bigbtn");
-    b.appendChild(ico("sched")); b.appendChild(el("span",null,"Set a repeating schedule"));
-    b.onclick = ()=>{ State.custodyDraft = blankCustodyDraft(); renderCalendar(); };
+    b.appendChild(ico("sched")); b.appendChild(el("span",null,"Set the schedule"));
+    b.onclick = ()=>{ State.custodyDraft = blankScheduleDraft(); renderCalendar(); };
     wrap.appendChild(b);
-    wrap.appendChild(custodyPathsHint());
-    wrap.appendChild(paintEntryButton());
     return wrap;
   }
 
-  pats.sort((a,b)=> a.effectiveFrom < b.effectiveFrom ? 1 : a.effectiveFrom > b.effectiveFrom ? -1 : b.at - a.at);
-  const today = dayOf(Date.now());
-  const cur = activeCustodyPattern(today) || pats[0];
-
   wrap.appendChild(el("p","eyebrow","Custody schedule"));
   wrap.appendChild(custodyPatternLine(cur));
+  if(Store.mode === "device") wrap.appendChild(el("p","sub","Only on this phone — not shared with the other parent."));
+  if(prop) wrap.appendChild(scheduleProposalBox(prop));
   /* was a text link under a primary button, so the one control that changes the
-     schedule read as a footnote: it is a button now, in the same ghost weight
-     as "Assign days by tapping" beside it. */
+     schedule read as a footnote: it is a button now. Saving again while a
+     schedule already governs writes a new PROPOSAL — the current one keeps
+     governing until it is accepted (see commitScheduleSave/patternGoverns). */
   const chg = el("button","bigbtn ghost");
   chg.appendChild(ico("sched")); chg.appendChild(el("span",null,"Change the schedule"));
-  chg.onclick = ()=>{ State.custodyDraft = blankCustodyDraft(); renderCalendar(); };
-  wrap.appendChild(custodyPathsHint());
-  wrap.appendChild(paintEntryButton());
+  chg.onclick = ()=>{ State.custodyDraft = blankScheduleDraft(); renderCalendar(); };
   wrap.appendChild(chg);
 
-  const earlier = pats.filter(p=>p.id !== cur.id);
-  if(earlier.length){
+  const pats = Store.allCustodyPatterns().filter(p=>p.id !== cur.id && patternGoverns(p));
+  pats.sort((a,b)=> a.effectiveFrom < b.effectiveFrom ? 1 : a.effectiveFrom > b.effectiveFrom ? -1 : b.at - a.at);
+  if(pats.length){
     const open = !!State.custodyHistoryOpen;
     const tog = el("button","voidtog");
     tog.setAttribute("aria-expanded", String(open));
     tog.appendChild(el("span","vt-caret", open ? "▾" : "▸"));
-    tog.appendChild(el("span",null, earlier.length + (earlier.length===1 ? " earlier schedule" : " earlier schedules") +
+    tog.appendChild(el("span",null, pats.length + (pats.length===1 ? " earlier schedule" : " earlier schedules") +
       " — kept in the record"));
     const box = el("div","daylist voidlist");
     box.hidden = !open;
-    earlier.forEach(p=>box.appendChild(custodyPatternLine(p, true)));
+    pats.forEach(p=>box.appendChild(custodyPatternLine(p, true)));
     tog.onclick = ()=>{
       const now = !State.custodyHistoryOpen;
       State.custodyHistoryOpen = now;
@@ -5975,6 +6065,11 @@ function calDrawDaySheet(){
   hd.appendChild(x);
   s.appendChild(hd);
 
+  /* "Ask to change this day" — reuses the exact swap request/accept/decline/
+     withdraw flow (putSwapRequest/respondToSwap), no second flow. At the TOP
+     of the sheet per Simon's ruling 09-18 night, ahead of events. */
+  s.appendChild(calSwapSection(dstr));
+
   if(State.calAdding){ s.appendChild(calEventForm(null)); return; }
   if(State.calEditingEvent){
     const ev = Store.allEvents().find(e=>e.id === State.calEditingEvent.id);
@@ -6002,8 +6097,6 @@ function calDrawDaySheet(){
     { const L = el("div","daylist"); epis.forEach(e=>L.appendChild(calEpisodeRow(e))); epWrap.appendChild(L); }
     s.appendChild(epWrap);
   }
-
-  s.appendChild(calSwapSection(dstr));
 }
 
 function calEventCard(e){
@@ -6069,16 +6162,26 @@ function calNoteBox(e){
   return box;
 }
 
+/* Simon's ruling 09-18 (calendar day marks): a logged incident, seen from the
+   day sheet, is shown in the COLOUR OF ITS INTENSITY — the SAME .stripe bN
+   severity badge entryRow already uses on the Record tab, not a new ramp and
+   not a bare number. A dash (no fill) when no severity was given, exactly
+   like entryRow's own "–" case. */
 function calEpisodeRow(e){
   const row = el("div","panel calepi");
+  const stripe = el("span","stripe b"+(e.sev||0), e.sev ? String(e.sev) : "–");
+  stripe.setAttribute("aria-hidden","true");
+  row.appendChild(stripe);
+  const b = el("div","ebody");
   const top = el("div","etop");
   top.appendChild(el("span","etime", clockOf(e.start)));
   const dur = el("span","edur mono", durText(e.dur));
   if(!e.measured){ const s = el("span","est"," est"); dur.appendChild(s); }
   top.appendChild(dur);
-  row.appendChild(top);
-  row.appendChild(el("div","evtitle a"+(e.sev||0), headlineOf(e)));
-  row.appendChild(rowMeta([el("span","etrig", labelOf(e.trig)), labelOf(e.place)], e.who));
+  b.appendChild(top);
+  b.appendChild(el("div","evtitle a"+(e.sev||0), headlineOf(e)));
+  b.appendChild(rowMeta([el("span","etrig", labelOf(e.trig)), labelOf(e.place)], e.who));
+  row.appendChild(b);
   return row;
 }
 
@@ -6104,7 +6207,7 @@ function calSwapSection(dstr){
 
   const pending = rows.some(r=>!r.response);
   if(!pending){
-    const ask = el("button","linkbtn", State.calSwapOpen===dstr ? "Cancel" : "Request a swap for this day");
+    const ask = el("button","linkbtn", State.calSwapOpen===dstr ? "Cancel" : "Ask to change this day");
     ask.onclick = ()=>{
       State.calSwapOpen = State.calSwapOpen===dstr ? null : dstr;
       /* B1 fix: a swap used to be a free-text message with NO direction, so
@@ -6632,6 +6735,17 @@ function updateTabCounts(){
   const evAll = Store.allEvents().filter(e=>!e.voided);
   const thisMonthEvs = evAll.filter(e=>e.date.slice(0,7) === dayOf(Date.now()).slice(0,7)).length;
   $("cnt-calendar").textContent = tabCountLabel(thisMonthEvs, " this mo");
+  /* amber tab badge (session 88): a "?" beside Calendar while a change request
+     is unanswered — never colour-only, the glyph and the tab's own aria-label
+     both carry it, same rule as the month-grid mark. */
+  const pend = pendingSwapRequests();
+  const dot = $("ambTabDot");
+  if(dot) dot.hidden = pend.length === 0;
+  const tCal = $("t-calendar");
+  if(tCal){
+    if(pend.length) tCal.setAttribute("aria-label","Calendar — " + pend.length + (pend.length===1 ? " pending change request" : " pending change requests"));
+    else tCal.removeAttribute("aria-label");
+  }
 }
 function renderAll(){
   if(!State.me) return;
@@ -8143,25 +8257,62 @@ Store.init();
        !Store.allCustodyPatterns().some(p=>p.anchorDate==="2026-01-05" && p.patternType==="weekend-alt"));
   })();
 
-  // ---- CUSTODY SCHEDULE UI: a non-Monday 2-2-3 start is refused by the
-  // REAL validation function the "Set schedule" button calls, and writes
-  // NOTHING to Store. Mutation target: drop the weekdayOf(...)!==1 guard in
-  // attemptCustodySave and this goes red (both halves).
+  // ---- TAP-ONLY 14-CELL SCHEDULE (session 88): save gating, both-weeks
+  // resolution + repeat at +14 days, and the shared/accept rules — legacy
+  // grandfathered, v:2 needs the OTHER parent's accept in shared mode, governs
+  // at once in device mode, and an accept by the proposer never counts.
   (function(){
-    const beforePat = JSON.stringify(Store.custodyPatterns);
+    if(typeof scheduleForm === "undefined" || typeof $ === "undefined") return;
     const beforeDraft = State.custodyDraft;
-    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    try {
+      State.custodyDraft = {cells: new Array(14).fill(null)};
+      let f = scheduleForm();
+      let btn = f.querySelector(".bigbtn");
+      ck("14-cell editor: Save is disabled until all 14 cells are set", !!btn && btn.disabled === true);
+      ck("14-cell editor: it says how many are left", !!btn && /14/.test(btn.textContent));
+      State.custodyDraft.cells = State.custodyDraft.cells.map((_,i)=> i < 13 ? "dad" : null);
+      f = scheduleForm(); btn = f.querySelector(".bigbtn");
+      ck("14-cell editor: says exactly how many are still needed with one left", !!btn && btn.disabled === true && /1 day left/.test(btn.textContent));
+      State.custodyDraft.cells = State.custodyDraft.cells.map(()=>"dad");
+      f = scheduleForm(); btn = f.querySelector(".bigbtn");
+      ck("14-cell editor: Save enables once all 14 cells are set", !!btn && btn.disabled === false);
+    } finally { State.custodyDraft = beforeDraft; }
+  })();
+  (function(){
+    const bp = JSON.stringify(Store.custodyPatterns), ba = JSON.stringify(Store.scheduleAccepts), bm = Store.mode;
+    const realSave = Store.saveLocal, realPush = Store.push;
     Store.saveLocal = function(){}; Store.push = function(){};
     try {
-      State.custodyDraft = {patternType:"223", parentPick:"dad", startDate:"2026-01-06",  // a Tuesday
-        missing:null, dateMissing:false, confirming:false};
-      attemptCustodySave();
-      ck("selfcheck custody UI: a non-Monday 2-2-3 start is refused before confirmation",
-         Array.isArray(State.custodyDraft.missing) && State.custodyDraft.dateMissing === true &&
-         State.custodyDraft.confirming === false);
-      ck("selfcheck custody UI: the refused 2-2-3 attempt wrote nothing to Store",
-         JSON.stringify(Store.custodyPatterns) === beforePat);
-    } finally { Store.saveLocal = realSaveLocal; Store.push = realPush; State.custodyDraft = beforeDraft; }
+      Store.custodyPatterns = {}; Store.scheduleAccepts = {};
+      const cells = new Array(14).fill("dad"); cells[0] = "mom"; cells[7] = "mom";   // both Mondays are Mom's
+      Store.mode = "sync";
+      const id = Store.putCustodyPattern("dad", "custom", "2026-03-02", "2026-03-02", {parentA:"dad",parentB:"mom",sequence:cells}, 2);
+      ck("v:2 unaccepted does NOT govern in shared mode", activeCustodyPattern("2026-03-02") === null);
+      ck("an unaccepted v:2 pattern IS the pending proposal", !!pendingProposal() && pendingProposal().id === id);
+      Store.acceptSchedule("dad", id);   // the PROPOSER accepting their own proposal
+      ck("accept by the PROPOSER does not count", activeCustodyPattern("2026-03-02") === null);
+      Store.acceptSchedule("mom", id);   // the OTHER parent accepts
+      ck("accept by the OTHER parent makes it govern", activeCustodyPattern("2026-03-02") !== null &&
+         activeCustodyPattern("2026-03-02").id === id);
+      ck("no pending proposal once accepted", pendingProposal() === null);
+      ck("both weeks resolve and the pattern repeats at +14 days",
+         resolvePatternParent(activeCustodyPattern("2026-03-02"), "2026-03-02") === "mom" &&   // idx0
+         resolvePatternParent(activeCustodyPattern("2026-03-02"), "2026-03-09") === "mom" &&   // idx7, week2 same weekday
+         resolvePatternParent(activeCustodyPattern("2026-03-02"), "2026-03-16") === "mom");    // idx14 == idx0, repeats
+      // device mode: governs at once, no accept needed
+      Store.custodyPatterns = {}; Store.scheduleAccepts = {}; Store.mode = "device";
+      const id2 = Store.putCustodyPattern("dad", "custom", "2026-04-06", "2026-04-06", {parentA:"dad",parentB:"mom",sequence:cells}, 2);
+      ck("v:2 governs at once in device mode, no accept needed", activeCustodyPattern("2026-04-06") !== null &&
+         activeCustodyPattern("2026-04-06").id === id2);
+      ck("device mode never shows a pending proposal", pendingProposal() === null);
+      // legacy (no v) still governs unconditionally, exactly as before
+      Store.custodyPatterns = {}; Store.scheduleAccepts = {}; Store.mode = "sync";
+      Store.putCustodyPattern("dad", "week", "2026-05-04", "2026-05-04", {parentA:"dad", parentB:"mom"});
+      ck("a legacy pattern (no v) still governs with no accept", activeCustodyPattern("2026-05-04") !== null);
+    } finally {
+      Store.saveLocal = realSave; Store.push = realPush; Store.mode = bm;
+      Store.custodyPatterns = JSON.parse(bp); Store.scheduleAccepts = JSON.parse(ba);
+    }
   })();
 
   // ---- CUSTODY SCHEDULE UI: logging an exception through the real commit
@@ -8926,13 +9077,46 @@ Store.init();
        !slots.some(id=>/selfcheck|capprobe|probe event/i.test($(id).textContent || "")));
   })();
 
-  /* (a) calendar: ONE dot per day — a day with anything gets exactly one dot,
-     a day with nothing gets none. Tests the pure decision function, not the
-     live DOM, per CONVENTIONS.md §8. */
-  ck("calendar day dot: shows for a day with an event", hasDayDot([{type:"med"}], []) === true);
-  ck("calendar day dot: shows for a day with an entry, no events", hasDayDot([], [{sev:3}]) === true);
-  ck("calendar day dot: none for a day with nothing", hasDayDot([], []) === false);
-  ck("calendar day dot: still exactly one signal regardless of count", hasDayDot([{type:"a"},{type:"b"},{type:"c"}], [{},{}]) === true);
+  /* (a) calendar day marks (AMENDED 09-18 night): dot = event/info, "!" =
+     incident, "?" = pending request — three independent glyphs, not one
+     shared dot. Tests the pure decision functions, not the live DOM, per
+     CONVENTIONS.md §8. */
+  ck("calendar day marks: event dot shows for a day with an event", hasEventDot([{type:"med"}]) === true);
+  ck("calendar day marks: event dot does NOT show for an incident with no event", hasEventDot([]) === false);
+  ck("calendar day marks: incident mark shows for a day with an entry", hasIncidentMark([{sev:3}]) === true);
+  ck("calendar day marks: neither mark for a day with nothing", hasEventDot([]) === false && hasIncidentMark([]) === false);
+  ck("calendar day marks: both marks together when a day has an event AND an entry",
+     hasEventDot([{type:"a"}]) === true && hasIncidentMark([{sev:1}]) === true);
+  ck("calendar day marks: still exactly one dot regardless of event count", hasEventDot([{type:"a"},{type:"b"},{type:"c"}]) === true);
+  (function(){
+    const beforeSwaps = JSON.stringify(Store.swapRequests), beforeResp = JSON.stringify(Store.swapResponses);
+    const realSave = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      Store.swapRequests = {}; Store.swapResponses = {};
+      ck("calendar day marks: no amber mark with no swap request", pendingSwapForDay("2026-05-01") === null);
+      Store.putSwapRequest("dad", "2026-05-01", "", "requester");
+      ck("calendar day marks: amber mark while a swap request is unanswered", !!pendingSwapForDay("2026-05-01"));
+      const reqId = Store.allSwapRequests()[0].id;
+      Store.respondToSwap(reqId, "mom", "accept");
+      ck("calendar day marks: amber mark gone once answered", pendingSwapForDay("2026-05-01") === null);
+    } finally {
+      Store.saveLocal = realSave; Store.push = realPush;
+      Store.swapRequests = JSON.parse(beforeSwaps); Store.swapResponses = JSON.parse(beforeResp);
+    }
+  })();
+  if(typeof calDayCell !== "undefined"){
+    (function(){
+      const d = "2026-05-02";
+      const cellNone = calDayCell(d, false, {}, {});
+      ck("calendar day marks DOM: a plain day shows no marks",
+         cellNone.querySelector(".epi").hidden && cellNone.querySelector(".calbad").hidden && cellNone.querySelector(".calamber").hidden);
+      const cellBoth = calDayCell(d, false, {[d]:[{type:"medical"}]}, {[d]:[{sev:2}]});
+      ck("calendar day marks DOM: an event AND an incident show dot and '!' together",
+         !cellBoth.querySelector(".epi").hidden && !cellBoth.querySelector(".calbad").hidden && cellBoth.querySelector(".calamber").hidden);
+      ck("calendar day marks DOM: cell aria-label names the incident", /entr(y|ies) recorded that day/.test(cellBoth.getAttribute("aria-label")));
+    })();
+  }
 
   /* (c) insights progress bar: the visible fraction is gone, but the real
      n/need numbers must still reach a locked card's aria attributes. */
