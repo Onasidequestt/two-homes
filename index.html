@@ -22,6 +22,10 @@
   --sev1-ink:#1A0C04; --sev2-ink:#1A0C04; --sev3-ink:#1A0C04; --sev4-ink:#FFFFFF; --sev5-ink:#FFFFFF;
   --good:#2F6F4F; --warn:#886918; --danger:#9B3025;
   --dad:#3A5FA8; --mom:#7A4090;
+  /* Tinted parent backgrounds (ADDITION, session 88) — solid hex, not
+     color-mix, so a self-check can parse+contrast them at load. Text in
+     --dad/--mom on these backgrounds clears 4.5:1 in every palette. */
+  --dad-bg:#E5ECFA; --mom-bg:#F2E5F5;
   --primary:#0E1116; --primary-ink:#FFFFFF;
   --scrim:rgba(10,14,18,.5);
   --r:20px; --shadow:0 1px 2px rgba(60,40,10,.05), 0 14px 34px rgba(60,40,10,.08);
@@ -68,6 +72,7 @@
     --sev1-ink:#FFFFFF; --sev2-ink:#FFFFFF; --sev3-ink:#FFFFFF; --sev4-ink:#1A0C04; --sev5-ink:#1A0C04;
     --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
     --dad:#7FA3E8; --mom:#C08BDA;
+    --dad-bg:#1B2740; --mom-bg:#2A1B33;
     --primary:#EEF0F5; --primary-ink:#0B0D12;
     --scrim:rgba(0,0,0,.72);
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
@@ -84,6 +89,7 @@
   --sev1-ink:#FFFFFF; --sev2-ink:#FFFFFF; --sev3-ink:#FFFFFF; --sev4-ink:#1A0C04; --sev5-ink:#1A0C04;
   --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
   --dad:#7FA3E8; --mom:#C08BDA;
+  --dad-bg:#1B2740; --mom-bg:#2A1B33;
   --primary:#EEF0F5; --primary-ink:#0B0D12;
     --scrim:rgba(0,0,0,.72);
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
@@ -980,6 +986,7 @@ body[data-tab="insights"]{--accent:#17698F;--accent-soft:#DCEDF5}
     --line:#B0B0B0; --line-strong:#767676;
     --accent:#1F4F54; --warn:#886918; --danger:#9B3025;
     --dad:#2C4880; --mom:#653576;
+    --dad-bg:#E5ECFA; --mom-bg:#F2E5F5;
     --sev1:#EFC9AE; --sev2:#E0A377; --sev3:#CE7A4B; --sev4:#B0512C; --sev5:#8A2F1C;
     --sev1-edge:#BF7A46; --sev2-edge:#B9703F; --sev3-edge:#A0552C; --sev4-edge:#8A3C1E; --sev5-edge:#6B2214;
     --sev1-ink:#1A0C04; --sev2-ink:#1A0C04; --sev3-ink:#1A0C04; --sev4-ink:#FFFFFF; --sev5-ink:#FFFFFF;
@@ -8665,6 +8672,66 @@ Store.init();
          if(was === null) document.body.removeAttribute("data-tab"); else document.body.setAttribute("data-tab", was);
          return ok;
       })());
+
+      /* ---- parent colours: Mom = purple, Dad = blue, one system, everywhere
+         (Simon's ruling, session 88) ---- */
+      (function(){
+         const lin = c=>{ c/=255; return c<=.03928? c/12.92 : Math.pow((c+.055)/1.055,2.4); };
+         const L = h=>{ let x=h.replace("#",""); if(x.length===3) x=x.replace(/./g,"$&$&");
+           const n=parseInt(x,16); return .2126*lin(n>>16&255)+.7152*lin(n>>8&255)+.0722*lin(n&255); };
+         const cr = (a,b)=>{ const x=L(a), y=L(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+         const hue = h=>{ let x=h.replace("#",""); if(x.length===3) x=x.replace(/./g,"$&$&");
+           const n=parseInt(x,16), r=(n>>16&255)/255, g=(n>>8&255)/255, b=(n&255)/255;
+           const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+           if(d===0) return 0;
+           let hh; if(mx===r) hh=((g-b)/d)%6; else if(mx===g) hh=(b-r)/d+2; else hh=(r-g)/d+4;
+           hh*=60; if(hh<0) hh+=360; return hh; };
+         const isBlue = h=> h>=190 && h<=250, isPurple = h=> h>=260 && h<=320;
+         /* read light and dark straight off the cascade by flipping data-theme —
+            real in a browser; under the harness stub every read comes back as
+            the bare :root (light) values, which are still blue/purple, so the
+            maths still runs, just without a second live sample. */
+         const readTheme = attr=>{
+           const el = document.documentElement, had = el.getAttribute("data-theme");
+           el.setAttribute("data-theme", attr);
+           const cs = getComputedStyle(el), g = n=>cs.getPropertyValue(n).trim();
+           const out = {dad:g("--dad"), mom:g("--mom"), dadBg:g("--dad-bg"), momBg:g("--mom-bg")};
+           if(had===null) el.removeAttribute("data-theme"); else el.setAttribute("data-theme", had);
+           return out;
+         };
+         const light = readTheme("light"), dark = readTheme("dark");
+         /* print lives inside @media print, which cannot be flipped on from
+            page script — read it off the real stylesheet text via the CSSOM
+            (a real browser only; the harness stub exposes no styleSheets, so
+            this falls back to the light sample rather than faking a third). */
+         let print = null;
+         try{
+           for(const ss of (document.styleSheets||[])){
+             let rules; try{ rules = ss.cssRules; }catch(e){ continue; }
+             if(!rules) continue;
+             for(const r of rules){
+               if(r.media && /print/.test(r.media.mediaText||"") && r.cssRules){
+                 for(const rr of r.cssRules){
+                   if(rr.style && rr.style.getPropertyValue("--dad")){
+                     print = {dad:rr.style.getPropertyValue("--dad").trim(), mom:rr.style.getPropertyValue("--mom").trim(),
+                       dadBg:rr.style.getPropertyValue("--dad-bg").trim(), momBg:rr.style.getPropertyValue("--mom-bg").trim()};
+                   }
+                 }
+               }
+             }
+           }
+         }catch(e){}
+         if(!print || !print.dad) print = light;
+         ck("parent colours: --dad reads a blue hue and --mom a purple hue in light, dark and print",
+           isBlue(hue(light.dad)) && isPurple(hue(light.mom)) &&
+           isBlue(hue(dark.dad)) && isPurple(hue(dark.mom)) &&
+           isBlue(hue(print.dad)) && isPurple(hue(print.mom)));
+         ck("parent colours: --dad-bg/--mom-bg carry >=4.5:1 text contrast against --dad/--mom in light, dark and print",
+           cr(light.dad, light.dadBg) >= 4.5 && cr(light.mom, light.momBg) >= 4.5 &&
+           cr(dark.dad, dark.dadBg) >= 4.5 && cr(dark.mom, dark.momBg) >= 4.5 &&
+           cr(print.dad, print.dadBg) >= 4.5 && cr(print.mom, print.momBg) >= 4.5);
+      })();
+
       ck("insights type: no chart label is set below the 12px floor of the type scale", (function(){
          const host = document.createElement("div"); host.className = "bar";
          const mk = c=>{ const n = document.createElement("span"); n.className = c; host.appendChild(n); return n; };
