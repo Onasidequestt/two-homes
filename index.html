@@ -432,7 +432,12 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 .resphint b{color:var(--ink-2);font-weight:600}
 .field > .qlab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
                color:var(--muted);margin-bottom:8px;display:flex;gap:7px;align-items:baseline}
-.req{color:var(--danger);font-weight:700;font-size:10px;letter-spacing:.04em}
+/* panel 9 (critic C, verified): red was carrying a NEUTRAL label. "REQUIRED"
+   states a rule before the parent has done anything wrong; only "STILL NEEDED"
+   — which appears after a save actually failed — is an error. Red now waits for
+   the error. The word still changes, so the state is never colour-only. */
+.req{color:var(--ink-2);font-weight:700;font-size:10px;letter-spacing:.04em}
+.req.missing{color:var(--danger)}
 .stepno{font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:10px;color:var(--muted)}
 .step2lab{margin:16px 0 -4px}
 /* REQUIRED turning into a green ANSWERED is the clearest confirmation available,
@@ -461,6 +466,7 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
                font-size:11px;line-height:1.5;color:var(--ink-2);background:transparent}
 .pkey b,.plimits b{color:var(--ink)}
 .err{margin-top:12px;font-size:12.5px;color:var(--danger);font-weight:600}
+.progressnote{margin-top:12px;font-size:12.5px;color:var(--ink-2);font-weight:600}
 .fielderr{margin:0 0 8px}
 .whatfield.missing .opt{display:none}   /* flagged: the label, the word STILL NEEDED and the sentence below are enough; the hint made the row wrap in three red columns */
 /* Saving used to be silent: the form simply vanished. This is a real confirmation
@@ -790,11 +796,16 @@ textarea{border-radius:10px}
 .dtop{display:flex;align-items:center;justify-content:space-between;width:100%}
 .dnum{font-size:12.5px;font-weight:700;color:var(--ink-2)}
 .epi{font-size:13px;line-height:1;color:var(--evdot);font-weight:700}
+/* the marks row: right-aligned, one consistent gap, never wrapping. It reserves
+   its height whether or not a mark is showing, so a day gaining a mark does not
+   shove the grid. Session 89 (panel 9 density). */
+.dmarkrow{display:flex;align-items:center;justify-content:flex-end;gap:3px;
+     min-height:13px;line-height:1;width:100%}
 /* incident mark ("!") and pending-request mark ("?") — session 88, additions
    beside .epi (the event dot). Three different glyphs, never colour-only. */
-.calbad{font-size:13px;line-height:1;color:var(--danger);font-weight:800;margin-left:2px}
-.calamber{font-size:13px;line-height:1;color:var(--amber);font-weight:800;margin-left:2px}
-.dcell.amber{background:var(--amber-bg);border-color:var(--amber)}
+.calbad{font-size:12px;line-height:1;color:var(--danger);font-weight:800}
+.calamber{font-size:12px;line-height:1;color:var(--amber);font-weight:800}
+.dcell.amber{background:var(--amber-bg)}
 .dmarks{display:flex;flex-wrap:wrap;gap:2px;width:100%}
 .evtag{font-size:9.5px;font-weight:700;letter-spacing:.01em;padding:1px 3px;border-radius:3px;
        background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);line-height:1.4}
@@ -3577,7 +3588,7 @@ function chipRow(labelText, required, opts, cur, onPick, missing, toggle, addFie
   const answered = cur != null;
   let reqTag = null;
   if(required){
-    reqTag = el("span","req" + (answered ? " ok" : ""),
+    reqTag = el("span","req" + (answered ? " ok" : (missing ? " missing" : "")),
                 answered ? "✓ ANSWERED" : (missing ? "STILL NEEDED" : "REQUIRED"));
     lab.appendChild(reqTag);
   }
@@ -3599,8 +3610,10 @@ function chipRow(labelText, required, opts, cur, onPick, missing, toggle, addFie
       /* updated in place, because a selection-only tap deliberately does not
          re-render — without this the confirmation would never appear */
       if(reqTag){
-        reqTag.className = "req" + (off ? "" : " ok");
-        reqTag.textContent = off ? "REQUIRED" : "✓ ANSWERED";
+        /* unpicking returns the tag to the state it was rendered in, so a
+           field that HAD failed a save keeps its error colour */
+        reqTag.className = "req" + (off ? (missing ? " missing" : "") : " ok");
+        reqTag.textContent = off ? (missing ? "STILL NEEDED" : "REQUIRED") : "✓ ANSWERED";
       }
       onPick(off ? null : k);
     };
@@ -3871,7 +3884,7 @@ function draftForm(){
   const nl = el("div","qlab"); nl.id = "notelab";
   if(!running) nl.appendChild(el("span","stepno","Step 1 of 2"));
   nl.appendChild(el("span",null,"What happened"));
-  const noteTag = el("span","req" + (String(d.note||"").trim() ? " ok" : ""), String(d.note||"").trim() ? "✓ ANSWERED" : (nmiss ? "STILL NEEDED" : "REQUIRED"));
+  const noteTag = el("span","req" + (String(d.note||"").trim() ? " ok" : (nmiss ? " missing" : "")), String(d.note||"").trim() ? "✓ ANSWERED" : (nmiss ? "STILL NEEDED" : "REQUIRED"));
   nl.appendChild(noteTag);
   nl.appendChild(el("span","opt","in your words · both parents read this"));
   nf.appendChild(nl);
@@ -3883,7 +3896,8 @@ function draftForm(){
   const grow = ()=>{ ta.style.height = "auto"; ta.style.height = Math.max(64, ta.scrollHeight + 2) + "px"; };
   ta.oninput = ()=>{ d.note = ta.value; grow();
     /* typing does not re-render (the caret would jump), so the tag is updated in place */
-    const ok = !!ta.value.trim(); noteTag.className = "req" + (ok ? " ok" : ""); noteTag.textContent = ok ? "✓ ANSWERED" : "REQUIRED"; };
+    const ok = !!ta.value.trim(); noteTag.className = "req" + (ok ? " ok" : (nmiss ? " missing" : ""));
+    noteTag.textContent = ok ? "✓ ANSWERED" : (nmiss ? "STILL NEEDED" : "REQUIRED"); };
   nf.appendChild(ta);
   wrap.appendChild(nf);
   setTimeout(grow, 0);   /* needs layout, so after the form is in the page */
@@ -5721,19 +5735,25 @@ function calDayCell(dstr, isToday, evsByDay, episByDay){
 
   const top = el("div","dtop");
   top.appendChild(el("span","dnum", String(p.d)));
+  /* panel 9, two critics independently: the number and up to three marks all
+     competed for one ~45px row and the grid read noisy. The marks keep their
+     three distinct shapes (Simon's ruling) but move to their own right-aligned
+     row below the number, so nothing is squeezed. */
+  const marks = el("div","dmarkrow");
   const epi = el("span","epi","●");
   epi.setAttribute("aria-hidden","true");
   if(!hasEventDot(evs)) epi.hidden = true;
-  top.appendChild(epi);
+  marks.appendChild(epi);
   const bad = el("span","calbad","!");
   bad.setAttribute("aria-hidden","true");
   if(!hasIncidentMark(epis)) bad.hidden = true;
-  top.appendChild(bad);
+  marks.appendChild(bad);
   const amb = el("span","calamber","?");
   amb.setAttribute("aria-hidden","true");
   if(!pendingSwap) amb.hidden = true;
-  top.appendChild(amb);
+  marks.appendChild(amb);
   btn.appendChild(top);
+  btn.appendChild(marks);
 
   const band = el("span","dband");
   band.setAttribute("aria-hidden","true");
@@ -6164,8 +6184,13 @@ function scheduleForm(){
   wrap.appendChild(scheduleGrid(d, false));
   const left = d.cells.filter(w=>w==null).length;
   if(left){
-    const e = el("div","err","Still needed: " + left + (left===1 ? " day" : " days") + " (Dad or Mom).");
-    e.setAttribute("role","alert");
+    /* panel 9 (critic C, verified on schedule_empty.png): this was red on FIRST
+       open, before the parent had done anything. It cannot be an error report —
+       Save is disabled until all fourteen are set, so a failed save is not
+       reachable here. It is a progress counter, so it reads as one: neutral ink,
+       role=status (an alert on arrival also interrupted screen readers). */
+    const e = el("div","progressnote","Still needed: " + left + (left===1 ? " day" : " days") + " (Dad or Mom).");
+    e.setAttribute("role","status");
     wrap.appendChild(e);
   }
   const save = el("button","bigbtn", left ? left + (left===1 ? " day" : " days") + " left" : "Save schedule");
@@ -8789,6 +8814,13 @@ Store.init();
       let btn = f.querySelector(".bigbtn");
       ck("14-cell editor: Save is disabled until all 14 cells are set", !!btn && btn.disabled === true);
       ck("14-cell editor: it says how many are left", !!btn && /14/.test(btn.textContent));
+      /* red is reserved for something having gone wrong. On first open nothing
+         has: the counter is progress, not an error. */
+      ck("14-cell editor: the day counter on an untouched form is progress, not an error", (function(){
+         const n = f.querySelector(".progressnote");
+         return !!n && /Still needed: 14 days/.test(n.textContent) &&
+                n.getAttribute("role") === "status" && !f.querySelector(".err");
+      })());
       State.custodyDraft.cells = State.custodyDraft.cells.map((_,i)=> i < 13 ? "dad" : null);
       f = scheduleForm(); btn = f.querySelector(".bigbtn");
       ck("14-cell editor: says exactly how many are still needed with one left", !!btn && btn.disabled === true && /1 day left/.test(btn.textContent));
@@ -9533,6 +9565,26 @@ Store.init();
          return whole === "none" && act === "underline";
       })());
 
+      /* ---- red is reserved for errors, not for stating a rule (panel 9) ---- */
+      /* real browser only: the stub resolves no custom properties through a
+         cascade, so a colour comparison there would compare two blanks. */
+      ck("the REQUIRED tag is neutral and only STILL NEEDED wears the error red", (function(){
+         const f = document.createElement("div"); f.className = "field";
+         const lab = document.createElement("div"); lab.className = "qlab";
+         const plain = document.createElement("span"); plain.className = "req"; plain.textContent = "REQUIRED";
+         const miss = document.createElement("span"); miss.className = "req missing"; miss.textContent = "STILL NEEDED";
+         const okt = document.createElement("span"); okt.className = "req ok"; okt.textContent = "✓ ANSWERED";
+         lab.appendChild(plain); lab.appendChild(miss); lab.appendChild(okt);
+         f.appendChild(lab); document.body.appendChild(f);
+         const probe = document.createElement("span");
+         probe.style.color = getComputedStyle(document.documentElement).getPropertyValue("--danger").trim();
+         document.body.appendChild(probe);
+         const danger = getComputedStyle(probe).color;
+         const cp = getComputedStyle(plain).color, cm = getComputedStyle(miss).color, co = getComputedStyle(okt).color;
+         f.remove(); probe.remove();
+         return !!danger && cm === danger && cp !== danger && co !== danger && cp !== cm;
+      })());
+
       /* ---- the caveats fold; the per-card caveat stays (Simon 09-18) ---- */
       ck("the 'not a scoreboard' and 'does not rank' caveats live inside the fold, not as grey strips", (function(){
          const m = $("v-money"), i = $("v-insights");
@@ -9991,6 +10043,36 @@ Store.init();
       ck("calendar day marks DOM: an event AND an incident show dot and '!' together",
          !cellBoth.querySelector(".epi").hidden && !cellBoth.querySelector(".calbad").hidden && cellBoth.querySelector(".calamber").hidden);
       ck("calendar day marks DOM: cell aria-label names the incident", /entr(y|ies) recorded that day/.test(cellBoth.getAttribute("aria-label")));
+      /* panel 9 density: the three marks sit on their OWN row below the number,
+         and a day wearing all three must still fit the cell. Structural half
+         runs everywhere; the geometry half needs a real layout engine, so it is
+         skipped under the stub rather than faked green. */
+      ck("calendar day marks DOM: the marks sit on their own row, not beside the number",
+         (function(){
+           const row = cellBoth.querySelector(".dmarkrow");
+           /* the stub has no Node.contains, so descend from the row itself */
+           return !!row && !!row.querySelector(".epi") && !!row.querySelector(".calbad") &&
+                  !!row.querySelector(".calamber") && !cellBoth.querySelector(".dtop .epi");
+         })());
+      /* a real layout engine or nothing: the stub has no geometry, and a check
+         that "passes" on all-zero rects is not a check. */
+      const hasLayout = !!(document.body && document.body.getBoundingClientRect &&
+                           document.body.getBoundingClientRect().width > 0);
+      if(hasLayout){
+        const host = document.createElement("div");
+        host.style.cssText = "position:absolute;left:-9999px;top:0;width:390px";
+        const grid = document.createElement("div"); grid.className = "calgrid";
+        const cellAll = calDayCell(d, false, {[d]:[{type:"medical"}]}, {[d]:[{sev:2}]});
+        cellAll.querySelector(".calamber").hidden = false;
+        grid.appendChild(cellAll); host.appendChild(grid); document.body.appendChild(host);
+        const r = cellAll.getBoundingClientRect(), mr = cellAll.querySelector(".dmarkrow").getBoundingClientRect();
+        const num = cellAll.querySelector(".dnum").getBoundingClientRect();
+        const fits = cellAll.scrollWidth <= cellAll.clientWidth + 1;
+        const below = mr.top >= num.bottom - 0.5;
+        host.remove();
+        ck("calendar day marks: a day wearing the dot, the '!' AND the '?' still fits its cell at 390px, marks below the number",
+           fits && below);
+      }
     })();
   }
 
