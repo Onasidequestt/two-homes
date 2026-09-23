@@ -551,6 +551,39 @@ textarea{border-radius:10px}
 .etrig{color:var(--ink-2);font-weight:600}
 .emeta{font-size:13px;color:var(--muted);margin-top:3px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 .enote{font-size:12.5px;color:var(--ink-2);margin-top:6px;padding-left:9px;border-left:2px solid var(--line-strong)}
+/* behaviour tags under a row: quiet, one weight below the meta line; a positive
+   behaviour wears the ok tint so the record does not read as a list of faults */
+.ectx{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+.etags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.bopen{margin-top:4px}
+.bdone{margin-top:10px;align-self:flex-start}
+.etag{font-size:11.5px;line-height:1.3;padding:3px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line)}
+.etag.pos{background:color-mix(in srgb, var(--good) 14%, var(--surface));border-color:color-mix(in srgb, var(--good) 40%, var(--line))}
+.etag.more{background:transparent;color:var(--muted)}
+/* the picker */
+.bnote{margin:0 0 10px}
+.bpicked{margin-bottom:10px}
+.bsearch{width:100%;padding:11px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--ink);font-size:16px;margin-bottom:8px}
+.bsearch:focus{outline:2px solid var(--accent);outline-offset:1px}
+.bgroups{display:flex;flex-direction:column;gap:6px}
+.bgroup{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.bgroup.open{border-color:var(--line-strong)}
+.bgroup-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:11px 12px;background:transparent;border:0;color:var(--ink);font-size:14px;font-weight:600;text-align:left}
+.bgroup-hd:active{background:var(--surface-2)}
+.bgroup.pos .bgroup-t::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);margin-right:8px;vertical-align:middle}
+.bgroup-r{display:flex;align-items:center;gap:8px}
+.bgroup-n{font-size:12px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--accent);color:var(--accent-ink)}
+.bgroup-car{color:var(--muted);font-size:18px;line-height:1;width:16px;text-align:center}
+.bgroup > .chips{padding:2px 12px 12px}
+.bhits{margin-top:2px}
+.chipsub{display:block;font-size:10.5px;font-weight:500;opacity:.75;margin-top:1px}
+.chip.pos[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:var(--accent-ink)}
+/* the folded context block */
+.ctxwrap{margin-top:18px}
+.ctxbtn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;padding:12px 14px;border:1px dashed var(--line-strong);border-radius:12px;background:transparent;color:var(--ink);font-size:14px;font-weight:600;text-align:left}
+.ctxbtn:active{background:var(--surface-2)}
+.ctxbtn .opt{font-weight:500;font-size:11.5px;color:var(--muted)}
+.ctxbox{padding:0 0 4px}
 .badge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;
        border-radius:4px;background:var(--surface-2);color:var(--muted)}
 .badge.dad,.badge.mom{display:inline-flex;align-items:center;gap:4px;color:var(--ink)}
@@ -1502,6 +1535,477 @@ const RESPONSES = [
 ];
 const SLEEP = [["rough","Woke a lot"],["ok","Some waking"],["good","Slept through"]];
 
+/* ============================================================
+   BEHAVIOURS SEEN — Clark Patrick's brief, 2026-09-22 ("Two Homes Project").
+   Twenty groups of OBSERVABLE behaviours for a four-year-old. Pattern
+   tracking only: the group names are his own parent-facing tab names, never
+   a diagnosis. An entry may carry tags from any number of groups. Keys are
+   stable "b.<group>.<slug>" strings, so a rename of a label never orphans a
+   record. Generated from the text of his email, not typed by hand.
+   ponytail: his "behind the scenes" mapping of groups onto broader clinical
+   domains is NOT stored — the ceiling is that Insights groups by his 20
+   names only; the upgrade path is a `domain` field per group that no
+   parent-facing string ever reads (the self-check bans such words on screen). */
+const BEHAVIOR_GROUPS = [
+  {k:"anx", name:"Anxiety / Fear", positive:false, tags:[
+    ["b.anx.separation_distress", "Separation distress"],
+    ["b.anx.clinging", "Clinging"],
+    ["b.anx.reassurance_seeking", "Reassurance seeking"],
+    ["b.anx.anticipatory_worry", "Anticipatory worry"],
+    ["b.anx.fear_of_unfamiliar_people", "Fear of unfamiliar people"],
+    ["b.anx.fear_of_new_places", "Fear of new places"],
+    ["b.anx.fear_of_new_activities", "Fear of new activities"],
+    ["b.anx.social_hesitation", "Social hesitation"],
+    ["b.anx.avoidance_refusal", "Avoidance/refusal"],
+    ["b.anx.freezing_shutting_down", "Freezing/shutting down"],
+    ["b.anx.fear_of_making_mistakes", "Fear of making mistakes"],
+    ["b.anx.perfectionistic_behavior", "Perfectionistic behavior"],
+    ["b.anx.repeated_checking", "Repeated checking"],
+    ["b.anx.bedtime_anxiety", "Bedtime anxiety"],
+    ["b.anx.nighttime_fears", "Nighttime fears"],
+    ["b.anx.nightmares", "Nightmares"],
+    ["b.anx.fear_of_caregiver_leaving", "Fear of caregiver leaving"],
+    ["b.anx.fear_of_caregiver_being_harm", "Fear of caregiver being harmed"],
+    ["b.anx.physical_complaints_when_wor", "Physical complaints when worried"],
+    ["b.anx.irritability_when_anxious", "Irritability when anxious"],
+    ["b.anx.crying_related_to_fear", "Crying related to fear"],
+    ["b.anx.tantrum_related_to_fear", "Tantrum related to fear"],
+    ["b.anx.excessive_startle_response", "Excessive startle response"],
+    ["b.anx.difficulty_recovering_from_w", "Difficulty recovering from worry"],
+    ["b.anx.needs_caregiver_nearby", "Needs caregiver nearby"]]},
+  {k:"att", name:"Attention", positive:false, tags:[
+    ["b.att.easily_distracted", "Easily distracted"],
+    ["b.att.short_attention_span", "Short attention span"],
+    ["b.att.short_task_persistence", "Short task persistence"],
+    ["b.att.daydreaming_staring_off", "Daydreaming/staring off"],
+    ["b.att.does_not_seem_to_listen", "Does not seem to listen"],
+    ["b.att.needs_repeated_instructions", "Needs repeated instructions"],
+    ["b.att.forgets_instructions", "Forgets instructions"],
+    ["b.att.loses_track_of_task", "Loses track of task"],
+    ["b.att.difficulty_following_multi_s", "Difficulty following multi-step directions"],
+    ["b.att.frequently_loses_belongings", "Frequently loses belongings"],
+    ["b.att.difficulty_finishing_activit", "Difficulty finishing activities"],
+    ["b.att.rapid_activity_switching", "Rapid activity switching"],
+    ["b.att.needs_frequent_redirection", "Needs frequent redirection"],
+    ["b.att.difficulty_maintaining_conve", "Difficulty maintaining conversation attention"],
+    ["b.att.easily_distracted_by_sounds", "Easily distracted by sounds"],
+    ["b.att.easily_distracted_by_visual_", "Easily distracted by visual activity"],
+    ["b.att.difficulty_staying_with_grou", "Difficulty staying with group activity"],
+    ["b.att.rushes_through_tasks", "Rushes through tasks"],
+    ["b.att.forgetful_during_routines", "Forgetful during routines"],
+    ["b.att.difficulty_organizing_belong", "Difficulty organizing belongings"]]},
+  {k:"hyp", name:"Hyperactivity", positive:false, tags:[
+    ["b.hyp.constant_movement", "Constant movement"],
+    ["b.hyp.excessive_running", "Excessive running"],
+    ["b.hyp.excessive_climbing", "Excessive climbing"],
+    ["b.hyp.difficulty_sitting", "Difficulty sitting"],
+    ["b.hyp.fidgeting", "Fidgeting"],
+    ["b.hyp.squirming", "Squirming"],
+    ["b.hyp.difficulty_with_quiet_play", "Difficulty with quiet play"],
+    ["b.hyp.excessive_talking", "Excessive talking"],
+    ["b.hyp.high_physical_energy", "High physical energy"],
+    ["b.hyp.pacing", "Pacing"],
+    ["b.hyp.jumping_repeatedly", "Jumping repeatedly"],
+    ["b.hyp.difficulty_remaining_at_tabl", "Difficulty remaining at table"],
+    ["b.hyp.leaves_activity_area_frequen", "Leaves activity area frequently"],
+    ["b.hyp.escalating_excitement", "Escalating excitement"],
+    ["b.hyp.difficulty_calming_body", "Difficulty calming body"],
+    ["b.hyp.excessive_physical_play", "Excessive physical play"],
+    ["b.hyp.constant_touching_of_objects", "Constant touching of objects"],
+    ["b.hyp.restlessness_during_stories", "Restlessness during stories"],
+    ["b.hyp.restlessness_during_meals", "Restlessness during meals"],
+    ["b.hyp.movement_interferes_with_act", "Movement interferes with activities"]]},
+  {k:"imp", name:"Impulsivity", positive:false, tags:[
+    ["b.imp.interrupting", "Interrupting"],
+    ["b.imp.talks_over_others", "Talks over others"],
+    ["b.imp.difficulty_waiting_turn", "Difficulty waiting turn"],
+    ["b.imp.impulsive_grabbing", "Impulsive grabbing"],
+    ["b.imp.takes_toys_without_asking", "Takes toys without asking"],
+    ["b.imp.acts_before_thinking", "Acts before thinking"],
+    ["b.imp.runs_off_unexpectedly", "Runs off unexpectedly"],
+    ["b.imp.unsafe_climbing", "Unsafe climbing"],
+    ["b.imp.unsafe_jumping", "Unsafe jumping"],
+    ["b.imp.bolting_elopement", "Bolting/elopement"],
+    ["b.imp.intrudes_on_others_play", "Intrudes on others' play"],
+    ["b.imp.difficulty_stopping_when_tol", "Difficulty stopping when told"],
+    ["b.imp.touches_things_despite_instr", "Touches things despite instruction"],
+    ["b.imp.opens_enters_things_impulsiv", "Opens/enters things impulsively"],
+    ["b.imp.difficulty_waiting", "Difficulty waiting"],
+    ["b.imp.strong_frustration_with_dela", "Strong frustration with delay"],
+    ["b.imp.impulsive_yelling", "Impulsive yelling"],
+    ["b.imp.impulsive_hitting_pushing", "Impulsive hitting/pushing"],
+    ["b.imp.throws_objects_impulsively", "Throws objects impulsively"],
+    ["b.imp.difficulty_controlling_excit", "Difficulty controlling excitement"]]},
+  {k:"soc", name:"Social Interaction", positive:false, tags:[
+    ["b.soc.reduced_eye_contact", "Reduced eye contact"],
+    ["b.soc.inconsistent_response_to_nam", "Inconsistent response to name"],
+    ["b.soc.limited_social_initiation", "Limited social initiation"],
+    ["b.soc.difficulty_joining_play", "Difficulty joining play"],
+    ["b.soc.prefers_solitary_play", "Prefers solitary play"],
+    ["b.soc.limited_reciprocal_play", "Limited reciprocal play"],
+    ["b.soc.difficulty_sustaining_back_a", "Difficulty sustaining back-and-forth interaction"],
+    ["b.soc.limited_sharing_of_interests", "Limited sharing of interests"],
+    ["b.soc.limited_showing_of_objects_t", "Limited showing of objects to others"],
+    ["b.soc.difficulty_recognizing_other", "Difficulty recognizing others' emotions"],
+    ["b.soc.difficulty_responding_to_emo", "Difficulty responding to emotions"],
+    ["b.soc.difficulty_reading_facial_ex", "Difficulty reading facial expressions"],
+    ["b.soc.difficulty_understanding_soc", "Difficulty understanding social cues"],
+    ["b.soc.difficulty_adjusting_behavio", "Difficulty adjusting behavior to setting"],
+    ["b.soc.friendship_difficulty", "Friendship difficulty"],
+    ["b.soc.social_withdrawal", "Social withdrawal"],
+    ["b.soc.watches_peers_without_joinin", "Watches peers without joining"],
+    ["b.soc.copies_peers_to_participate", "Copies peers to participate"],
+    ["b.soc.difficulty_taking_conversati", "Difficulty taking conversational turns"],
+    ["b.soc.talks_mainly_about_own_inter", "Talks mainly about own interests"],
+    ["b.soc.limited_spontaneous_conversa", "Limited spontaneous conversation"],
+    ["b.soc.difficulty_answering_social_", "Difficulty answering social questions"],
+    ["b.soc.difficulty_asking_peers_to_p", "Difficulty asking peers to play"],
+    ["b.soc.difficulty_sharing_enjoyment", "Difficulty sharing enjoyment"],
+    ["b.soc.difficulty_understanding_per", "Difficulty understanding personal space"]]},
+  {k:"com", name:"Communication", positive:false, tags:[
+    ["b.com.echolalia", "Echolalia"],
+    ["b.com.scripted_speech", "Scripted speech"],
+    ["b.com.repeated_phrases", "Repeated phrases"],
+    ["b.com.repetitive_questioning", "Repetitive questioning"],
+    ["b.com.unusual_speech_rhythm", "Unusual speech rhythm"],
+    ["b.com.unusual_speech_volume", "Unusual speech volume"],
+    ["b.com.unusual_speech_pitch", "Unusual speech pitch"],
+    ["b.com.literal_interpretation", "Literal interpretation"],
+    ["b.com.difficulty_explaining_feelin", "Difficulty explaining feelings"],
+    ["b.com.difficulty_describing_events", "Difficulty describing events"],
+    ["b.com.difficulty_asking_for_help", "Difficulty asking for help"],
+    ["b.com.uses_gestures_instead_of_wor", "Uses gestures instead of words"],
+    ["b.com.repeats_tv_movie_dialogue", "Repeats TV/movie dialogue"],
+    ["b.com.talks_extensively_about_pref", "Talks extensively about preferred topic"],
+    ["b.com.delayed_response_to_question", "Delayed response to questions"],
+    ["b.com.difficulty_with_conversation", "Difficulty with conversational reciprocity"],
+    ["b.com.talks_at_rather_than_with_ot", "Talks at rather than with others"],
+    ["b.com.difficulty_answering_open_en", "Difficulty answering open-ended questions"],
+    ["b.com.uses_unusually_formal_langua", "Uses unusually formal language"],
+    ["b.com.repeats_same_story_topic", "Repeats same story/topic"]]},
+  {k:"rep", name:"Repetitive Behaviors / Interests", positive:false, tags:[
+    ["b.rep.repetitive_body_movements", "Repetitive body movements"],
+    ["b.rep.hand_flapping", "Hand flapping"],
+    ["b.rep.rocking", "Rocking"],
+    ["b.rep.spinning", "Spinning"],
+    ["b.rep.pacing", "Pacing"],
+    ["b.rep.repetitive_jumping", "Repetitive jumping"],
+    ["b.rep.repetitive_object_movement", "Repetitive object movement"],
+    ["b.rep.spinning_wheels", "Spinning wheels"],
+    ["b.rep.opening_closing_doors_repeat", "Opening/closing doors repeatedly"],
+    ["b.rep.flipping_switches_repeatedly", "Flipping switches repeatedly"],
+    ["b.rep.lining_up_objects", "Lining up objects"],
+    ["b.rep.sorting_objects_repeatedly", "Sorting objects repeatedly"],
+    ["b.rep.repetitive_play_sequence", "Repetitive play sequence"],
+    ["b.rep.repetitive_pretend_play_scri", "Repetitive pretend-play script"],
+    ["b.rep.strong_specific_interests", "Strong specific interests"],
+    ["b.rep.intense_focus_on_one_topic", "Intense focus on one topic"],
+    ["b.rep.focus_on_parts_of_objects", "Focus on parts of objects"],
+    ["b.rep.distress_if_arrangement_chan", "Distress if arrangement changes"],
+    ["b.rep.strong_attachment_to_specifi", "Strong attachment to specific object"],
+    ["b.rep.repeating_same_activity", "Repeating same activity"],
+    ["b.rep.repeating_same_route_routine", "Repeating same route/routine"]]},
+  {k:"rou", name:"Routine / Transitions", positive:false, tags:[
+    ["b.rou.difficulty_with_transitions", "Difficulty with transitions"],
+    ["b.rou.distress_with_small_changes", "Distress with small changes"],
+    ["b.rou.strong_routine_dependence", "Strong routine dependence"],
+    ["b.rou.needs_advance_warning", "Needs advance warning"],
+    ["b.rou.difficulty_stopping_preferre", "Difficulty stopping preferred activity"],
+    ["b.rou.difficulty_starting_non_pref", "Difficulty starting non-preferred activity"],
+    ["b.rou.distress_when_plans_change", "Distress when plans change"],
+    ["b.rou.insistence_on_same_sequence", "Insistence on same sequence"],
+    ["b.rou.insistence_on_same_foods", "Insistence on same foods"],
+    ["b.rou.insistence_on_same_clothing", "Insistence on same clothing"],
+    ["b.rou.insistence_on_same_route", "Insistence on same route"],
+    ["b.rou.distress_when_object_moved", "Distress when object moved"],
+    ["b.rou.difficulty_leaving_home", "Difficulty leaving home"],
+    ["b.rou.difficulty_leaving_school", "Difficulty leaving school"],
+    ["b.rou.difficulty_entering_new_sett", "Difficulty entering new setting"],
+    ["b.rou.difficulty_switching_caregiv", "Difficulty switching caregivers"],
+    ["b.rou.difficulty_ending_screen_tim", "Difficulty ending screen time"],
+    ["b.rou.difficulty_ending_play", "Difficulty ending play"],
+    ["b.rou.difficulty_with_unexpected_v", "Difficulty with unexpected visitors"],
+    ["b.rou.difficulty_with_substitute_t", "Difficulty with substitute teacher/caregiver"]]},
+  {k:"sen", name:"Sensory Sensitivity", positive:false, tags:[
+    ["b.sen.sound_sensitivity", "Sound sensitivity"],
+    ["b.sen.covers_ears", "Covers ears"],
+    ["b.sen.distress_with_loud_noises", "Distress with loud noises"],
+    ["b.sen.touch_sensitivity", "Touch sensitivity"],
+    ["b.sen.clothing_sensitivity", "Clothing sensitivity"],
+    ["b.sen.hair_brushing_sensitivity", "Hair-brushing sensitivity"],
+    ["b.sen.tooth_brushing_sensitivity", "Tooth-brushing sensitivity"],
+    ["b.sen.water_on_face_sensitivity", "Water-on-face sensitivity"],
+    ["b.sen.food_texture_sensitivity", "Food texture sensitivity"],
+    ["b.sen.smell_sensitivity", "Smell sensitivity"],
+    ["b.sen.light_sensitivity", "Light sensitivity"],
+    ["b.sen.visual_overstimulation", "Visual overstimulation"],
+    ["b.sen.crowded_space_sensitivity", "Crowded-space sensitivity"],
+    ["b.sen.temperature_sensitivity", "Temperature sensitivity"],
+    ["b.sen.pain_sensitivity", "Pain sensitivity"],
+    ["b.sen.strong_reaction_to_minor_inj", "Strong reaction to minor injury"],
+    ["b.sen.dislikes_messy_hands", "Dislikes messy hands"],
+    ["b.sen.avoids_certain_textures", "Avoids certain textures"],
+    ["b.sen.distress_during_grooming", "Distress during grooming"],
+    ["b.sen.distress_with_tags_seams_sho", "Distress with tags/seams/shoes"]]},
+  {k:"see", name:"Sensory Seeking", positive:false, tags:[
+    ["b.see.spinning", "Spinning"],
+    ["b.see.crashing_into_objects", "Crashing into objects"],
+    ["b.see.jumping_repeatedly", "Jumping repeatedly"],
+    ["b.see.heavy_physical_play", "Heavy physical play"],
+    ["b.see.seeking_tight_squeezes", "Seeking tight squeezes"],
+    ["b.see.seeking_pressure", "Seeking pressure"],
+    ["b.see.touching_many_surfaces", "Touching many surfaces"],
+    ["b.see.rubbing_textures", "Rubbing textures"],
+    ["b.see.chewing_non_food_objects", "Chewing non-food objects"],
+    ["b.see.mouthing_objects", "Mouthing objects"],
+    ["b.see.smelling_objects", "Smelling objects"],
+    ["b.see.watching_spinning_objects", "Watching spinning objects"],
+    ["b.see.seeking_loud_sounds", "Seeking loud sounds"],
+    ["b.see.seeking_movement", "Seeking movement"],
+    ["b.see.hanging_upside_down", "Hanging upside down"],
+    ["b.see.rocking", "Rocking"],
+    ["b.see.climbing_for_sensory_input", "Climbing for sensory input"],
+    ["b.see.running_back_and_forth", "Running back and forth"],
+    ["b.see.seeking_water_play", "Seeking water play"],
+    ["b.see.seeking_messy_play", "Seeking messy play"]]},
+  {k:"reg", name:"Emotional Regulation", positive:false, tags:[
+    ["b.reg.frequent_crying", "Frequent crying"],
+    ["b.reg.intense_tantrum", "Intense tantrum"],
+    ["b.reg.prolonged_tantrum", "Prolonged tantrum"],
+    ["b.reg.rapid_mood_change", "Rapid mood change"],
+    ["b.reg.irritability", "Irritability"],
+    ["b.reg.anger_outburst", "Anger outburst"],
+    ["b.reg.yelling", "Yelling"],
+    ["b.reg.screaming", "Screaming"],
+    ["b.reg.hitting", "Hitting"],
+    ["b.reg.kicking", "Kicking"],
+    ["b.reg.biting", "Biting"],
+    ["b.reg.throwing_objects", "Throwing objects"],
+    ["b.reg.destructive_behavior", "Destructive behavior"],
+    ["b.reg.drops_to_floor", "Drops to floor"],
+    ["b.reg.runs_away_when_upset", "Runs away when upset"],
+    ["b.reg.shuts_down_when_upset", "Shuts down when upset"],
+    ["b.reg.difficulty_identifying_feeli", "Difficulty identifying feelings"],
+    ["b.reg.difficulty_calming", "Difficulty calming"],
+    ["b.reg.needs_adult_help_to_regulate", "Needs adult help to regulate"],
+    ["b.reg.long_recovery_time", "Long recovery time"],
+    ["b.reg.strong_reaction_to_minor_fru", "Strong reaction to minor frustration"],
+    ["b.reg.difficulty_tolerating_no", "Difficulty tolerating \"no\""],
+    ["b.reg.difficulty_tolerating_losing", "Difficulty tolerating losing"],
+    ["b.reg.difficulty_tolerating_mistak", "Difficulty tolerating mistakes"],
+    ["b.reg.becomes_overwhelmed_easily", "Becomes overwhelmed easily"]]},
+  {k:"slp", name:"Sleep", positive:false, tags:[
+    ["b.slp.bedtime_resistance", "Bedtime resistance"],
+    ["b.slp.difficulty_falling_asleep", "Difficulty falling asleep"],
+    ["b.slp.frequent_waking", "Frequent waking"],
+    ["b.slp.early_waking", "Early waking"],
+    ["b.slp.nightmares", "Nightmares"],
+    ["b.slp.night_terrors", "Night terrors"],
+    ["b.slp.needs_caregiver_to_fall_asle", "Needs caregiver to fall asleep"],
+    ["b.slp.refuses_to_sleep_alone", "Refuses to sleep alone"],
+    ["b.slp.restless_sleep", "Restless sleep"],
+    ["b.slp.unusually_short_sleep", "Unusually short sleep"],
+    ["b.slp.unusually_long_sleep", "Unusually long sleep"],
+    ["b.slp.difficult_morning_waking", "Difficult morning waking"],
+    ["b.slp.daytime_tiredness", "Daytime tiredness"],
+    ["b.slp.irritability_after_poor_slee", "Irritability after poor sleep"],
+    ["b.slp.behavior_worsens_after_poor_", "Behavior worsens after poor sleep"]]},
+  {k:"eat", name:"Eating / Feeding", positive:false, tags:[
+    ["b.eat.food_refusal", "Food refusal"],
+    ["b.eat.very_limited_food_variety", "Very limited food variety"],
+    ["b.eat.texture_based_food_refusal", "Texture-based food refusal"],
+    ["b.eat.color_based_food_preference", "Color-based food preference"],
+    ["b.eat.brand_specific_food_preferen", "Brand-specific food preference"],
+    ["b.eat.food_must_be_presented_speci", "Food must be presented specific way"],
+    ["b.eat.refuses_mixed_foods", "Refuses mixed foods"],
+    ["b.eat.strong_smell_related_food_re", "Strong smell-related food reaction"],
+    ["b.eat.difficulty_sitting_for_meals", "Difficulty sitting for meals"],
+    ["b.eat.grazing_constantly", "Grazing constantly"],
+    ["b.eat.eats_very_quickly", "Eats very quickly"],
+    ["b.eat.eats_very_slowly", "Eats very slowly"],
+    ["b.eat.overstuffs_mouth", "Overstuffs mouth"],
+    ["b.eat.holds_food_in_mouth", "Holds food in mouth"],
+    ["b.eat.strong_reaction_to_new_foods", "Strong reaction to new foods"],
+    ["b.eat.difficulty_eating_in_unfamil", "Difficulty eating in unfamiliar setting"],
+    ["b.eat.requests_same_food_repeatedl", "Requests same food repeatedly"],
+    ["b.eat.avoids_utensils", "Avoids utensils"],
+    ["b.eat.sensory_seeking_with_food", "Sensory seeking with food"],
+    ["b.eat.mealtime_distress", "Mealtime distress"]]},
+  {k:"grp", name:"Preschool / Group Behavior", positive:false, tags:[
+    ["b.grp.difficulty_separating_at_sch", "Difficulty separating at school"],
+    ["b.grp.difficulty_joining_group", "Difficulty joining group"],
+    ["b.grp.difficulty_circle_time", "Difficulty circle time"],
+    ["b.grp.difficulty_following_classro", "Difficulty following classroom routine"],
+    ["b.grp.difficulty_sharing", "Difficulty sharing"],
+    ["b.grp.difficulty_taking_turns", "Difficulty taking turns"],
+    ["b.grp.difficulty_cooperative_play", "Difficulty cooperative play"],
+    ["b.grp.difficulty_following_teacher", "Difficulty following teacher instructions"],
+    ["b.grp.frequent_peer_conflict", "Frequent peer conflict"],
+    ["b.grp.leaves_group_activity", "Leaves group activity"],
+    ["b.grp.avoids_peer_interaction", "Avoids peer interaction"],
+    ["b.grp.watches_instead_of_participa", "Watches instead of participates"],
+    ["b.grp.becomes_overwhelmed_in_busy_", "Becomes overwhelmed in busy classroom"],
+    ["b.grp.difficulty_with_cleanup", "Difficulty with cleanup"],
+    ["b.grp.difficulty_school_transition", "Difficulty school transitions"],
+    ["b.grp.difficulty_nap_rest_period", "Difficulty nap/rest period"],
+    ["b.grp.strong_attachment_to_teacher", "Strong attachment to teacher"],
+    ["b.grp.strong_distress_at_pickup_dr", "Strong distress at pickup/drop-off"],
+    ["b.grp.difficulty_playground_intera", "Difficulty playground interaction"],
+    ["b.grp.difficulty_structured_activi", "Difficulty structured activity"]]},
+  {k:"psoc", name:"Positive Social Development", positive:true, tags:[
+    ["b.psoc.initiates_play_with_peer", "Initiates play with peer"],
+    ["b.psoc.joins_peer_play_appropriatel", "Joins peer play appropriately"],
+    ["b.psoc.sustains_cooperative_play", "Sustains cooperative play"],
+    ["b.psoc.takes_turns", "Takes turns"],
+    ["b.psoc.shares_voluntarily", "Shares voluntarily"],
+    ["b.psoc.helps_another_child", "Helps another child"],
+    ["b.psoc.comforts_upset_person", "Comforts upset person"],
+    ["b.psoc.shows_affection_appropriatel", "Shows affection appropriately"],
+    ["b.psoc.seeks_adult_help_appropriate", "Seeks adult help appropriately"],
+    ["b.psoc.uses_words_to_solve_conflict", "Uses words to solve conflict"],
+    ["b.psoc.apologizes", "Apologizes"],
+    ["b.psoc.recognizes_another_person_s_", "Recognizes another person's feelings"],
+    ["b.psoc.names_own_emotion", "Names own emotion"],
+    ["b.psoc.talks_about_feelings", "Talks about feelings"],
+    ["b.psoc.makes_eye_contact_naturally", "Makes eye contact naturally"],
+    ["b.psoc.responds_to_name", "Responds to name"],
+    ["b.psoc.engages_in_back_and_forth_co", "Engages in back-and-forth conversation"],
+    ["b.psoc.shares_interesting_object_ev", "Shares interesting object/event"],
+    ["b.psoc.shows_parent_something_excit", "Shows parent something exciting"],
+    ["b.psoc.asks_another_child_to_play", "Asks another child to play"],
+    ["b.psoc.participates_in_pretend_play", "Participates in pretend play"],
+    ["b.psoc.creates_imaginative_story", "Creates imaginative story"],
+    ["b.psoc.plays_different_types_of_gam", "Plays different types of games"],
+    ["b.psoc.adapts_play_to_another_child", "Adapts play to another child"],
+    ["b.psoc.understands_simple_social_ru", "Understands simple social rules"]]},
+  {k:"pctl", name:"Positive Self-Control", positive:true, tags:[
+    ["b.pctl.completes_activity", "Completes activity"],
+    ["b.pctl.sustains_attention", "Sustains attention"],
+    ["b.pctl.follows_one_step_instruction", "Follows one-step instruction"],
+    ["b.pctl.follows_two_step_instruction", "Follows two-step instruction"],
+    ["b.pctl.follows_three_step_instructi", "Follows three-step instruction"],
+    ["b.pctl.waits_turn", "Waits turn"],
+    ["b.pctl.waits_briefly_without_distre", "Waits briefly without distress"],
+    ["b.pctl.stops_when_asked", "Stops when asked"],
+    ["b.pctl.transitions_when_prompted", "Transitions when prompted"],
+    ["b.pctl.cleans_up_independently", "Cleans up independently"],
+    ["b.pctl.keeps_track_of_belongings", "Keeps track of belongings"],
+    ["b.pctl.returns_to_task_after_distra", "Returns to task after distraction"],
+    ["b.pctl.listens_during_story", "Listens during story"],
+    ["b.pctl.sits_through_meal", "Sits through meal"],
+    ["b.pctl.participates_in_group_activi", "Participates in group activity"],
+    ["b.pctl.asks_before_taking_object", "Asks before taking object"],
+    ["b.pctl.uses_words_instead_of_grabbi", "Uses words instead of grabbing"],
+    ["b.pctl.handles_delay_appropriately", "Handles delay appropriately"],
+    ["b.pctl.accepts_redirection", "Accepts redirection"],
+    ["b.pctl.demonstrates_impulse_control", "Demonstrates impulse control"]]},
+  {k:"preg", name:"Positive Emotional Regulation", positive:true, tags:[
+    ["b.preg.calms_independently", "Calms independently"],
+    ["b.preg.accepts_comfort", "Accepts comfort"],
+    ["b.preg.uses_calming_strategy", "Uses calming strategy"],
+    ["b.preg.takes_deep_breaths", "Takes deep breaths"],
+    ["b.preg.requests_a_break", "Requests a break"],
+    ["b.preg.requests_help", "Requests help"],
+    ["b.preg.identifies_frustration", "Identifies frustration"],
+    ["b.preg.recovers_quickly_after_upset", "Recovers quickly after upset"],
+    ["b.preg.handles_disappointment", "Handles disappointment"],
+    ["b.preg.accepts_no", "Accepts \"no\""],
+    ["b.preg.handles_losing_game", "Handles losing game"],
+    ["b.preg.tries_again_after_mistake", "Tries again after mistake"],
+    ["b.preg.handles_minor_change", "Handles minor change"],
+    ["b.preg.tolerates_frustration", "Tolerates frustration"],
+    ["b.preg.uses_words_when_angry", "Uses words when angry"],
+    ["b.preg.separates_from_caregiver_suc", "Separates from caregiver successfully"],
+    ["b.preg.approaches_unfamiliar_activi", "Approaches unfamiliar activity"],
+    ["b.preg.tries_new_activity", "Tries new activity"],
+    ["b.preg.handles_unexpected_change", "Handles unexpected change"],
+    ["b.preg.returns_to_baseline_after_di", "Returns to baseline after distress"]]},
+  {k:"pind", name:"Independence / Daily Living", positive:true, tags:[
+    ["b.pind.dresses_independently", "Dresses independently"],
+    ["b.pind.undresses_independently", "Undresses independently"],
+    ["b.pind.puts_shoes_on", "Puts shoes on"],
+    ["b.pind.washes_hands", "Washes hands"],
+    ["b.pind.brushes_teeth_with_assistanc", "Brushes teeth with assistance"],
+    ["b.pind.uses_toilet_independently", "Uses toilet independently"],
+    ["b.pind.communicates_bathroom_need", "Communicates bathroom need"],
+    ["b.pind.cleans_up_toys", "Cleans up toys"],
+    ["b.pind.carries_own_belongings", "Carries own belongings"],
+    ["b.pind.follows_morning_routine", "Follows morning routine"],
+    ["b.pind.follows_bedtime_routine", "Follows bedtime routine"],
+    ["b.pind.eats_independently", "Eats independently"],
+    ["b.pind.uses_utensils", "Uses utensils"],
+    ["b.pind.opens_simple_containers", "Opens simple containers"],
+    ["b.pind.makes_simple_choices", "Makes simple choices"],
+    ["b.pind.completes_small_household_ta", "Completes small household task"],
+    ["b.pind.helps_prepare_activity", "Helps prepare activity"],
+    ["b.pind.follows_safety_instruction", "Follows safety instruction"],
+    ["b.pind.stays_near_caregiver_appropr", "Stays near caregiver appropriately"],
+    ["b.pind.asks_permission_appropriatel", "Asks permission appropriately"]]},
+  {k:"pcog", name:"Cognitive / Language Development", positive:true, tags:[
+    ["b.pcog.speaks_in_complete_sentences", "Speaks in complete sentences"],
+    ["b.pcog.tells_simple_story", "Tells simple story"],
+    ["b.pcog.describes_what_happened", "Describes what happened"],
+    ["b.pcog.answers_who_what_where_quest", "Answers who/what/where questions"],
+    ["b.pcog.asks_questions", "Asks questions"],
+    ["b.pcog.explains_wants_clearly", "Explains wants clearly"],
+    ["b.pcog.explains_needs_clearly", "Explains needs clearly"],
+    ["b.pcog.remembers_recent_events", "Remembers recent events"],
+    ["b.pcog.follows_story", "Follows story"],
+    ["b.pcog.retells_story", "Retells story"],
+    ["b.pcog.names_colors", "Names colors"],
+    ["b.pcog.counts_objects", "Counts objects"],
+    ["b.pcog.recognizes_patterns", "Recognizes patterns"],
+    ["b.pcog.completes_simple_puzzle", "Completes simple puzzle"],
+    ["b.pcog.engages_in_imaginative_play", "Engages in imaginative play"],
+    ["b.pcog.uses_objects_symbolically_in", "Uses objects symbolically in play"],
+    ["b.pcog.understands_first_then", "Understands first/then"],
+    ["b.pcog.understands_basic_time_conce", "Understands basic time concepts"],
+    ["b.pcog.understands_simple_rules", "Understands simple rules"],
+    ["b.pcog.learns_new_routine", "Learns new routine"]]},
+  {k:"pflx", name:"Flexibility / Coping", positive:true, tags:[
+    ["b.pflx.handles_transition_smoothly", "Handles transition smoothly"],
+    ["b.pflx.accepts_change_in_routine", "Accepts change in routine"],
+    ["b.pflx.accepts_different_caregiver", "Accepts different caregiver"],
+    ["b.pflx.tolerates_noisy_environment", "Tolerates noisy environment"],
+    ["b.pflx.uses_headphones_appropriatel", "Uses headphones appropriately"],
+    ["b.pflx.tries_new_food", "Tries new food"],
+    ["b.pflx.tolerates_grooming", "Tolerates grooming"],
+    ["b.pflx.tolerates_different_clothing", "Tolerates different clothing"],
+    ["b.pflx.accepts_moved_rearranged_obj", "Accepts moved/rearranged object"],
+    ["b.pflx.stops_preferred_activity_cal", "Stops preferred activity calmly"],
+    ["b.pflx.switches_activity_independen", "Switches activity independently"],
+    ["b.pflx.handles_unexpected_event", "Handles unexpected event"],
+    ["b.pflx.uses_sensory_tool_appropriat", "Uses sensory tool appropriately"],
+    ["b.pflx.requests_quieter_space", "Requests quieter space"],
+    ["b.pflx.requests_movement_break", "Requests movement break"],
+    ["b.pflx.recovers_from_sensory_overlo", "Recovers from sensory overload"],
+    ["b.pflx.participates_in_crowded_envi", "Participates in crowded environment"],
+    ["b.pflx.tolerates_waiting", "Tolerates waiting"],
+    ["b.pflx.accepts_alternate_plan", "Accepts alternate plan"],
+    ["b.pflx.tries_unfamiliar_experience", "Tries unfamiliar experience"]]}
+];
+const BEHAVIOR_LABEL = {};
+const BEHAVIOR_GROUP_OF = {};
+BEHAVIOR_GROUPS.forEach(g=>g.tags.forEach(([k,v])=>{ BEHAVIOR_LABEL[k] = v; BEHAVIOR_GROUP_OF[k] = g.k; }));
+function behaviorGroup(gk){ return BEHAVIOR_GROUPS.find(g=>g.k === gk) || null; }
+/* the OPTIONAL context his brief lists beside each behaviour — closed lists,
+   one word each, so the Insights counts stay comparable between the two homes */
+const OUTCOMES = [["done","Did what was asked"],["settled","Settled"],["moved","Moved on"],["stopped","Stopped on its own"],["unresolved","Not resolved"]];
+const HUNGER = [["fed","Recently ate"],["hungry","Hungry"],["unsure","Not sure"]];
+const HEALTH = [["well","Well"],["tired","Tired"],["unwell","Unwell"]];
+const SENSORY = [["quiet","Quiet"],["busy","Busy"],["loud","Loud"],["bright","Bright"],["crowded","Crowded"]];
+const CHANGES = [["none","No change"],["transition","Changing activity"],["plans","Plans changed"],["place","New place"],["caregiver","Different caregiver"],["visitors","Visitors"]];
+const CONTEXT_FIELDS = [
+  ["outcome","Outcome",OUTCOMES],["sleepq","Sleep last night",SLEEP],["hunger","Hunger",HUNGER],
+  ["health","Illness or tiredness",HEALTH],["sensory","Surroundings",SENSORY],["change","Change going on",CHANGES]
+];
+const CONTEXT_LABEL = {};
+CONTEXT_FIELDS.forEach(([f,name,opts])=>{ CONTEXT_LABEL[f] = {}; opts.forEach(([k,v])=>CONTEXT_LABEL[f][k]=v); });
+function contextLabel(field, key){ return key == null ? "" : ((CONTEXT_LABEL[field]||{})[key] || String(key)); }
+/* the empty optional block every draft starts from; a saved entry copies it */
+function blankContext(){ return {tags:[], people:"", recov:null, outcome:null, sleepq:null, hunger:null, health:null, sensory:null, change:null}; }
+const CONTEXT_KEYS = Object.keys(blankContext());
+
 const LABEL = {};
 TRIGGERS.concat(PLACES, RESPONSES, SLEEP).forEach(([k,v])=>LABEL[k]=v);
 
@@ -1531,6 +2035,7 @@ function matchBuiltin(field, text){
 function labelOf(key){
   if(key == null) return "";
   if(LABEL[key]) return LABEL[key];
+  if(BEHAVIOR_LABEL[key]) return BEHAVIOR_LABEL[key];
   const c = Store.optionLabel(key);
   if(c) return c;
   return String(key).indexOf("c:") === 0 ? String(key).slice(2) : String(key);
@@ -3470,7 +3975,7 @@ function paintTimerPill(){
   p.onclick = ()=>setTab("log", true);
 }
 function beginLive(){
-  State.draft = {start:Date.now(), end:null, measured:true, sev:null, trig:null, place:null, resp:null, note:""};
+  State.draft = Object.assign({start:Date.now(), end:null, measured:true, sev:null, trig:null, place:null, resp:null, note:""}, blankContext());
   State.tick = setInterval(()=>{
     /* tick the digits, NOT their parent: setting textContent on #liveTimer is
        specified as "remove all children", which deleted the .livedot span one
@@ -3484,7 +3989,7 @@ function beginLive(){
 }
 function beginRetro(){
   const n = new Date();
-  State.draft = {start:Date.now(), end:Date.now(), measured:false, estMin:5,
+  State.draft = Object.assign({start:Date.now(), end:Date.now(), measured:false, estMin:5,
     /* WHEN it happened, asked rather than assumed. Without this the entry was
        stamped `Date.now() - duration`, so a 4:30pm episode logged at 8:45pm
        once the child was asleep was recorded as an 8:40pm episode — and the
@@ -3494,7 +3999,7 @@ function beginRetro(){
        hardest. Defaults to now, which is correct for "it just ended". */
     whenT: pad(n.getHours()) + ":" + pad(n.getMinutes()),
     whenD: null,   /* null = today (or last night, for a time still ahead of the clock) */
-    sev:null, trig:null, place:null, resp:null, note:""};
+    sev:null, trig:null, place:null, resp:null, note:""}, blankContext());
   renderLog();
 }
 /* Resolve a wall-clock "HH:MM" against the nearest past occurrence. A time
@@ -3577,6 +4082,193 @@ function showFirstMissing(root){
   const m = root && root.querySelector && root.querySelector(".field.missing");
   if(m && m.scrollIntoView) m.scrollIntoView({block:"center"});
   return m || null;
+}
+/* BEHAVIOURS SEEN — an inline multi-pick over ~400 tags in 20 groups. Never a
+   wall of chips: groups are collapsed rows with a count, a group opens on tap,
+   and a search box cuts across every group. Everything flips IN PLACE (no
+   re-render: the search box keeps its caret, the form keeps its scroll). The
+   picked tags sit at the top as pressed chips; tapping one there unpicks it.
+   `d.tags` is the array both the log form and the edit sheet share. */
+function tagLabel(k){ return BEHAVIOR_LABEL[k] || labelOf(k); }
+function behaviourPicker(d, onRedraw){
+  if(!Array.isArray(d.tags)) d.tags = [];
+  const f = el("div","field bpick");
+  const lab = el("div","qlab"); lab.id = "cr" + (++chipRowSeq);
+  lab.appendChild(el("span",null,"Behaviours seen"));
+  lab.appendChild(el("span","opt","pick as many as fit · you can skip this"));
+  f.appendChild(lab);
+  f.appendChild(el("p","pcsub bnote","What you saw, in plain words. These are for spotting patterns over time — not a checklist for anything."));
+  const picked = el("div","chips bpicked"); picked.setAttribute("role","group"); picked.setAttribute("aria-label","Behaviours picked");
+  f.appendChild(picked);
+  /* FOLDED until asked for: twenty group rows on every form would be the
+     "wall" four blind panels named. Closed, the field is its picked chips and
+     one button; open, the search and the groups. Picked chips stay tappable
+     either way. */
+  if(!d.bpOpen){
+    const opener = el("button","ctxbtn bopen"); opener.type = "button"; opener.setAttribute("aria-expanded","false");
+    opener.appendChild(el("span",null, d.tags.length ? "Change behaviours" : "Add behaviours seen"));
+    opener.appendChild(el("span","opt","twenty groups, or search by word"));
+    opener.onclick = ()=>{ d.bpOpen = true; onRedraw(); };
+    const drawPickedClosed = ()=>{ picked.innerHTML = ""; picked.hidden = !d.tags.length;
+      d.tags.forEach(k=>{ const b = el("button","chip" + ((behaviorGroup(BEHAVIOR_GROUP_OF[k])||{}).positive ? " pos" : ""), tagLabel(k)); b.type = "button"; b.setAttribute("aria-pressed","true"); b.setAttribute("data-k",k);
+        b.onclick = ()=>{ d.tags.splice(d.tags.indexOf(k),1); drawPickedClosed(); opener.firstChild.textContent = d.tags.length ? "Change behaviours" : "Add behaviours seen"; }; picked.appendChild(b); }); };
+    drawPickedClosed();
+    f.appendChild(opener);
+    return f;
+  }
+  const search = document.createElement("input");
+  search.type = "search"; search.className = "bsearch"; search.placeholder = "Search behaviours"; search.setAttribute("aria-label","Search behaviours");
+  f.appendChild(search);
+  const body = el("div","bgroups");
+  f.appendChild(body);
+  const openGroups = {};
+  const has = k => d.tags.indexOf(k) >= 0;
+  const toggle = k => { const i = d.tags.indexOf(k); if(i >= 0) d.tags.splice(i,1); else d.tags.push(k); drawPicked(); drawBody(); };
+  function chip(k, v){
+    const b = el("button","chip" + (BEHAVIOR_GROUPS.find(g=>g.k===BEHAVIOR_GROUP_OF[k]).positive ? " pos" : ""), v);
+    b.type = "button"; b.setAttribute("data-k", k); b.setAttribute("aria-pressed", String(has(k)));
+    b.onclick = ()=>toggle(k);
+    return b;
+  }
+  function drawPicked(){
+    picked.innerHTML = "";
+    if(!d.tags.length){ picked.hidden = true; return; }
+    picked.hidden = false;
+    d.tags.forEach(k=>picked.appendChild(chip(k, tagLabel(k))));
+  }
+  function drawBody(){
+    body.innerHTML = "";
+    const q = String(search.value||"").trim().toLowerCase();
+    if(q.length >= 2){
+      const hits = [];
+      BEHAVIOR_GROUPS.forEach(g=>g.tags.forEach(([k,v])=>{ if(v.toLowerCase().indexOf(q) >= 0 || g.name.toLowerCase().indexOf(q) >= 0) hits.push([k,v,g]); }));
+      const c = el("div","chips bhits"); c.setAttribute("role","group"); c.setAttribute("aria-label","Matching behaviours");
+      /* a hit names its group: "Spinning" sits in two groups and a bare chip
+         would be a coin toss */
+      hits.slice(0,40).forEach(([k,v,g])=>{ const b = chip(k, v); b.appendChild(el("span","chipsub", g.name)); c.appendChild(b); });
+      if(!hits.length) c.appendChild(el("p","sub","Nothing matches. Try another word, or put it in “What happened”."));
+      else if(hits.length > 40) c.appendChild(el("p","sub","Showing the first 40 of " + hits.length + " — keep typing to narrow it."));
+      body.appendChild(c);
+      return;
+    }
+    BEHAVIOR_GROUPS.forEach(g=>{
+      const n = d.tags.filter(k=>BEHAVIOR_GROUP_OF[k] === g.k).length;
+      const row = el("div","bgroup" + (openGroups[g.k] ? " open" : "") + (g.positive ? " pos" : ""));
+      const hd = el("button","bgroup-hd"); hd.type = "button";
+      hd.setAttribute("aria-expanded", String(!!openGroups[g.k]));
+      hd.appendChild(el("span","bgroup-t", g.name));
+      const right = el("span","bgroup-r");
+      if(n) right.appendChild(el("span","bgroup-n mono", String(n)));
+      right.appendChild(el("span","bgroup-car", openGroups[g.k] ? "–" : "+"));
+      hd.appendChild(right);
+      hd.onclick = ()=>{ openGroups[g.k] = !openGroups[g.k]; drawBody(); };
+      row.appendChild(hd);
+      if(openGroups[g.k]){
+        const c = el("div","chips"); c.setAttribute("role","group"); c.setAttribute("aria-label", g.name);
+        g.tags.forEach(([k,v])=>c.appendChild(chip(k,v)));
+        row.appendChild(c);
+      }
+      body.appendChild(row);
+    });
+  }
+  search.oninput = drawBody;
+  drawPicked(); drawBody();
+  const done = el("button","linkbtn bdone","Done choosing"); done.type = "button";
+  done.onclick = ()=>{ d.bpOpen = false; onRedraw(); };
+  f.appendChild(done);
+  return f;
+}
+/* MORE CONTEXT — the rest of the optional block from the brief, folded behind
+   one button so the two required questions stay in reach. Each chip row is a
+   toggle (tap again to clear); nothing here is ever required. */
+function contextFields(d, onRedraw){
+  const wrap = el("div","ctxwrap");
+  const open = !!d.ctxOpen || CONTEXT_KEYS.some(k=>k !== "tags" && d[k] != null && d[k] !== "");
+  const btn = el("button","ctxbtn"); btn.type = "button";
+  btn.setAttribute("aria-expanded", String(open));
+  btn.appendChild(el("span",null, open ? "Hide the extra context" : "Add more context"));
+  btn.appendChild(el("span","opt","optional · sleep, hunger, surroundings, how it ended"));
+  btn.onclick = ()=>{ d.ctxOpen = !open; onRedraw(); };
+  wrap.appendChild(btn);
+  if(!open) return wrap;
+  const box = el("div","ctxbox");
+  CONTEXT_FIELDS.forEach(([field, name, opts])=>{
+    box.appendChild(chipRow(name, false, opts, d[field], v=>{ d[field] = v; }, false, true, null, null));
+  });
+  const nums = el("div","field");
+  const nl = el("div","qlab"); nl.id = "cr" + (++chipRowSeq); nl.appendChild(el("span",null,"Back to normal after"));
+  nums.appendChild(nl);
+  const r = el("label","retro-row");
+  const inp = document.createElement("input");
+  inp.type = "number"; inp.min = "0"; inp.id = "recovMin"; inp.value = d.recov == null ? "" : d.recov;
+  inp.setAttribute("aria-label","Minutes until back to normal");
+  inp.oninput = ()=>{ const v = parseInt(inp.value,10); d.recov = isNaN(v) ? null : Math.max(0, v); };
+  r.appendChild(inp); r.appendChild(el("span","retro-unit","min"));
+  nums.appendChild(r);
+  box.appendChild(nums);
+  const pf = el("div","field");
+  const pl = el("div","qlab"); pl.id = "cr" + (++chipRowSeq); pl.appendChild(el("span",null,"Who was there"));
+  pf.appendChild(pl);
+  const pi = document.createElement("input");
+  pi.type = "text"; pi.id = "peopleBox"; pi.maxLength = 80; pi.value = d.people || "";
+  pi.placeholder = "e.g. Grandma, her cousin"; pi.setAttribute("aria-labelledby", pl.id);
+  pi.oninput = ()=>{ d.people = pi.value; };
+  pf.appendChild(pi);
+  box.appendChild(pf);
+  wrap.appendChild(box);
+  return wrap;
+}
+/* the optional block as it is written into a record: arrays copied, blanks
+   as null, so two entries with nothing extra compare equal */
+function contextOf(d){
+  const o = {};
+  CONTEXT_KEYS.forEach(k=>{
+    if(k === "tags") o.tags = (d.tags||[]).slice();
+    else if(k === "people") o.people = String(d.people||"").trim();
+    else o[k] = (d[k] == null || d[k] === "") ? null : d[k];
+  });
+  return o;
+}
+/* ONE diff for a revision — the edit sheet's patch used to be five hand-written
+   comparisons; every field a record carries now goes through here, so a new
+   field cannot be editable on the sheet and silently dropped from the patch. */
+function entryPatch(d, e){
+  const patch = {};
+  if(d.sev !== e.sev) patch.sev = d.sev;
+  if(d.trig !== e.trig) patch.trig = d.trig;
+  if(d.place !== e.place) patch.place = d.place;
+  if((d.resp||null) !== (e.resp||null)) patch.resp = d.resp||null;
+  if((d.note||"") !== (e.note||"")) patch.note = d.note||"";
+  const a = contextOf(d), b = contextOf(e);
+  CONTEXT_KEYS.forEach(k=>{ if(JSON.stringify(a[k]) !== JSON.stringify(b[k])) patch[k] = a[k]; });
+  return patch;
+}
+const PATCH_WORD = {sev:"severity",trig:"trigger",place:"place",resp:"what ended it",note:"note",tags:"behaviours seen",
+  people:"who was there",recov:"recovery time",outcome:"outcome",sleepq:"sleep",hunger:"hunger",health:"illness or tiredness",sensory:"surroundings",change:"change going on"};
+/* the row of behaviour tags under an entry — shared by the Record list (which
+   is also the printed record) and the calendar day sheet, so they cannot drift.
+   Four shown, the rest counted; the sheet lists them all. */
+function tagRow(e, all){
+  const tags = e.tags || [];
+  if(!tags.length) return null;
+  const w = el("div","etags");
+  const show = all ? tags : tags.slice(0,4);
+  show.forEach(k=>w.appendChild(el("span","etag" + ((behaviorGroup(BEHAVIOR_GROUP_OF[k])||{}).positive ? " pos" : ""), tagLabel(k))));
+  if(tags.length > show.length) w.appendChild(el("span","etag more","+" + (tags.length - show.length) + " more"));
+  return w;
+}
+/* the optional context, as meta facts — only what was filled in */
+function contextFacts(e){
+  const f = [];
+  if(e.outcome) f.push(contextLabel("outcome", e.outcome));
+  if(e.recov != null) f.push("back to normal in " + e.recov + " min");
+  if(e.sleepq) f.push("sleep: " + contextLabel("sleepq", e.sleepq).toLowerCase());
+  if(e.hunger && e.hunger !== "unsure") f.push(contextLabel("hunger", e.hunger).toLowerCase());
+  if(e.health && e.health !== "well") f.push(contextLabel("health", e.health).toLowerCase());
+  if(e.sensory) f.push(contextLabel("sensory", e.sensory).toLowerCase() + " surroundings");
+  if(e.change && e.change !== "none") f.push(contextLabel("change", e.change).toLowerCase());
+  if(e.people) f.push("with " + e.people);
+  return f;
 }
 function chipRow(labelText, required, opts, cur, onPick, missing, toggle, addField, onAdded){
   const f = el("div","field" + (missing ? " missing" : ""));
@@ -3984,6 +4676,10 @@ function draftForm(){
     wrap.appendChild(chipRow("What ended it", false, optionsFor("resp"), d.resp,
       v=>{ d.resp = v; }, false, true, "resp", renderLog));
   }
+  if(step2){
+    wrap.appendChild(contextFields(d, renderLog));
+    wrap.appendChild(behaviourPicker(d, renderLog));
+  }
   const dock = el("div","savedock");
 
   /* the error goes BEFORE the button: it was appended after it, so the text
@@ -4023,7 +4719,7 @@ function draftForm(){
     dock.appendChild(b);
   }
 
-  wrap.appendChild(discardControl(()=>{ const x = State.draft||{}; return !!(x.measured || String(x.note||"").trim() || x.sev || x.trig || x.place || x.resp); }, cancelDraft));
+  wrap.appendChild(discardControl(()=>{ const x = State.draft||{}; return !!(x.measured || String(x.note||"").trim() || x.sev || x.trig || x.place || x.resp || (x.tags||[]).length); }, cancelDraft));
   return wrap;
 }
 
@@ -4045,7 +4741,7 @@ function saveDraft(){
   const entered = d.measured ? null : resolveWhen(d.whenT, d.whenD);
   const start = d.measured ? d.start : (entered == null ? Date.now() - dur*1000 : entered);
 
-  const entry = {
+  const entry = Object.assign({
     id: "e" + start.toString(36) + Math.random().toString(36).slice(2,7),
     who: State.me,
     start: start,
@@ -4058,7 +4754,7 @@ function saveDraft(){
     note: (d.note||"").trim(),
     created: Date.now(),
     revs: []
-  };
+  }, contextOf(d));
   Store.putEntry(State.me, entry);
   if(State.tick){ clearInterval(State.tick); State.tick = null; }
   State.draft = null;
@@ -4245,6 +4941,8 @@ function entryRow(e){
   b.appendChild(meta);
 
   if(e.note && headlineOf(e) !== String(e.note).trim()) b.appendChild(el("div","enote",e.note));   /* not twice when the words ARE the headline */
+  const cx = contextFacts(e); if(cx.length) b.appendChild(el("div","ectx", cx.join(" · ")));
+  const tr = tagRow(e, false); if(tr) b.appendChild(tr);
   row.appendChild(b);
 
   /* aria-label overrides all child text for AT, so the "renamed" badge above
@@ -4279,7 +4977,7 @@ function emptyBox(title, msg, icon){
    ============================================================ */
 let sheetT = null;
 function openEdit(e){
-  State.editing = {id:e.id, sev:e.sev, trig:e.trig, place:e.place, resp:e.resp, note:e.note||""};
+  State.editing = Object.assign({id:e.id, sev:e.sev, trig:e.trig, place:e.place, resp:e.resp, note:e.note||""}, contextOf(e));
   State.returnTo = document.activeElement;
   drawSheet(e);
   const sc = $("scrim");
@@ -4350,6 +5048,8 @@ function drawSheet(e){
   s.appendChild(chipRow("Trigger", false, optionsFor("trig"), d.trig, v=>{ d.trig=v; }, false, false, "trig", ()=>drawSheet(e)));
   s.appendChild(chipRow("Where", false, optionsFor("place"), d.place, v=>{ d.place=v; }, false, false, "place", ()=>drawSheet(e)));
   s.appendChild(chipRow("What ended it", false, optionsFor("resp"), d.resp, v=>{ d.resp=v; }, false, true, "resp", ()=>drawSheet(e)));
+  s.appendChild(contextFields(d, ()=>drawSheet(e)));
+  s.appendChild(behaviourPicker(d, ()=>drawSheet(e)));
 
   const nf = el("div","field");
   const nl = el("div","qlab","Note"); nl.id = "sheetNote";
@@ -4396,7 +5096,7 @@ function drawSheet(e){
     e.revs.forEach((r,i)=>{
       const line = el("div","rev");
       const when = new Date(r.at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
-      const what = r.void ? "withdrew the entry" : "changed " + Object.keys(r.patch||{}).map(k=>({sev:"severity",trig:"trigger",place:"place",resp:"what ended it",note:"note"}[k]||k)).join(", ");
+      const what = r.void ? "withdrew the entry" : "changed " + Object.keys(r.patch||{}).map(k=>PATCH_WORD[k]||k).join(", ");
       line.innerHTML = "";
       line.appendChild(el("b",null,"#"+(i+1)+" "));
       line.appendChild(document.createTextNode(when + " — " + what));
@@ -4415,13 +5115,8 @@ function drawSheet(e){
 
 function commitRevision(e, isVoid){
   const d = State.editing;
-  const patch = {};
+  const patch = isVoid ? {} : entryPatch(d, e);
   if(!isVoid){
-    if(d.sev !== e.sev) patch.sev = d.sev;
-    if(d.trig !== e.trig) patch.trig = d.trig;
-    if(d.place !== e.place) patch.place = d.place;
-    if((d.resp||null) !== (e.resp||null)) patch.resp = d.resp||null;
-    if((d.note||"") !== (e.note||"")) patch.note = d.note||"";
     if(!Object.keys(patch).length){ closeSheet(); return; }
   }
   const docId = Store.entryDoc(e.who, ymOf(e.start));
@@ -4622,6 +5317,32 @@ function renderPatterns(){
       c.takeaway = rows.length > 1 && rows[0].v > rows[1].v
         ? "Selected most often: " + rows[0].k + " (" + rows[0].v + " of " + n + ")."
         : "No one trigger stands out from the rest.";
+    });
+
+  /* ---------------- behaviours seen ----------------
+     Clark's brief: reveal patterns over time without treating any one entry as
+     a diagnosis. Counts ENTRIES per group (an entry with three tags from one
+     group counts once there), so a group's bar is "how many times a parent saw
+     something of this kind", never a symptom tally. */
+  const tagged = all.filter(e=>(e.tags||[]).length);
+  add("Behaviours seen",
+    "How many entries carried at least one behaviour from each group. An entry with several behaviours from one group counts once for that group. These are things a parent saw and named at the time — for spotting patterns, not a checklist for any condition.",
+    tagged.length, 10, "entries with behaviours",
+    c=>{
+      const byG = {}, byT = {};
+      tagged.forEach(e=>{
+        const seen = {};
+        e.tags.forEach(k=>{ const g = BEHAVIOR_GROUP_OF[k]; if(g && !seen[g]){ seen[g] = 1; byG[g] = (byG[g]||0)+1; } byT[k] = (byT[k]||0)+1; });
+      });
+      const rows = BEHAVIOR_GROUPS.filter(g=>byG[g.k]).map(g=>({k:g.name, v:byG[g.k]})).sort((a,b)=>b.v-a.v);
+      c.appendChild(barChart(rows.slice(0,8), ""));
+      const pos = tagged.filter(e=>e.tags.some(k=>(behaviorGroup(BEHAVIOR_GROUP_OF[k])||{}).positive)).length;
+      const top = Object.entries(byT).sort((a,b)=>b[1]-a[1]).slice(0,6);
+      c.takeaway = rows.length > 1 && rows[0].v > rows[1].v
+        ? "Seen most often: " + rows[0].k + " (" + rows[0].v + " of " + tagged.length + " entries)."
+        : "No one group stands out from the rest.";
+      c.appendChild(el("p","pcsub", pos + " of " + tagged.length + " entries include a positive behaviour. Most-named: " +
+        top.map(([k,v])=>tagLabel(k) + " (" + v + ")").join(", ") + "."));
     });
 
   /* ---------------- length by what ended it ----------------
@@ -6576,6 +7297,8 @@ function calEpisodeRow(e){
   b.appendChild(top);
   b.appendChild(el("div","evtitle a"+(e.sev||0), headlineOf(e)));
   b.appendChild(rowMeta([el("span","etrig", labelOf(e.trig)), labelOf(e.place)], e.who));
+  const cx = contextFacts(e); if(cx.length) b.appendChild(el("div","ectx", cx.join(" · ")));
+  const tr = tagRow(e, false); if(tr) b.appendChild(tr);
   row.appendChild(b);
   return row;
 }
@@ -7082,6 +7805,12 @@ function calCommitEventRevision(base, isVoid){
    Store.putMessage/markSeen above); a correction is a new message.
    ============================================================ */
 function msgTimeText(at){ return friendlyDay(dayOf(at)) + " " + clockOf(at); }
+/* On SCREEN "Today 2:53pm" is the friendly, correct thing. On PAPER it is
+   meaningless: the printed messages record is the exhibit a mediator reads
+   weeks later, and every Sent and Seen cell read "Today". Same rule the custody
+   exhibit already follows — a print exhibit carries the full unambiguous date.
+   Panel 10, critic A. */
+function msgExhibitTimeText(at){ return friendlyExhibitDate(dayOf(at)) + " " + clockOf(at); }
 function msgBubble(m, me){
   const mine = m.by === me;
   const b = el("div","msgbubble " + m.by + " " + (mine ? "mine" : "theirs"));
@@ -7148,7 +7877,7 @@ function renderMessagesPrint(){
   all.forEach(m=>{
     const tr = document.createElement("tr");
     const seenAt = Store.seenAt(m.id);
-    [WHO_NAME[m.by], msgTimeText(m.at), seenAt != null ? msgTimeText(seenAt) : "Not seen", m.text].forEach(v=>{
+    [WHO_NAME[m.by], msgExhibitTimeText(m.at), seenAt != null ? msgExhibitTimeText(seenAt) : "Not seen", m.text].forEach(v=>{
       const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -10194,6 +10923,16 @@ Store.init();
         const tbl = $("msgPrintSlot").querySelector("table");
         ck("the printed messages exhibit is a table with a Seen column and no 'Page' anywhere",
            !!tbl && /Seen/.test(tbl.querySelector("thead").textContent) && !/Page/.test($("msgPrintSlot").textContent));
+        /* panel 10 (critic A and critic C, and verified on the shot): every Sent
+           and Seen cell read "Today". On paper, weeks later, that is not a date.
+           The exhibit carries the full date, the way the custody exhibit does. */
+        ck("the printed messages exhibit dates every row absolutely — no 'Today'/'Yesterday'", (function(){
+           const body = tbl && tbl.querySelector("tbody");
+           if(!body) return false;
+           const txt = body.textContent;
+           const firstSent = body.querySelector("tr") && body.querySelector("tr").children[1].textContent;
+           return !/\bToday\b|\bYesterday\b/.test(txt) && /\b20\d\d\b/.test(firstSent);
+        })());
         const mast = document.createElement("div"); fillMasthead(mast, "messages", mastheadRangeText(Store.allMessages().map(m=>m.at)));
         ck("the printed messages exhibit has a masthead naming the record and both parents",
            /Messages/.test(mast.textContent) && new RegExp(WHO_NAME.dad).test(mast.textContent) && new RegExp(WHO_NAME.mom).test(mast.textContent));
@@ -10290,6 +11029,85 @@ Store.init();
       Store.messages = JSON.parse(beforeMsg); Store.messageSeen = JSON.parse(beforeSeen); State.me = beforeMe;
       State.tab = beforeTab;
       renderMessages();
+    }
+  })();
+
+  /* ---- BEHAVIOURS SEEN (Clark's 2026-09-22 brief) ---- */
+  (function(){
+    const keys = [];
+    BEHAVIOR_GROUPS.forEach(g=>g.tags.forEach(([k])=>keys.push(k)));
+    ck("behaviours: twenty groups, each with at least ten tags", BEHAVIOR_GROUPS.length === 20 && BEHAVIOR_GROUPS.every(g=>g.tags.length >= 10));
+    ck("behaviours: every tag key is unique across all groups", new Set(keys).size === keys.length && keys.length >= 400);
+    ck("behaviours: six positive groups, and they are the last six", BEHAVIOR_GROUPS.filter(g=>g.positive).length === 6 && BEHAVIOR_GROUPS.slice(14).every(g=>g.positive));
+    /* his design principle: the parent-facing words never name a condition */
+    const banned = /adhd|autis|diagnos|disorder|symptom|clinical/i;
+    const shown = BEHAVIOR_GROUPS.map(g=>g.name).concat(Object.values(BEHAVIOR_LABEL))
+      .concat(CONTEXT_FIELDS.map(f=>f[1])).concat(Object.keys(PATCH_WORD).map(k=>PATCH_WORD[k]));
+    ck("behaviours: no group name, tag, field name or patch word names a condition (his 'what happened?' principle)", !shown.some(t=>banned.test(t)));
+    ck("behaviours: labelOf resolves a behaviour key like any other key", labelOf("b.anx.separation_distress") === "Separation distress" && tagLabel("b.pflx.tries_new_food") === "Tries new food");
+
+    /* a real save/read through Store.putEntry, isolated like the event probe */
+    const before = JSON.stringify(Store.entries);
+    const realSaveLocal = Store.saveLocal, realPush = Store.push;
+    Store.saveLocal = function(){}; Store.push = function(){};
+    try {
+      const d = Object.assign({sev:2, trig:"transition", place:"home", resp:"held", note:"Cried when we left the park"}, blankContext());
+      d.tags = ["b.rou.difficulty_with_transitions","b.reg.frequent_crying","b.preg.accepts_comfort"];
+      d.recov = 8; d.outcome = "done"; d.sleepq = "rough"; d.people = " Grandma ";
+      const start = new Date(2026,8,3,16,30).getTime();
+      const en = Object.assign({id:"selfcheck_tags_e1", who:"dad", start:start, end:start+300000, dur:300, measured:true, timeSource:"timed",
+        sev:d.sev, trig:d.trig, place:d.place, resp:d.resp, note:d.note, created:Date.now(), revs:[]}, contextOf(d));
+      Store.putEntry("dad", en);
+      const back = Store.allEntries().find(e=>e.id==="selfcheck_tags_e1");
+      ck("behaviours: tags and context survive putEntry/allEntries (three tags, recovery 8, people trimmed)",
+         !!back && back.tags.length === 3 && back.tags[2] === "b.preg.accepts_comfort" && back.recov === 8 && back.outcome === "done" && back.people === "Grandma");
+      ck("behaviours: one entry may carry tags from several groups (transitions + regulation + positive)",
+         new Set(back.tags.map(k=>BEHAVIOR_GROUP_OF[k])).size === 3);
+      /* the row */
+      const row = entryRow(back);
+      const tagsEl = Array.from(row.children[1].children).find(n=>/etags/.test(n.className||""));
+      ck("behaviours: the Record row shows the tags, positive one tinted", !!tagsEl && tagsEl.children.length === 3 && /pos/.test(tagsEl.children[2].className));
+      ck("behaviours: the Record row's meta line carries the context (outcome, recovery, sleep, who was there)",
+         /Did what was asked/.test(row.textContent) && /back to normal in 8 min/.test(row.textContent) && /sleep: woke a lot/.test(row.textContent) && /with Grandma/.test(row.textContent));
+      const plain = entryRow(Object.assign({}, back, {tags:[], recov:null, outcome:null, sleepq:null, people:""}));
+      ck("behaviours: an entry with none shows no tag row and no context facts", !Array.from(plain.children[1].children).some(n=>/etags/.test(n.className||"")) && !/back to normal/.test(plain.textContent));
+      /* the picker flips in place */
+      const pd = Object.assign({}, blankContext());
+      const folded = behaviourPicker(pd, function(){});
+      ck("behaviours: the picker is FOLDED by default — one button, no group rows, no search", !Array.from(folded.children).some(n=>/bgroups|bsearch/.test(n.className||"")) && /Add behaviours seen/.test(folded.textContent));
+      pd.bpOpen = true;
+      const pk = behaviourPicker(pd, function(){});
+      const groupsBefore = Array.from(pk.children).find(n=>/bgroups/.test(n.className)).children.length;
+      ck("behaviours: the picker starts collapsed — twenty group rows, no chips", groupsBefore === 20 && !pk.textContent.match(/Separation distress/));
+      const hd = pk.querySelector ? pk.querySelector(".bgroup-hd") : Array.from(pk.children).find(n=>/bgroups/.test(n.className)).children[0].children[0];
+      hd.onclick();
+      const firstGroup = Array.from(pk.children).find(n=>/bgroups/.test(n.className)).children[0];
+      const chips = Array.from(firstGroup.children[1].children);
+      ck("behaviours: opening a group shows its tags (25 in Anxiety / Fear)", chips.length === 25);
+      chips[0].onclick(); chips[1].onclick(); chips[0].onclick();
+      ck("behaviours: tapping a chip picks it, tapping again unpicks it (one left, the second)", pd.tags.length === 1 && pd.tags[0] === "b.anx.clinging");
+      const pickedRow = Array.from(pk.children).find(n=>/bpicked/.test(n.className));
+      ck("behaviours: the picked row mirrors the pick", !pickedRow.hidden && pickedRow.children.length === 1 && pickedRow.children[0].textContent === "Clinging");
+      const search = Array.from(pk.children).find(n=>n.className === "bsearch");
+      search.value = "spinn"; search.oninput();
+      const hits = Array.from(Array.from(pk.children).find(n=>/bgroups/.test(n.className)).children[0].children).filter(n=>/chip/.test(n.className||""));
+      ck("behaviours: search cuts across groups (Spinning is in Repetitive AND Sensory Seeking, plus Spinning wheels and Watching spinning objects)", hits.length === 4);
+      ck("behaviours: a search hit names its group, so two 'Spinning' chips are told apart", /Repetitive/.test(hits[0].textContent) && /Sensory Seeking/.test(hits[2].textContent));
+      /* the edit diff */
+      const ed = Object.assign({sev:back.sev, trig:back.trig, place:back.place, resp:back.resp, note:back.note}, contextOf(back));
+      ck("behaviours: an unchanged edit produces an empty patch", Object.keys(entryPatch(ed, back)).length === 0);
+      ed.tags = ed.tags.slice(0,2); ed.hunger = "hungry";
+      const p = entryPatch(ed, back);
+      ck("behaviours: dropping a tag and adding hunger patches exactly those two fields", Object.keys(p).sort().join(",") === "hunger,tags" && p.tags.length === 2);
+      /* the Insights count: three tags, two from one group -> that group counted once */
+      const en2 = Object.assign({}, en, {id:"selfcheck_tags_e2", tags:["b.reg.frequent_crying","b.reg.yelling"]});
+      Store.putEntry("dad", en2);
+      const cnt = {};
+      Store.allEntries().filter(e=>/selfcheck_tags_/.test(e.id)).forEach(e=>{ const seen={}; e.tags.forEach(k=>{ const g=BEHAVIOR_GROUP_OF[k]; if(!seen[g]){ seen[g]=1; cnt[g]=(cnt[g]||0)+1; } }); });
+      ck("behaviours: Insights counts an entry once per group (two regulation tags on one entry = 1, not 2)", cnt.reg === 2 && cnt.rou === 1);
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush;
+      Store.entries = JSON.parse(before);
     }
   })();
 
