@@ -374,6 +374,7 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
 .retro-row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2)}
 .retro-lab{min-width:92px;text-align:right;color:var(--muted);font-size:12.5px}
 .retro-unit{color:var(--muted);font-size:12.5px}
+.durpick{justify-content:center;margin-top:2px}
 .whennote{margin-top:9px;font-size:11.5px;color:var(--muted);line-height:1.45}
 
 /* ---------- severity ----------
@@ -1533,6 +1534,8 @@ const RESPONSES = [
   ["quiet","Quiet space"],["distract","Distraction"],["gavein","Gave what was asked"],
   ["asleep","Fell asleep"]
 ];
+/* 5-minute steps to a quarter hour, then quarter hours to an hour */
+const DUR_PICKS = [5, 10, 15, 30, 45, 60];
 const SLEEP = [["rough","Woke a lot"],["ok","Some waking"],["good","Slept through"]];
 
 /* ============================================================
@@ -4555,10 +4558,27 @@ function draftForm(){
     const inp = document.createElement("input");
     inp.type = "number"; inp.min = "1"; inp.id = "estMin"; inp.value = d.estMin;
     inp.setAttribute("aria-label","Estimated length in minutes");
-    inp.oninput = ()=>{ d.estMin = Math.max(1, parseInt(inp.value||"1",10)); };
     w2.appendChild(inp);
     w2.appendChild(el("span","retro-unit","min"));
     wl.appendChild(w2);
+    /* Simon 2026-09-22: "a clickable button in 5 or 15 minute increments to
+       select how long it lasted". Same .chip as every other pick; the number
+       box stays for anything in between. One tap sets d.estMin AND the box. */
+    const qd = el("div","chips durpick");
+    qd.setAttribute("role","radiogroup"); qd.setAttribute("aria-label","How long it lasted");
+    DUR_PICKS.forEach(m=>{
+      const b = el("button","chip", m + " min");
+      b.type = "button"; b.setAttribute("data-min", String(m));
+      b.setAttribute("aria-pressed", String(d.estMin === m));
+      b.onclick = ()=>{
+        d.estMin = m; inp.value = m;
+        qd.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed", String(x === b)));
+      };
+      qd.appendChild(b);
+    });
+    inp.oninput = ()=>{ d.estMin = Math.max(1, parseInt(inp.value||"1",10));
+      qd.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed", String(+x.getAttribute("data-min") === d.estMin))); };
+    wl.appendChild(qd);
     tw.appendChild(wl);
     const note = el("div","whennote"); note.id = "whenNote"; note.textContent = whenNote(d.whenT, d.whenD);
     tw.appendChild(note);
@@ -4785,9 +4805,18 @@ function sevLegend(){
   });
   return lg;
 }
+function flashBox(){
+  const fl = el("div","flash");
+  fl.setAttribute("role","status");
+  const t = el("span","tick","✓"); t.setAttribute("aria-hidden","true");
+  fl.appendChild(t);
+  fl.appendChild(el("span",null,State.flash));
+  return fl;
+}
 function renderHistory(){
   const slot = $("histSlot");
   slot.innerHTML = "";
+  if(State.flash) slot.appendChild(flashBox());
   const all = Store.allEntries();
   if(!all.length){
     slot.appendChild(emptyBox("Nothing logged yet","The first entry you save will appear here, stamped with the time and who logged it.","record"));
@@ -5127,6 +5156,14 @@ function commitRevision(e, isVoid){
   next.revs = (raw.revs||[]).concat([ isVoid ? {at:Date.now(), by:State.me, void:true} : {at:Date.now(), by:State.me, patch:patch} ]);
   Store.putEntry(e.who, next);
   closeSheet();
+  /* Simon 2026-09-22: added behaviours to a record, hit Save, "didnt visually
+     give me any visual that it was logged". The sheet just closed. Same banner
+     as a fresh save, naming what changed, on the tab the sheet came from. */
+  State.flash = isVoid
+    ? "Removed · " + clockOf(e.start)
+    : "Updated · " + clockOf(e.start) + " · " + Object.keys(patch).map(k=>PATCH_WORD[k]||k).join(", ");
+  clearTimeout(flashT);
+  flashT = setTimeout(()=>{ State.flash = null; renderAll(); }, 6000);
   renderAll();
 }
 
@@ -6291,6 +6328,7 @@ function renderTrends(){
 function renderCalendar(){
   const slot = $("calSlot");
   slot.innerHTML = "";
+  if(State.flash) slot.appendChild(flashBox());
   if(!State.calMonth) State.calMonth = dayOf(Date.now()).slice(0,7);
   const ym = State.calMonth;
 
@@ -11105,6 +11143,34 @@ Store.init();
       const cnt = {};
       Store.allEntries().filter(e=>/selfcheck_tags_/.test(e.id)).forEach(e=>{ const seen={}; e.tags.forEach(k=>{ const g=BEHAVIOR_GROUP_OF[k]; if(!seen[g]){ seen[g]=1; cnt[g]=(cnt[g]||0)+1; } }); });
       ck("behaviours: Insights counts an entry once per group (two regulation tags on one entry = 1, not 2)", cnt.reg === 2 && cnt.rou === 1);
+      /* Simon 2026-09-22, two findings from a real test */
+      const keepDraft = State.draft, keepFlash = State.flash, keepEditing = State.editing;
+      State.draft = Object.assign({start:Date.now(), end:Date.now(), measured:false, estMin:5, whenT:"16:30", whenD:dayOf(Date.now()), note:"", stepOpen:true}, blankContext());
+      const df = draftForm();
+      const picks = Array.from(df.querySelectorAll(".durpick .chip"));
+      const minBox = Array.from(df.querySelectorAll("input")).find(n=>n.id === "estMin");
+      ck("duration: six quick-pick buttons, 5/10/15/30/45/60 min, sit beside the minutes box", picks.map(b=>b.getAttribute("data-min")).join(",") === "5,10,15,30,45,60");
+      ck("duration: the draft's 5 min starts pressed", picks[0].getAttribute("aria-pressed") === "true" && picks[2].getAttribute("aria-pressed") === "false");
+      picks[2].onclick();
+      ck("duration: tapping 15 min sets the draft AND the minutes box, and moves the press", State.draft.estMin === 15 && String(minBox.value) === "15" && picks[2].getAttribute("aria-pressed") === "true" && picks[0].getAttribute("aria-pressed") === "false");
+      minBox.value = "7"; minBox.oninput();
+      ck("duration: typing 7 in the box unpresses every button (7 is not a pick)", State.draft.estMin === 7 && !picks.some(b=>b.getAttribute("aria-pressed") === "true"));
+      State.draft = keepDraft;
+      /* a revision must confirm itself like a save does */
+      State.editing = Object.assign({id:back.id, sev:back.sev, trig:back.trig, place:back.place, resp:back.resp, note:back.note}, contextOf(back));
+      State.editing.tags = State.editing.tags.concat(["b.reg.yelling"]); State.editing.hunger = "hungry";
+      /* the real closeSheet/renderAll run here (top-level bindings cannot be swapped under the stub); closeSheet is a no-op with the scrim hidden */
+      commitRevision(back, false);
+      ck("revision: saving an edit that adds a behaviour and hunger shows a banner naming both", /^Updated · /.test(State.flash||"") && /behaviours seen/.test(State.flash) && /hunger/.test(State.flash));
+      const stored = Store.allEntries().find(e=>e.id === back.id);
+      ck("revision: the patch was written (tags now 4, hunger set)", !!stored && stored.tags.length === 4 && stored.hunger === "hungry");
+      const histSlot = $("histSlot"), calSlot = $("calSlot");
+      const hKeep = histSlot.innerHTML, cKeep = calSlot.innerHTML;
+      try {
+        renderHistory(); renderCalendar();
+        ck("revision: the banner is drawn on the Record tab and the Calendar tab, not only on Log", !!histSlot.querySelector(".flash") && !!calSlot.querySelector(".flash") && histSlot.querySelector(".flash").textContent.indexOf("Updated") >= 0);
+      } finally { histSlot.innerHTML = hKeep; calSlot.innerHTML = cKeep; }
+      clearTimeout(flashT); State.flash = keepFlash; State.editing = keepEditing;
     } finally {
       Store.saveLocal = realSaveLocal; Store.push = realPush;
       Store.entries = JSON.parse(before);
