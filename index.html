@@ -22,6 +22,7 @@
   --sev1-ink:#1A0C04; --sev2-ink:#1A0C04; --sev3-ink:#1A0C04; --sev4-ink:#FFFFFF; --sev5-ink:#FFFFFF;
   --good:#2F6F4F; --warn:#886918; --danger:#9B3025;
   --dad:#3A5FA8; --mom:#7A4090;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#4a3aa7;   /* categorical, validated (dataviz) */
   /* Tinted parent backgrounds (ADDITION, session 88) — solid hex, not
      color-mix, so a self-check can parse+contrast them at load. Text in
      --dad/--mom on these backgrounds clears 4.5:1 in every palette. */
@@ -82,6 +83,7 @@
     --sev1-ink:#FFFFFF; --sev2-ink:#FFFFFF; --sev3-ink:#FFFFFF; --sev4-ink:#1A0C04; --sev5-ink:#1A0C04;
     --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
     --dad:#7FA3E8; --mom:#C08BDA;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#9085e9;
     --dad-bg:#22346B; --mom-bg:#4A2663;
     --amber:#E3B23D; --amber-ink:#FCEFC8; --amber-bg:#4A3800;
     --evdot:#A66300;
@@ -101,6 +103,7 @@
   --sev1-ink:#FFFFFF; --sev2-ink:#FFFFFF; --sev3-ink:#FFFFFF; --sev4-ink:#1A0C04; --sev5-ink:#1A0C04;
   --good:#6FBF8F; --warn:#D6B14E; --danger:#E8776A;
   --dad:#7FA3E8; --mom:#C08BDA;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#9085e9;
   --dad-bg:#22346B; --mom-bg:#4A2663;
   --amber:#E3B23D; --amber-ink:#FCEFC8; --amber-bg:#4A3800;
   --evdot:#A66300;
@@ -653,6 +656,26 @@ textarea{border-radius:10px}
 /* a long value ("6m 25s, from 23 timed episodes") gets its own line under the
    track instead of crushing the track to a stub */
 .bar .val.long{grid-column:2 / -1;text-align:left;min-width:0}
+.calemail{margin-bottom:10px;padding:10px 12px}
+.calemail summary{cursor:pointer;font-size:13px}
+.calemail .emailsum{font-weight:400}
+.calemail .field{margin-top:8px}
+.calemail .field input{width:100%;box-sizing:border-box;margin:4px 0 6px}
+.maillog{margin-top:6px}
+/* Behaviours over time: small multiples (one row per series) */
+.seriesswitch{display:flex;gap:6px;margin:0 0 10px}
+.tmul{display:flex;flex-direction:column;gap:7px}
+.tmrow{display:grid;grid-template-columns:104px 1fr 38px;gap:4px 10px;align-items:end}
+.tmlab{font-size:12px;line-height:1.25;color:var(--ink-2);display:flex;gap:6px;align-items:center}
+.tmswatch{display:inline-block;width:9px;height:9px;border-radius:2px;flex:none}
+.tmcols{display:flex;gap:2px;align-items:flex-end;height:34px;border-bottom:1px solid var(--line)}
+.tmcol{flex:1 1 0;min-width:3px;height:100%;display:flex;align-items:flex-end}
+.tmfill{display:block;width:100%;border-radius:2px 2px 0 0;min-height:0}
+.tmval{font-size:12px;text-align:right;color:var(--ink-2)}
+.tmaxis{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);padding-left:114px}
+.tmtable{margin-top:10px;font-size:12px}
+.tmtable summary{cursor:pointer;color:var(--muted)}
+.tmtable table{margin-top:6px;font-size:11.5px}
 .takeaway{font-size:15px;font-weight:650;line-height:1.35;color:var(--ink);margin:2px 0 12px;letter-spacing:-.01em}
 .pcsub.pchow{margin:12px 0 0;font-size:11.5px}
 /* labels WRAP instead of truncating. The old fixed 78px track with an ellipsis
@@ -1991,6 +2014,71 @@ const BEHAVIOR_LABEL = {};
 const BEHAVIOR_GROUP_OF = {};
 BEHAVIOR_GROUPS.forEach(g=>g.tags.forEach(([k,v])=>{ BEHAVIOR_LABEL[k] = v; BEHAVIOR_GROUP_OF[k] = g.k; }));
 function behaviorGroup(gk){ return BEHAVIOR_GROUPS.find(g=>g.k === gk) || null; }
+
+/* ---- behaviour series helpers (Insights: over time + where the patterns point) ---- */
+/* The headings Clark named on 2026-09-22, each a FIXED list of his own groups or,
+   for the defiant-type heading his list has no group for, of specific tags. Not a
+   clinical instrument: a heading is a filing label for what a parent saw. */
+const BEHAVIOR_DOMAINS = [
+  {k:"anxiety", name:"Anxiety-type", groups:["anx"]},
+  {k:"adhd",    name:"ADHD-type", groups:["att","hyp","imp"]},
+  {k:"autism",  name:"Autism-type", groups:["soc","com","rep","rou","sen","see"]},
+  {k:"odd",     name:"Oppositional / defiant-type", tags:["b.reg.difficulty_tolerating_no","b.reg.anger_outburst","b.reg.destructive_behavior",
+                 "b.imp.difficulty_stopping_when_tol","b.imp.touches_things_despite_instr","b.grp.difficulty_following_teacher","b.grp.frequent_peer_conflict"]},
+  {k:"reg",     name:"Emotional regulation", groups:["reg"]}
+];
+function entryInDomain(e, d){
+  const tags = e.tags || [];
+  return tags.some(k=> ((d.groups||[]).indexOf(BEHAVIOR_GROUP_OF[k]) >= 0) || ((d.tags||[]).indexOf(k) >= 0));
+}
+/* ISO-week keys (Monday) up to 16 distinct weeks in the record, month keys past that */
+function behaviourPeriods(entries){
+  const wk = ms => { const d = new Date(ms); d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay()+6)%7)); return dayOf(d.getTime()); };
+  const weeks = new Set(entries.map(e=>wk(e.start))).size;
+  const unit = weeks > 16 ? "month" : "week";
+  const keyOf = unit === "week" ? (e=>wk(e.start)) : (e=>dayOf(e.start).slice(0,7));
+  const by = {};
+  entries.forEach(e=>{ const k = keyOf(e); (by[k] = by[k] || []).push(e); });
+  const keys = Object.keys(by).sort();
+  const label = k => unit === "week" ? new Date(k + "T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"})
+                                     : new Date(k + "-15T12:00:00").toLocaleDateString(undefined,{month:"short",year:"2-digit"});
+  return {unit, keys, by, label};
+}
+function topGroupSeries(entries, n){
+  const cnt = {};
+  entries.forEach(e=>{ const seen = {}; (e.tags||[]).forEach(k=>{ const g = BEHAVIOR_GROUP_OF[k]; if(g && !seen[g]){ seen[g] = 1; cnt[g] = (cnt[g]||0)+1; } }); });
+  return BEHAVIOR_GROUPS.filter(g=>cnt[g.k]).sort((a,b)=>cnt[b.k]-cnt[a.k]).slice(0, n)
+    .map(g=>({k:g.k, name:g.name, test:e=>(e.tags||[]).some(k=>BEHAVIOR_GROUP_OF[k] === g.k)}));
+}
+/* one row per series, one column per period, height = share. Every column carries
+   its value in an aria-label; the last column shows it in text. Zero draws no
+   column (a baseline tick only) — no fabricated sliver. */
+function smallMultiples(rows, periods){
+  const box = el("div","tmul");
+  rows.forEach(r=>{
+    const row = el("div","tmrow");
+    const lab = el("span","tmlab"); const swatch = el("i","tmswatch"); swatch.style.background = r.color; lab.appendChild(swatch); lab.appendChild(document.createTextNode(r.name));
+    row.appendChild(lab);
+    const cols = el("div","tmcols");
+    r.vals.forEach((v,i)=>{
+      const col = el("div","tmcol");
+      const f = el("i","tmfill"); f.style.height = v.pct + "%"; f.style.background = r.color;
+      col.appendChild(f);
+      col.setAttribute("aria-label", r.name + ", " + periods.label(v.pk) + ": " + v.pct + "% (" + v.hit + " of " + v.n + ")");
+      col.setAttribute("role","img");
+      cols.appendChild(col);
+    });
+    row.appendChild(cols);
+    const last = r.vals[r.vals.length-1];
+    row.appendChild(el("span","tmval mono", last.pct + "%"));
+    box.appendChild(row);
+  });
+  const ax = el("div","tmaxis");
+  ax.appendChild(el("span",null, periods.label(periods.keys[0])));
+  ax.appendChild(el("span",null, periods.label(periods.keys[periods.keys.length-1])));
+  box.appendChild(ax);
+  return box;
+}
 /* the OPTIONAL context his brief lists beside each behaviour — closed lists,
    one word each, so the Insights counts stay comparable between the two homes */
 const OUTCOMES = [["done","Did what was asked"],["settled","Settled"],["moved","Moved on"],["stopped","Stopped on its own"],["unresolved","Not resolved"]];
@@ -2411,6 +2499,9 @@ const Store = {
   handovers:{},          // <ym>__<who> -> {who, month, items:{id:note}}   each parent writes only their own
   swapRequests:{},       // who -> {who, items:{id:request}}
   swapResponses:{},      // who -> {who, items:{requestId:response}}
+  calSuggestions:{},     // who -> {who, items:{id:suggestion}}   (option C, Clark 09-22)
+  calSuggestResponses:{},// who -> {who, items:{suggestionId:response}}
+  profiles:{},           // who -> {who, items:{email:{v, at, revs}}}   (option B, Clark 09-22)
   scheduleAccepts:{},    // who -> {who, items:{id:{id,patternId,at,by}}}  append-only, one accept per who per tap
   messages:{},           // who -> {who, items:{id:{id,text,at,by}}}      append-only, no edit/delete API at all
   messageSeen:{},        // who -> {who, items:{msgId:{id,at,by}}}        first-seen only, never overwritten
@@ -2514,7 +2605,7 @@ const Store = {
         err  => { this.mode = "local"; this.loadLocal(); this.emit(); }
       );
       /* calendar collections — same mergeDoc/saveLocal/emit wiring as above */
-      ["calEvents","calNotes","custodyPatterns","custodyExceptions","swapRequests","swapResponses","handovers","scheduleAccepts"].forEach(kind=>{
+      ["calEvents","calNotes","custodyPatterns","custodyExceptions","swapRequests","swapResponses","handovers","scheduleAccepts","calSuggestions","calSuggestResponses","profiles"].forEach(kind=>{
         db.collection(kind).onSnapshot(
           snap => { snap.docs.forEach(d=>{ this.mergeDoc(this[kind], d.id, d.data()||{}); });
                     this.saveLocal(); this.emit(); },
@@ -2532,7 +2623,7 @@ const Store = {
      all read it, so a new collection cannot be saved yet survive a reset. */
   MIRROR_KEYS: ["entries","days","options","expenses","settlements","calEvents","calNotes",
                 "custodyPatterns","custodyExceptions","swapRequests","swapResponses","handovers",
-                "scheduleAccepts","messages","messageSeen"],
+                "scheduleAccepts","messages","messageSeen","calSuggestions","calSuggestResponses","profiles"],
   /* START FRESH — device mode ONLY. There the phone's own storage is the whole record,
      so emptying it is honest. In any shared mode the record is append-only on a server
      and both parents rely on it: a local wipe would only pretend, so this refuses and
@@ -3024,6 +3115,86 @@ const Store = {
     Object.values(this.scheduleAccepts).forEach(doc=>Object.values(doc.items||{}).forEach(a=>out.push(a)));
     return out;
   },
+  /* ---- SUGGESTED CORRECTIONS (Clark's ruling 2026-09-22, option C): either
+     parent may SUGGEST a correction to the other's event; it applies only once
+     the owner agrees, and the asking is recorded either way. Same append-only
+     two-doc shape as swaps: the suggester writes calSuggestions[<who>], the
+     answer goes in calSuggestResponses[<who>], and an accepted patch lands on
+     the owner's event as an ordinary revision carrying `suggestedBy`, written
+     by the OWNER — write isolation holds (each parent still writes only their
+     own documents). Nothing is ever deleted; a declined or withdrawn
+     suggestion stays in the record and on paper. ---- */
+  putSuggestion(who, ev, patch, message){
+    if(!ev || ev.who === who || !patch || !Object.keys(patch).length) return null;
+    const id = "sug_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    const doc = this.calSuggestions[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    doc.items[id] = {id, eventId:ev.id, eventWho:ev.who, eventDate:ev.date, patch:Object.assign({}, patch), message:(message||"").trim().slice(0,140), at:Date.now(), by:who};
+    this.calSuggestions[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("calSuggestions", who);
+    return id;
+  },
+  /* accept/decline: the event's OWNER only. withdraw: the suggester only. All only while unanswered. */
+  respondToSuggestion(sugId, who, decision, note){
+    const sug = this.suggestionsWithResponse().find(s=>s.id === sugId);
+    if(!sug || sug.response) return false;
+    if(decision === "withdraw" ? who !== sug.by : who !== sug.eventWho) return false;
+    if(["accept","decline","withdraw"].indexOf(decision) < 0) return false;
+    const doc = this.calSuggestResponses[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    doc.items[sugId] = {decision, note:(note||"").trim().slice(0,140), at:Date.now(), by:who};
+    this.calSuggestResponses[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("calSuggestResponses", who);
+    if(decision === "accept"){
+      const docId = sug.eventDate.slice(0,7) + "__" + sug.eventWho;
+      const evDoc = this.calEvents[docId];
+      const raw = evDoc && evDoc.items && evDoc.items[sug.eventId];
+      if(raw){
+        const next = Object.assign({}, raw);
+        next.revs = (raw.revs||[]).concat([{at:Date.now(), by:who, patch:Object.assign({}, sug.patch), suggestedBy:sug.by, suggestion:sug.id}]);
+        this.putEvent(who, next);
+      }
+    }
+    return true;
+  },
+  allSuggestions(){
+    const out = [];
+    Object.values(this.calSuggestions).forEach(doc=>Object.values(doc.items||{}).forEach(s=>out.push(s)));
+    return out.sort((a,b)=>a.at-b.at);
+  },
+  suggestionsWithResponse(){
+    const resp = {};
+    Object.values(this.calSuggestResponses).forEach(doc=>Object.entries(doc.items||{}).forEach(([id,r])=>{
+      /* two phones offline: the owner's accept/decline beats the suggester's withdraw, as with swaps */
+      if(!resp[id] || resp[id].decision === "withdraw") resp[id] = r; }));
+    return this.allSuggestions().map(s=>Object.assign({}, s, {response: resp[s.id]||null}));
+  },
+  suggestionsForEvent(eventId){ return this.suggestionsWithResponse().filter(s=>s.eventId === eventId); },
+  /* ---- PROFILES (Clark's ruling 2026-09-22, option B): each parent puts THEIR
+     OWN email on file, in their own document, so the server can email the
+     other parent when a swap is requested or answered. Append-only like a day
+     card: a changed address keeps the old one as a revision. Both parents can
+     read both addresses (co-parents, one family key); nothing else lives here. ---- */
+  setMyEmail(who, email){
+    const v = (email||"").trim().slice(0,200);
+    if(v && !EMAIL_RE.test(v)) return false;
+    const doc = this.profiles[who] || {who, items:{}};
+    doc.items = Object.assign({}, doc.items);
+    const prev = doc.items.email;
+    if(prev && prev.v === v) return true;
+    doc.items.email = {v, at:Date.now(), revs:(prev ? (prev.revs||[]).concat([{at:Date.now(), was:prev.v}]) : [])};
+    this.profiles[who] = doc;
+    this.saveLocal(); this.emit();
+    this.push("profiles", who);
+    return true;
+  },
+  emailOf(who){
+    const doc = this.profiles[who];
+    const v = doc && doc.items && doc.items.email && doc.items.email.v;
+    return v && EMAIL_RE.test(v) ? v : "";
+  },
   /* ---- MESSAGES (session 88 4b): a permanent, printed thread — no edit, no
      delete, ever. putMessage refuses an empty (or whitespace-only) body and
      caps length so one paste cannot balloon the record; markSeen is written
@@ -3429,6 +3600,7 @@ const State = {
   me:null,
   pickPending:null, // "dad"|"mom" while the gate confirm step is open, cleared on Confirm/Back
   tab:"log",
+  insightsSeries:"domains",   /* Behaviours over time: "domains" | "groups" */
   draft:null,      // {start, end, sev, trig, place, resp, note, measured}
   flash:null,      // transient "what was just saved" confirmation
   tick:null,
@@ -3453,6 +3625,9 @@ const State = {
   calDay:null,      // "YYYY-MM-DD" whose day sheet is open, or null
   calAdding:null,   // draft object while the "add event" form is open
   calEditingEvent:null, // draft object while an existing event's form is open
+  calEmailOpen:false,   // the email-alerts box stays open across the redraw a Save causes
+  calSuggesting:null,   // draft while suggesting a correction to the OTHER parent's event (option C)
+  calSugDeclineOpen:null,
   calSwapOpen:null,  // date whose "request a swap" mini-form is expanded
   calSwapDraft:null, // {wantsCustody,message,missing} while that mini-form is open
   calNoteOpen:{},    // eventId -> the private-note box was opened this session (sheet redraws must not close it)
@@ -5382,6 +5557,83 @@ function renderPatterns(){
         top.map(([k,v])=>tagLabel(k) + " (" + v + ")").join(", ") + "."));
     });
 
+/* ---------------- behaviours over time (Clark's reply 2026-09-22 19:34) ----------------
+   "one chart that shows percentages of behavior over time". One panel, one row per
+   series, one small column per period: the share of that period's tagged entries
+   that named something in the series. Rows, not a 100% stack: an entry may sit in
+   several series at once, so the shares are not parts of one whole and must not be
+   drawn as if they were. Periods are ISO weeks up to 16 weeks of record, months
+   after that. Direct row labels, values in text, a table behind <details>. */
+  const seriesMode = State.insightsSeries === "groups" ? "groups" : "domains";
+  add("Behaviours over time",
+    "For each period, the share of entries with behaviour tags that named something in that row. One entry can count in several rows, so rows do not add to 100%. Weeks while the record is short, months once it passes 16 weeks. Periods with no tagged entry are left blank, not drawn as zero.",
+    tagged.length, 10, "entries with behaviours",
+    c=>{
+      const periods = behaviourPeriods(tagged);
+      const sw = el("div","seriesswitch");
+      [["domains","By category"],["groups","By group"]].forEach(([k,lab])=>{
+        const b = el("button","chip" + (seriesMode === k ? " on" : ""), lab); b.type = "button";
+        b.setAttribute("aria-pressed", seriesMode === k ? "true" : "false");
+        b.onclick = ()=>{ State.insightsSeries = k; renderPatterns(); };
+        sw.appendChild(b);
+      });
+      c.appendChild(sw);
+      if(periods.keys.length < 2){
+        c.appendChild(el("p","lockmsg","All " + tagged.length + " tagged entries fall in one " + periods.unit + ". A second " + periods.unit + " is needed before anything changes over time."));
+        c.takeaway = "One " + periods.unit + " so far — nothing to compare yet.";
+        return;
+      }
+      const series = seriesMode === "groups" ? topGroupSeries(tagged, 6) : BEHAVIOR_DOMAINS.map(d=>({k:d.k, name:d.name, test:e=>entryInDomain(e, d)}));
+      const rows = series.map((s,i)=>{
+        const vals = periods.keys.map(pk=>{
+          const bucket = periods.by[pk];
+          return {pk, n:bucket.length, hit:bucket.filter(s.test).length, pct:Math.round(100*bucket.filter(s.test).length/bucket.length)};
+        });
+        return {k:s.k, name:s.name, color:"var(--s" + ((i % 6) + 1) + ")", vals};
+      });
+      c.appendChild(smallMultiples(rows, periods));
+      /* the sentence: the row whose latest period rose most against its first */
+      const moved = rows.map(r=>({name:r.name, d:r.vals[r.vals.length-1].pct - r.vals[0].pct, last:r.vals[r.vals.length-1].pct})).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d))[0];
+      c.takeaway = periods.keys.length + " " + periods.unit + "s of tagged entries. " +
+        (moved && Math.abs(moved.d) >= 15 ? moved.name + " " + (moved.d > 0 ? "rose" : "fell") + " " + Math.abs(moved.d) + " points from the first " + periods.unit + " to the latest." : "No row has moved more than 15 points from the first " + periods.unit + " to the latest.");
+      const tbl = el("details","tmtable");
+      tbl.appendChild(el("summary",null,"As a table"));
+      const t = document.createElement("table"); t.className = "exhibit-tbl";
+      const th = document.createElement("tr"); [""].concat(periods.keys.map(k=>periods.label(k))).forEach(h=>{ const x = document.createElement("th"); x.textContent = h; th.appendChild(x); });
+      t.appendChild(th);
+      rows.forEach(r=>{ const tr = document.createElement("tr"); const n = document.createElement("td"); n.textContent = r.name; tr.appendChild(n);
+        r.vals.forEach(v=>{ const td = document.createElement("td"); td.textContent = v.pct + "% (" + v.hit + "/" + v.n + ")"; tr.appendChild(td); }); t.appendChild(tr); });
+      tbl.appendChild(t); c.appendChild(tbl);
+    });
+
+  /* ---------------- where the patterns point ----------------
+     Clark: "which category those behaviors could be linked to, anxiety, ADHD,
+     Autism, oppositional defiance disorder, etc. — doesn't have to diagnose
+     anything but simply indicate which patterns are showing up the most that
+     track in certain categories". Each heading is a fixed list of his own groups
+     (BEHAVIOR_DOMAINS); an entry counts under a heading once. The headings
+     overlap by design and NONE of this is a screen: the caveat is in the card. */
+  add("Where the patterns point",
+    "Entries with behaviour tags, counted once under each heading whose groups they touched. The headings are the categories Clark asked for, each a fixed list of his own groups (open the list below). One entry can sit under several. A tall bar says many entries named behaviours that get filed under that heading — it is not a screen, a score or a diagnosis, and Sleep, Eating and the positive groups are under no heading at all.",
+    tagged.length, 10, "entries with behaviours",
+    c=>{
+      const rows = BEHAVIOR_DOMAINS.map(d=>{ const hit = tagged.filter(e=>entryInDomain(e, d)).length;
+        return {k:d.name, v:hit, label:hit + " of " + tagged.length + " (" + Math.round(100*hit/tagged.length) + "%)"}; }).sort((a,b)=>b.v-a.v);
+      c.appendChild(barChart(rows));
+      c.takeaway = rows[0].v && rows[0].v > (rows[1]||{v:0}).v
+        ? "Most entries name behaviours filed under " + rows[0].k + " (" + rows[0].v + " of " + tagged.length + ")."
+        : "No heading stands out from the rest.";
+      const dt = el("details","tmtable");
+      dt.appendChild(el("summary",null,"Which groups sit under each heading"));
+      BEHAVIOR_DOMAINS.forEach(d=>{
+        const names = (d.groups||[]).map(g=>(behaviorGroup(g)||{}).name).filter(Boolean)
+          .concat((d.tags||[]).map(k=>tagLabel(k)));
+        const p = el("p","pcsub"); p.appendChild(el("b",null,d.name + ": ")); p.appendChild(document.createTextNode(names.join(", ") + "."));
+        dt.appendChild(p);
+      });
+      c.appendChild(dt);
+    });
+
   /* ---------------- length by what ended it ----------------
      Retitled from "What ends it fastest". That title asked the card to rank
      effectiveness, which this data cannot do at any sample size: the response
@@ -6433,6 +6685,7 @@ function renderCalendar(){
   calDrawPaintBar();
 
   if(!State.paint && !liftCustody) slot.appendChild(calCustodyPanel());
+  slot.appendChild(calEmailBox());   /* option B: the alerts box, below the schedule, never above the month */
 
   if(State.calDay) calDrawDaySheet();
 }
@@ -6465,6 +6718,23 @@ function pendingSwapRequests(){
    live. Never colour-only: the "?" glyph and the words both carry it. */
 function calAmberBanner(){
   const pend = pendingSwapRequests();
+  const sugs = pendingSuggestions();
+  if(!pend.length && sugs.length){
+    /* a suggested correction waits exactly like a swap: same banner, same glyph, tap opens the day */
+    const s = sugs[0];
+    const banner = el("div","calbanner amber"); banner.id = "calAmberBanner"; banner.setAttribute("role","status");
+    const mark = el("span","calamber","?"); mark.setAttribute("aria-hidden","true"); banner.appendChild(mark);
+    if(s.by === State.me){
+      banner.appendChild(el("span",null,"Waiting on " + WHO_NAME[s.eventWho] + " to answer your suggested correction for " + friendlyDay(s.eventDate) + "."));
+    } else {
+      const b = el("button","linkbtn bannerask");
+      b.appendChild(el("span",null, WHO_NAME[s.by] + " suggests a correction to your event on " + friendlyDay(s.eventDate) + " — "));
+      b.appendChild(el("span","askdo","Answer"));
+      b.onclick = ()=>{ calOpenDay(s.eventDate); };
+      banner.appendChild(b);
+    }
+    return banner;
+  }
   if(!pend.length) return null;
   const r = pend[0];
   const banner = el("div","calbanner amber");
@@ -6488,7 +6758,7 @@ function calDayCell(dstr, isToday, evsByDay, episByDay){
   const evs = evsByDay ? (evsByDay[dstr] || []) : Store.eventsForDay(dstr).filter(e=>!e.voided);
   const epis = episByDay ? (episByDay[dstr] || []) : episodesForDay(dstr);
   const cst = custodyForDate(dstr);
-  const pendingSwap = pendingSwapForDay(dstr);
+  const pendingSwap = pendingSwapForDay(dstr) || pendingSuggestionForDay(dstr);
   const btn = el("button","dcell" + (isToday ? " today" : "") + (pendingSwap ? " amber" : ""));
   btn.type = "button";
 
@@ -7171,6 +7441,7 @@ function calOpenDay(dstr){
   State.calDay = dstr;
   State.calAdding = null;
   State.calEditingEvent = null;
+  State.calSuggesting = null; State.calSugDeclineOpen = null;
   State.calSwapOpen = null;
   State.calSwapDraft = null;
   State.calExceptionDraft = null;
@@ -7190,6 +7461,7 @@ function calCloseDay(){
   sc.classList.remove("opening");
   sc.classList.add("closing");
   State.calDay = null; State.calAdding = null; State.calEditingEvent = null; State.calSwapOpen = null; State.calSwapDraft = null;
+  State.calSuggesting = null; State.calSugDeclineOpen = null;
   State.calExceptionDraft = null;
   $("app").removeAttribute("inert");
   clearTimeout(calSheetT);
@@ -7225,6 +7497,11 @@ function calDrawDaySheet(){
     const ev = Store.allEvents().find(e=>e.id === State.calEditingEvent.id);
     if(ev){ s.appendChild(calEventForm(ev)); return; }
     State.calEditingEvent = null;
+  }
+  if(State.calSuggesting){
+    const ev = Store.allEvents().find(e=>e.id === State.calSuggesting.id);
+    if(ev && ev.who !== State.me){ s.appendChild(calEventForm(ev, "suggest")); return; }
+    State.calSuggesting = null;
   }
 
   const evWrap = el("div","field");
@@ -7276,11 +7553,176 @@ function calEventCard(e){
        plain body text, so a parent could miss that this entry was not theirs to
        edit at all. .locked-other gives it its own sunk background the way a
        disabled control reads, on top of the existing lock glyph and wording. */
-    const lk = el("p","sub locked-other","🔒 " + WHO_NAME[e.who] + "’s entry — only " + WHO_NAME[e.who] + " can change it.");
+    const lk = el("p","sub locked-other","🔒 " + WHO_NAME[e.who] + "’s entry — only " + WHO_NAME[e.who] + " can change it. You can suggest a correction.");
     card.appendChild(lk);
+    if(!e.voided && !Store.suggestionsForEvent(e.id).some(s=>!s.response)){
+      const sb = el("button","linkbtn","Suggest a correction"); sb.type = "button";
+      sb.onclick = ()=>{ State.calSuggesting = {id:e.id}; calDrawDaySheet(); };
+      card.appendChild(sb);
+    }
   }
+  Store.suggestionsForEvent(e.id).forEach(s=>card.appendChild(calSuggestionRow(s)));
   card.appendChild(calNoteBox(e));
   return card;
+}
+
+/* ---------- swap notices by email (option B) ----------
+   One compact box under the Calendar banner. Its summary line is a TRUE
+   statement of the configuration, never a delivery claim: the phone cannot
+   know an email arrived. Delivery attempts are the server's log
+   (api.php?op=maillog), fetched only when the box is opened. On a copy that
+   is not on the family's own hosting (GitHub Pages, device mode) it says so. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function emailNoticeStatus(me){
+  const hosted = !!Store.hosted;
+  const mine = Store.emailOf(me), theirs = Store.emailOf(otherOf(me));
+  if(!hosted) return {hosted, mine, theirs, line:"Email alerts start once the app is on the family's own hosting. Until then a request waits here until " + WHO_NAME[otherOf(me)] + " opens the app."};
+  const parts = [];
+  parts.push(theirs ? WHO_NAME[otherOf(me)] + " is emailed when you ask or answer." : WHO_NAME[otherOf(me)] + " has no email on file, so nothing reaches " + (otherOf(me) === "mom" ? "her" : "him") + " outside the app.");
+  parts.push(mine ? "You are emailed at " + mine + "." : "Add your email to be told when " + WHO_NAME[otherOf(me)] + " asks or answers.");
+  return {hosted, mine, theirs, line:parts.join(" ")};
+}
+function calEmailBox(){
+  const me = State.me;
+  const st = emailNoticeStatus(me);
+  const box = el("details","panel calemail");
+  box.id = "calEmailBox";
+  if(State.calEmailOpen) box.open = true;
+  const sum = el("summary");
+  sum.appendChild(el("b",null,"Email alerts for swap requests"));
+  sum.appendChild(el("span","sub emailsum", " " + (st.hosted ? (st.mine && st.theirs ? "on for both parents" : st.mine || st.theirs ? "on for one parent" : "off — no addresses yet") : "not yet")));
+  box.appendChild(sum);
+  box.appendChild(el("p","sub", st.line));
+  if(st.hosted){
+    const f = el("div","field");
+    f.appendChild(el("div","qlab","Your email — " + WHO_NAME[me]));
+    const inp = document.createElement("input");
+    inp.type = "email"; inp.value = st.mine; inp.maxLength = 200; inp.placeholder = "you@example.com";
+    inp.setAttribute("aria-label","Your email address for swap alerts");
+    inp.oninput = ()=>{ err.hidden = true; };
+    f.appendChild(inp);
+    const err = el("div","err"); err.hidden = true; err.setAttribute("role","alert");
+    const save = el("button","linkbtn", st.mine ? "Change" : "Save"); save.type = "button";
+    save.onclick = ()=>{
+      const ok = Store.setMyEmail(me, inp.value);
+      if(!ok){ err.textContent = "That does not look like an email address."; err.hidden = false; return; }
+      State.calEmailOpen = true; renderCalendar();
+    };
+    f.appendChild(save); f.appendChild(err);
+    if(st.mine){
+      const clear = el("button","linkbtn danger-link","Remove my email"); clear.type = "button";
+      clear.onclick = ()=>{ Store.setMyEmail(me, ""); State.calEmailOpen = true; renderCalendar(); };
+      f.appendChild(clear);
+    }
+    box.appendChild(f);
+    box.appendChild(el("p","sub", WHO_NAME[otherOf(me)] + ": " + (st.theirs ? st.theirs : "no email on file. Only " + WHO_NAME[otherOf(me)] + " can add it, on " + (otherOf(me) === "mom" ? "her" : "his") + " own phone.")));
+    const log = el("div","maillog"); log.appendChild(el("p","sub","Recent alerts the server tried to send appear here when this box is open."));
+    box.appendChild(log);
+    box.ontoggle = ()=>{
+      State.calEmailOpen = box.open;
+      if(box.open && Store.hosted && typeof fetch === "function") loadMailLog(log);
+    };
+  }
+  return box;
+}
+function mailLogRowText(r){
+  const when = new Date(r.at*1000).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+  const why = r.ok ? "sent" : (r.why === "no_address" ? "not sent — no email on file for " + WHO_NAME[r.to_who] : "not sent (" + r.why + ")");
+  return when + " · to " + WHO_NAME[r.to_who] + " · " + r.subject.replace(/^Two Homes: /, "") + " · " + why;
+}
+function loadMailLog(slot){
+  fetch(Store.hosted.url + "?op=maillog", {headers:Store.hosted.headers(), cache:"no-store"})
+    .then(r=>r.ok ? r.json() : null)
+    .then(j=>{
+      slot.innerHTML = "";
+      if(!j){ slot.appendChild(el("p","sub","Could not read the server's alert log just now.")); return; }
+      if(!j.rows.length){ slot.appendChild(el("p","sub","No alerts have been sent yet.")); return; }
+      j.rows.forEach(r=>slot.appendChild(el("p","sub mono", mailLogRowText(r))));
+    }).catch(()=>{ slot.innerHTML = ""; slot.appendChild(el("p","sub","Could not read the server's alert log just now.")); });
+}
+
+/* ---------- suggested corrections (option C) ---------- */
+const SUG_FIELD = {title:"Title", date:"Date", time:"Time", type:"Type", location:"Location", note:"Note"};
+function sugValueText(k, v){
+  if(v == null || v === "") return "(blank)";
+  if(k === "date") return friendlyExhibitDate(v);
+  if(k === "time") return clockOfTimeStr(v);
+  if(k === "type") return calTypeLabel(v);
+  return "“" + v + "”";
+}
+/* ONE sentence for what a suggestion changes: the card, the banner and the print
+   exhibit all read it, so they cannot disagree. */
+function suggestionChangesText(s){
+  return Object.keys(s.patch).map(k=>(SUG_FIELD[k]||k) + " → " + sugValueText(k, s.patch[k])).join(" · ");
+}
+function suggestionOutcomeText(s){
+  if(!s.response) return "Awaiting " + WHO_NAME[s.eventWho];
+  if(s.response.decision === "withdraw") return "Withdrawn by " + WHO_NAME[s.by] + " before an answer";
+  const word = s.response.decision === "accept" ? "Accepted" : "Declined";
+  const note = (s.response.note||"").trim();
+  return note ? word + ". Reason given: “" + note + "”" : word;
+}
+function pendingSuggestions(){
+  return Store.suggestionsWithResponse().filter(s=>!s.response).sort((a,b)=> a.eventDate < b.eventDate ? -1 : a.eventDate > b.eventDate ? 1 : 0);
+}
+function pendingSuggestionForDay(dstr){ return pendingSuggestions().find(s=>s.eventDate === dstr) || null; }
+function calSuggestionRow(s){
+  const row = el("div","panel calswap calsug" + (s.response && s.response.decision === "withdraw" ? " voided" : ""));
+  const top = el("div","etop");
+  top.appendChild(el("span","badge "+s.by, WHO_NAME[s.by]));
+  top.appendChild(el("span","etime", new Date(s.at).toLocaleDateString(undefined,{month:"short",day:"numeric"}) + " " + clockOf(s.at)));
+  row.appendChild(top);
+  row.appendChild(el("p","sub", WHO_NAME[s.by] + " suggests: " + suggestionChangesText(s)));
+  if(s.message) row.appendChild(el("p","sub", "“" + s.message + "”"));
+  if(!s.response){
+    if(s.eventWho === State.me){
+      const act = el("div","confirmact");
+      const yes = el("button","cyes affirm","Accept"); yes.type = "button";
+      yes.onclick = ()=>{ Store.respondToSuggestion(s.id, State.me, "accept"); calDrawDaySheet(); };
+      act.appendChild(yes);
+      const no = el("button","cno", State.calSugDeclineOpen === s.id ? "Decline this suggestion" : "Decline"); no.type = "button";
+      row.appendChild(act);
+      if(State.calSugDeclineOpen !== s.id){
+        no.onclick = ()=>{ State.calSugDeclineOpen = s.id; calDrawDaySheet(); };
+        act.appendChild(no);
+      } else {
+        const box = el("div","adder declinebox");
+        const inp = document.createElement("input");
+        inp.type = "text"; inp.maxLength = 140; inp.placeholder = "Reason, optional. Both parents see it";
+        inp.setAttribute("aria-label","Reason for declining, optional. Both parents will see it and it prints in the record");
+        no.onclick = ()=>{ Store.respondToSuggestion(s.id, State.me, "decline", inp.value.trim()); State.calSugDeclineOpen = null; calDrawDaySheet(); };
+        const back = el("button","linkbtn","Cancel"); back.type = "button";
+        back.onclick = ()=>{ State.calSugDeclineOpen = null; calDrawDaySheet(); };
+        box.appendChild(inp); box.appendChild(no); box.appendChild(back);
+        row.appendChild(box);
+      }
+      row.appendChild(el("p","sub","Accepting applies the change to your event as a revision. The original stays in the record."));
+    } else {
+      row.appendChild(el("p","sub","Waiting on " + WHO_NAME[s.eventWho] + ". Nothing changes until they agree."));
+      const wd = el("button","linkbtn danger-link","Withdraw suggestion"); wd.type = "button";
+      wd.onclick = ()=>{ Store.respondToSuggestion(s.id, State.me, "withdraw"); calDrawDaySheet(); };
+      row.appendChild(wd);
+    }
+  } else {
+    row.appendChild(el("p","sub" + (s.response.decision === "withdraw" ? " swapgone" : ""), suggestionOutcomeText(s) + " · " +
+      new Date(s.response.at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})));
+  }
+  return row;
+}
+function calCommitSuggestion(base){
+  if(base.who === State.me) return;
+  const d = State.calSuggesting;
+  const patch = {};
+  if(d.title !== base.title) patch.title = d.title.trim();
+  if((d.time||null) !== (base.time||null)) patch.time = d.time||null;
+  if(d.type !== base.type) patch.type = d.type;
+  if((d.location||"") !== (base.location||"")) patch.location = (d.location||"").trim();
+  if((d.note||"") !== (base.note||"")) patch.note = (d.note||"").trim();
+  if(d.date !== base.date) patch.date = d.date;
+  if(!Object.keys(patch).length){ State.calSuggesting = null; calDrawDaySheet(); return; }
+  Store.putSuggestion(State.me, base, patch, d.message);
+  State.calSuggesting = null;
+  calDrawDaySheet();
 }
 
 /* ---------- PRIVACY LEGIBILITY ----------
@@ -7493,7 +7935,7 @@ function calSwapRow(r){
         if(dbox) row.appendChild(dbox);
       }
     } else {
-      row.appendChild(el("p","sub","Waiting on " + WHO_NAME[otherOf(r.by)] + "."));
+      row.appendChild(el("p","sub","Waiting on " + WHO_NAME[otherOf(r.by)] + "." + (Store.hosted && Store.emailOf(otherOf(r.by)) ? " An email went to the address " + WHO_NAME[otherOf(r.by)] + " has on file." : "")));
       row.appendChild(swapWithdrawControl(r));
     }
   } else if(r.response.decision === "withdraw"){
@@ -7666,7 +8108,7 @@ function renderCustodyPrint(fromStr, toStr){
         e.location || "—",
         e.note || "—",
         WHO_NAME[e.who],
-        e.voided ? "Withdrawn" : (e.edited ? "Edited" : "None")
+        e.voided ? "Withdrawn" : (e.edited ? "Edited" + ((e.revs||[]).some(r=>r.suggestedBy) ? " (on " + WHO_NAME[(e.revs||[]).filter(r=>r.suggestedBy).pop().suggestedBy] + "’s suggestion)" : "") : "None")
       ].forEach(v=>{ const td=document.createElement("td"); td.textContent=v; tr.appendChild(td); });
       tbody.appendChild(tr);
     });
@@ -7674,6 +8116,33 @@ function renderCustodyPrint(fromStr, toStr){
     evSec.appendChild(tbl);
   }
   slot.appendChild(evSec);
+
+  /* ---- suggested corrections in range (option C): every one, accepted,
+     declined, withdrawn or still unanswered — the asking is recorded either way. ---- */
+  const sugSec = el("div","exhibit-sec");
+  sugSec.appendChild(el("h3",null,"Suggested corrections"));
+  const sugs = Store.suggestionsWithResponse().filter(s=>s.eventDate >= fromStr && s.eventDate <= toStr);
+  if(!sugs.length){
+    sugSec.appendChild(emptyBox("No suggested corrections in this range",
+      "Neither parent suggested a change to the other's event between " + friendlyExhibitDate(fromStr) + " and " + friendlyExhibitDate(toStr) + ".", "calendar"));
+  } else {
+    const tbl = document.createElement("table"); tbl.className = "exhibit-tbl";
+    const thead = document.createElement("thead"); const hr = document.createElement("tr");
+    ["Event date","Suggested by","Change suggested","Message","Outcome","Suggested at","Answered at"].forEach(t=>{ const th=document.createElement("th"); th.textContent=t; hr.appendChild(th); });
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const tbody = document.createElement("tbody");
+    sugs.sort((a,b)=>a.eventDate.localeCompare(b.eventDate)).forEach(s=>{
+      const tr = document.createElement("tr");
+      if(s.response && s.response.decision === "withdraw") tr.className = "exhibit-voided";
+      [friendlyExhibitDate(s.eventDate), WHO_NAME[s.by], suggestionChangesText(s), s.message || "—", suggestionOutcomeText(s),
+       new Date(s.at).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}),
+       s.response ? new Date(s.response.at).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}) : "—"
+      ].forEach(v=>{ const td=document.createElement("td"); td.textContent=v; tr.appendChild(td); });
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody); sugSec.appendChild(tbl);
+  }
+  slot.appendChild(sugSec);
 
   slot.appendChild(el("p","sub exhibit-foot",
     "This printed record is built from the shared record only. Each parent's private notes on calendar " +
@@ -7684,15 +8153,18 @@ function renderCustodyPrint(fromStr, toStr){
 
 function calBlankDraft(dstr){ return {date:dstr, time:"", type:null, title:"", location:"", note:""}; }
 
-function calEventForm(existing){
+function calEventForm(existing, mode){
+  const isSuggest = mode === "suggest";
   const isEdit = !!existing;
-  const d = isEdit ? State.calEditingEvent : State.calAdding;
+  const d = isSuggest ? State.calSuggesting : isEdit ? State.calEditingEvent : State.calAdding;
   if(isEdit && d.title === undefined){
     Object.assign(d, {date:existing.date, time:existing.time||"", type:existing.type,
       title:existing.title, location:existing.location||"", note:existing.note||""});
   }
   const s = el("div");
-  s.appendChild(el("p","sub", isEdit
+  s.appendChild(el("p","sub", isSuggest
+    ? "This is " + WHO_NAME[existing.who] + "’s event. Change what is wrong below; your suggestion goes to " + WHO_NAME[existing.who] + " and applies only once they agree. The asking is recorded either way."
+    : isEdit
     ? "Changes are saved as a revision. The original stays in the record."
     : "Either parent can add an event. Both parents see it, except a private note you add separately."));
 
@@ -7749,23 +8221,33 @@ function calEventForm(existing){
 
   const err = el("div","err"); err.hidden = true; err.setAttribute("role","alert");
 
-  const save = el("button","bigbtn", isEdit ? "Save revision" : "Save event");
+  if(isSuggest){
+    const mf = el("div","field");
+    mf.appendChild(el("div","qlab","Message to " + WHO_NAME[existing.who]));
+    const mi = document.createElement("input");
+    mi.type = "text"; mi.maxLength = 140; mi.placeholder = "optional"; mi.value = d.message||"";
+    mi.setAttribute("aria-label","Message with this suggestion, optional");
+    mi.oninput = ()=>{ d.message = mi.value; };
+    mf.appendChild(mi);
+    s.appendChild(mf);
+  }
+  const save = el("button","bigbtn", isSuggest ? "Send suggestion to " + WHO_NAME[existing.who] : isEdit ? "Save revision" : "Save event");
   save.onclick = ()=>{
     if(!d.title || !d.title.trim() || !d.date || !d.type){
       err.textContent = "A title, a date and a type are needed to save.";
       err.hidden = false;
       return;
     }
-    if(isEdit) calCommitEventRevision(existing); else calCommitNewEvent();
+    if(isSuggest) calCommitSuggestion(existing); else if(isEdit) calCommitEventRevision(existing); else calCommitNewEvent();
   };
   s.appendChild(save);
   s.appendChild(err);
 
   const cancel = el("button","linkbtn","Cancel");
-  cancel.onclick = ()=>{ State.calAdding = null; State.calEditingEvent = null; calDrawDaySheet(); };
+  cancel.onclick = ()=>{ State.calAdding = null; State.calEditingEvent = null; State.calSuggesting = null; calDrawDaySheet(); };
   s.appendChild(cancel);
 
-  if(isEdit && existing.who === State.me){
+  if(isEdit && !isSuggest && existing.who === State.me){
     const delWrap = el("div","delwrap");
     if(existing.voided){
       delWrap.appendChild(el("p","sub","This event was already withdrawn."));
@@ -7992,7 +8474,7 @@ function updateTabCounts(){
   /* amber tab badge (session 88): a "?" beside Calendar while a change request
      is unanswered — never colour-only, the glyph and the tab's own aria-label
      both carry it, same rule as the month-grid mark. */
-  const pend = pendingSwapRequests();
+  const pend = pendingSwapRequests().concat(pendingSuggestions());
   const dot = $("ambTabDot");
   if(dot) dot.hidden = pend.length === 0;
   const tCal = $("t-calendar");
@@ -9009,7 +9491,7 @@ Store.init();
       const theirs = calEventCard({id:"lk1", who:"mom", date:"2026-09-20", type:"school", title:"Field trip", location:"", note:"", created:0, revs:[]});
       const lk = theirs.querySelector(".locked-other");
       ck("an event the other parent wrote gets the muted .locked-other treatment, naming them by name",
-         !!lk && lk.textContent === "🔒 Mom’s entry — only Mom can change it.");
+         !!lk && lk.textContent === "🔒 Mom’s entry — only Mom can change it. You can suggest a correction.");
       const mine = calEventCard({id:"lk2", who:"dad", date:"2026-09-20", type:"school", title:"Field trip", location:"", note:"", created:0, revs:[]});
       ck("the viewer's OWN event never carries .locked-other (and still offers Edit)",
          !mine.querySelector(".locked-other") &&
@@ -10920,6 +11402,180 @@ Store.init();
       Store.messages = JSON.parse(beforeMsg); Store.messageSeen = JSON.parse(beforeSeen);
     }
     ck("selfcheck messages: left no probe message behind", !Store.allMessages().some(m=>/selfcheck message/.test(m.text)));
+  })();
+
+  /* ---- Behaviours over time + Where the patterns point (Clark's reply 09-22) ---- */
+  (function(){
+    ck("domains: every group and tag a heading names exists in Clark's list (a typo would silently drop it from the count)",
+       BEHAVIOR_DOMAINS.every(d=> (d.groups||[]).every(g=>!!behaviorGroup(g)) && (d.tags||[]).every(k=>!!BEHAVIOR_GROUP_OF[k])));
+    ck("domains: no heading NAMES a diagnosis as a fact — every name ends in '-type' or is a plain word, and no positive/sleep/eating group sits under any heading",
+       BEHAVIOR_DOMAINS.every(d=>/-type$/.test(d.name) || d.k === "reg") &&
+       !BEHAVIOR_DOMAINS.some(d=>(d.groups||[]).some(g=>["slp","eat"].indexOf(g) >= 0 || (behaviorGroup(g)||{}).positive)));
+    const A = {tags:["b.att.easily_distracted"]}, R = {tags:["b.reg.difficulty_tolerating_no"]}, P = {tags:["b.psoc.initiates_play_with_peer"]};
+    const dom = k => BEHAVIOR_DOMAINS.find(d=>d.k === k);
+    ck("domains: an attention tag counts under ADHD-type and nowhere else", entryInDomain(A, dom("adhd")) && !entryInDomain(A, dom("anxiety")) && !entryInDomain(A, dom("odd")));
+    ck("domains: 'difficulty tolerating no' counts under BOTH Emotional regulation and Oppositional-type (one entry, several headings)", entryInDomain(R, dom("reg")) && entryInDomain(R, dom("odd")));
+    ck("domains: a positive tag counts under no heading", !BEHAVIOR_DOMAINS.some(d=>entryInDomain(P, d)));
+    const wkOf = (y,m,d)=>({start:new Date(y,m,d,12).getTime(), tags:["b.anx.clinging"]});
+    const p2 = behaviourPeriods([wkOf(2026,8,1), wkOf(2026,8,2), wkOf(2026,8,9)]);
+    ck("periods: three entries across two Mondays make two WEEK periods, oldest first", p2.unit === "week" && p2.keys.length === 2 && p2.keys[0] < p2.keys[1] && p2.by[p2.keys[0]].length === 2);
+    const many = []; for(let i=0;i<18;i++) many.push(wkOf(2026,0,1+7*i));
+    const pm = behaviourPeriods(many);
+    ck("periods: past 16 distinct weeks the unit becomes MONTH", pm.unit === "month" && pm.keys.every(k=>/^\d{4}-\d{2}$/.test(k)));
+    const ts = topGroupSeries([{tags:["b.anx.clinging","b.anx.nightmares"]},{tags:["b.anx.clinging","b.reg.yelling"]},{tags:["b.reg.yelling"]},{tags:["b.att.fidgeting"]}], 2);
+    ck("top groups: ranked by entries (a group counted once per entry), cut to n", ts.length === 2 && ts[0].k === "anx" && ts[1].k === "reg");
+    const rows = [{k:"x", name:"Row X", color:"var(--s1)", vals:[{pk:p2.keys[0], n:2, hit:0, pct:0},{pk:p2.keys[1], n:1, hit:1, pct:100}]}];
+    const sm = smallMultiples(rows, p2);
+    const cols = Array.from(sm.querySelectorAll(".tmcol"));
+    ck("small multiples: one column per period; a 0% period draws NO fill height, 100% fills the track", cols.length === 2 && cols[0].querySelector(".tmfill").style.height === "0%" && cols[1].querySelector(".tmfill").style.height === "100%");
+    ck("small multiples: every column carries its value in words (touch has no tooltip) and the latest value is printed as text", /0% \(0 of 2\)/.test(cols[0].getAttribute("aria-label")) && sm.querySelector(".tmval").textContent === "100%");
+    ck("small multiples: the row label carries the series NAME beside its swatch — identity is never colour alone", /Row X/.test(sm.querySelector(".tmlab").textContent) && !!sm.querySelector(".tmswatch"));
+    /* the real renderPatterns, seeded with tagged entries in two weeks */
+    if(typeof $ === "function" && $("patSlot")){
+      const before = JSON.stringify(Store.entries), keepMode = State.insightsSeries, keepSlot = $("patSlot").innerHTML;
+      const realSaveLocal = Store.saveLocal, realPush = Store.push;
+      Store.saveLocal = function(){}; Store.push = function(){};
+      try {
+        Store.entries = {};
+        for(let i=0;i<12;i++){
+          const start = new Date(2026,8,1 + (i < 6 ? 0 : 7), 10 + i).getTime();
+          Store.putEntry("dad", {id:"selfcheck_tm_"+i, who:"dad", start, end:start+60000, dur:60, measured:true, sev:2, trig:"transition", place:"home", resp:"held", note:"", created:start, revs:[],
+            tags: i % 3 === 0 ? ["b.att.easily_distracted"] : ["b.anx.clinging"]});
+        }
+        State.insightsSeries = "domains"; renderPatterns();
+        const cards = Array.from($("patSlot").querySelectorAll(".pcard"));
+        const tm = cards.find(c=>/Behaviours over time/.test(c.querySelector("h3").textContent));
+        const wp = cards.find(c=>/Where the patterns point/.test(c.querySelector("h3").textContent));
+        ck("over time: the card is OPEN at 12 tagged entries in two weeks, with one row per heading and two columns each",
+           !!tm && tm.querySelectorAll(".tmrow").length === BEHAVIOR_DOMAINS.length && tm.querySelector(".tmrow").querySelectorAll(".tmcol").length === 2);
+        const anxRow = Array.from(tm.querySelectorAll(".tmrow")).find(r=>/Anxiety-type/.test(r.textContent));
+        ck("over time: Anxiety-type reads 67% in both weeks (4 of 6 entries each week are clinging)", !!anxRow && Array.from(anxRow.querySelectorAll(".tmcol")).every(c=>/67% \(4 of 6\)/.test(c.getAttribute("aria-label"))));
+        ck("over time: a table view exists behind a summary, with the same numbers", /67% \(4\/6\)/.test(tm.querySelector(".tmtable").textContent));
+        ck("where the patterns point: ADHD-type 4 of 12, Anxiety-type 8 of 12, and the caveat says it is not a screen or a diagnosis",
+           !!wp && /Anxiety-type/.test(wp.querySelector(".bars .bar").textContent) && /8 of 12 \(67%\)/.test(wp.textContent) && /4 of 12 \(33%\)/.test(wp.textContent) && /not a screen, a score or a diagnosis/.test(wp.querySelector(".pchow").textContent));
+        ck("where the patterns point: the heading list is on the page (which groups sit under each heading)", /Attention, Hyperactivity, Impulsivity/.test(wp.querySelector(".tmtable").textContent));
+        const sw = Array.from(tm.querySelectorAll(".seriesswitch .chip"));
+        sw[1].onclick();
+        const tm2 = Array.from($("patSlot").querySelectorAll(".pcard")).find(c=>/Behaviours over time/.test(c.querySelector("h3").textContent));
+        ck("over time: 'By group' re-draws rows as Clark's groups (Anxiety / Fear, Attention) and marks itself pressed",
+           State.insightsSeries === "groups" && tm2.querySelectorAll(".tmrow").length === 2 && /Anxiety \/ Fear/.test(tm2.querySelector(".tmrow").textContent) &&
+           tm2.querySelectorAll(".seriesswitch .chip")[1].getAttribute("aria-pressed") === "true");
+        /* one week only -> the card says so instead of drawing one column */
+        Store.entries = {};
+        for(let i=0;i<10;i++){ const start = new Date(2026,8,1,8+i).getTime(); Store.putEntry("dad", {id:"selfcheck_tm1_"+i, who:"dad", start, end:start+60000, dur:60, measured:true, sev:1, trig:"transition", place:"home", resp:"held", note:"", created:start, revs:[], tags:["b.anx.clinging"]}); }
+        renderPatterns();
+        const tm3 = Array.from($("patSlot").querySelectorAll(".pcard")).find(c=>/Behaviours over time/.test(c.querySelector("h3").textContent));
+        ck("over time: ten entries in ONE week draw no columns and say a second week is needed", !!tm3 && !tm3.querySelector(".tmcol") && /second week is needed/.test(tm3.textContent));
+      } finally {
+        Store.saveLocal = realSaveLocal; Store.push = realPush;
+        Store.entries = JSON.parse(before); State.insightsSeries = keepMode; $("patSlot").innerHTML = keepSlot;
+      }
+      ck("over time selfcheck: left no probe entry behind", !Store.allEntries().some(e=>/selfcheck_tm/.test(e.id)));
+    }
+  })();
+
+  /* ---- SUGGESTED CORRECTIONS (option C, Clark 2026-09-22) ---- */
+  (function(){
+    const beforeEv = JSON.stringify(Store.calEvents), beforeS = JSON.stringify(Store.calSuggestions), beforeR = JSON.stringify(Store.calSuggestResponses), wasMe = State.me;
+    const realSaveLocal = Store.saveLocal, realPush = Store.push; const pushed = [];
+    Store.saveLocal = function(){}; Store.push = function(kind, id){ pushed.push(kind + "/" + id); };
+    try {
+      Store.calEvents = {}; Store.calSuggestions = {}; Store.calSuggestResponses = {};
+      const ev = {id:"selfcheck_sug_ev", who:"mom", date:"2026-10-03", time:"", type:"medical", title:"Dentist", location:"", note:"", created:1, revs:[]};
+      Store.putEvent("mom", ev);
+      ck("suggest: the owner cannot suggest on their own event, and an empty patch is refused", Store.putSuggestion("mom", ev, {date:"2026-10-04"}) === null && Store.putSuggestion("dad", ev, {}) === null);
+      const id = Store.putSuggestion("dad", ev, {date:"2026-10-04", title:"Dentist 2pm"}, " wrong day I think ");
+      const s1 = Store.suggestionsForEvent("selfcheck_sug_ev")[0];
+      ck("suggest: Dad's suggestion is written to DAD's own document (write isolation) and carries the event, the patch and the trimmed message",
+         !!id && pushed.indexOf("calSuggestions/dad") >= 0 && !Store.calSuggestions.mom && s1.eventWho === "mom" && s1.patch.title === "Dentist 2pm" && s1.message === "wrong day I think" && !s1.response);
+      ck("suggest: the change sentence names field and value, in words a mediator can read", suggestionChangesText(s1) === "Date → " + friendlyExhibitDate("2026-10-04") + " · Title → “Dentist 2pm”" && /Oct/.test(suggestionChangesText(s1)));
+      ck("suggest: pending suggestions feed the banner and the day mark", pendingSuggestions().length === 1 && !!pendingSuggestionForDay("2026-10-03") && !pendingSuggestionForDay("2026-10-04"));
+      ck("suggest: the event itself is UNCHANGED while the suggestion waits", Store.allEvents()[0].date === "2026-10-03" && Store.allEvents()[0].title === "Dentist" && !Store.allEvents()[0].edited);
+      ck("suggest: Dad (the suggester) cannot accept his own suggestion; only the owner can", Store.respondToSuggestion(id, "dad", "accept") === false && !s1.response);
+      ck("suggest: Mom cannot withdraw Dad's suggestion", Store.respondToSuggestion(id, "mom", "withdraw") === false);
+      State.me = "mom";
+      const card = calEventCard(Store.allEvents()[0]);
+      const row = card.querySelector(".calsug");
+      ck("suggest: the owner's event card shows the suggestion with Accept and Decline, and no 'Suggest a correction' button on her own event",
+         !!row && !!row.querySelector(".cyes") && !!row.querySelector(".cno") && /Dad suggests: Date → /.test(row.textContent) && !Array.from(card.querySelectorAll("button")).some(b=>b.textContent === "Suggest a correction"));
+      State.me = "dad";
+      const dadCard = calEventCard(Store.allEvents()[0]);
+      ck("suggest: while his suggestion is pending Dad sees 'Waiting on Mom' + Withdraw, and no second 'Suggest a correction' button",
+         /Waiting on Mom/.test(dadCard.textContent) && Array.from(dadCard.querySelectorAll("button")).some(b=>/Withdraw suggestion/.test(b.textContent)) && !Array.from(dadCard.querySelectorAll("button")).some(b=>b.textContent === "Suggest a correction"));
+      ck("suggest: Mom accepts -> the patch lands on MOM's event as a revision she wrote, marked as Dad's suggestion; the response is in MOM's doc",
+         Store.respondToSuggestion(id, "mom", "accept") === true && (function(){ const e = Store.allEvents()[0]; const r = e.revs[e.revs.length-1];
+           return e.date === "2026-10-04" && e.title === "Dentist 2pm" && e.edited && r.by === "mom" && r.suggestedBy === "dad" && r.suggestion === id && pushed.indexOf("calSuggestResponses/mom") >= 0 && !Store.calSuggestResponses.dad; })());
+      ck("suggest: an answered suggestion cannot be answered again, and leaves the pending list", Store.respondToSuggestion(id, "mom", "decline") === false && pendingSuggestions().length === 0 && suggestionOutcomeText(Store.suggestionsForEvent("selfcheck_sug_ev")[0]) === "Accepted");
+      /* decline with a reason; withdraw */
+      const e2 = Store.allEvents()[0];
+      const id2 = Store.putSuggestion("dad", e2, {time:"14:00"}, "");
+      Store.respondToSuggestion(id2, "mom", "decline", "It is 3pm, I checked");
+      const s2 = Store.suggestionsForEvent("selfcheck_sug_ev").find(x=>x.id === id2);
+      ck("suggest: a decline keeps the event as it was and quotes the reason in the outcome", Store.allEvents()[0].time === "" && suggestionOutcomeText(s2) === "Declined. Reason given: “It is 3pm, I checked”");
+      const id3 = Store.putSuggestion("dad", Store.allEvents()[0], {location:"Kahului"}, "");
+      ck("suggest: the suggester can withdraw while unanswered; the row stays, struck through", Store.respondToSuggestion(id3, "dad", "withdraw") === true && /Withdrawn by Dad/.test(suggestionOutcomeText(Store.suggestionsForEvent("selfcheck_sug_ev").find(x=>x.id === id3))));
+      /* the print exhibit carries all three, never filtered */
+      if(typeof $ === "function" && $("custodyPrintSlot")){
+        const keep = $("custodyPrintSlot").innerHTML;
+        try {
+          renderCustodyPrint("2026-10-01","2026-10-31");
+          const txt = $("custodyPrintSlot").textContent;
+          ck("suggest: the printed exhibit lists all three suggestions with outcomes, and the event row says it was edited on Dad's suggestion",
+             /Suggested corrections/.test(txt) && /Accepted/.test(txt) && /Declined\. Reason given/.test(txt) && /Withdrawn by Dad/.test(txt) && /Edited \(on Dad’s suggestion\)/.test(txt));
+        } finally { $("custodyPrintSlot").innerHTML = keep; }
+      }
+      ck("suggest: both new kinds are mirrored to the phone and pushed like every other collection", Store.MIRROR_KEYS.indexOf("calSuggestions") >= 0 && Store.MIRROR_KEYS.indexOf("calSuggestResponses") >= 0);
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush; State.me = wasMe;
+      Store.calEvents = JSON.parse(beforeEv); Store.calSuggestions = JSON.parse(beforeS); Store.calSuggestResponses = JSON.parse(beforeR);
+    }
+    ck("suggest selfcheck: left nothing behind", !Store.allSuggestions().length || !Store.allSuggestions().some(s=>s.eventId === "selfcheck_sug_ev"));
+  })();
+
+  /* ---- EMAIL ALERTS for swaps (option B, Clark 2026-09-22) ---- */
+  (function(){
+    const beforeP = JSON.stringify(Store.profiles), wasMe = State.me, wasHosted = Store.hosted, wasOpen = State.calEmailOpen;
+    const realSaveLocal = Store.saveLocal, realPush = Store.push; const pushed = [];
+    Store.saveLocal = function(){}; Store.push = function(kind, id){ pushed.push(kind + "/" + id); };
+    try {
+      Store.profiles = {};
+      ck("email: a malformed address is refused and nothing is written", Store.setMyEmail("dad", "not-an-address") === false && !Store.profiles.dad);
+      ck("email: Dad's address lands in DAD's own document and is pushed as 'profiles'", Store.setMyEmail("dad", " dad@example.com ") === true && Store.emailOf("dad") === "dad@example.com" && pushed.indexOf("profiles/dad") >= 0 && !Store.profiles.mom);
+      ck("email: a changed address keeps the old one as a revision (append-only)", Store.setMyEmail("dad", "dad2@example.com") && Store.profiles.dad.items.email.revs.length === 1 && Store.profiles.dad.items.email.revs[0].was === "dad@example.com");
+      ck("email: removing an address is allowed (blank) and emailOf reads empty", Store.setMyEmail("dad", "") === true && Store.emailOf("dad") === "");
+      ck("email: 'profiles' is mirrored to the phone like every other collection", Store.MIRROR_KEYS.indexOf("profiles") >= 0);
+      State.me = "dad";
+      Store.hosted = null;
+      const off = emailNoticeStatus("dad");
+      ck("email: on a copy that is NOT on the family's hosting the status says alerts have not started — no false liveliness", !off.hosted && /start once the app is on the family's own hosting/.test(off.line));
+      Store.hosted = {link:"ok", url:"api.php", headers(){ return {}; }};
+      Store.setMyEmail("mom", "mom@example.com");
+      const one = emailNoticeStatus("dad");
+      ck("email: hosted, Mom on file, Dad not: the line says Mom is emailed and asks Dad for his", /Mom is emailed when you ask or answer/.test(one.line) && /Add your email/.test(one.line));
+      Store.setMyEmail("dad", "dad@example.com");
+      ck("email: hosted, both on file: the line names Dad's own address", /You are emailed at dad@example.com/.test(emailNoticeStatus("dad").line));
+      Store.setMyEmail("mom", "");
+      ck("email: hosted, Mom NOT on file: the line says nothing reaches her outside the app", /Mom has no email on file, so nothing reaches her outside the app/.test(emailNoticeStatus("dad").line));
+      if(typeof $ === "function" && $("calSlot")){
+        const keep = $("calSlot").innerHTML;
+        try {
+          renderCalendar();
+          const box = $("calSlot").querySelector(".calemail");
+          ck("email: the Calendar tab carries the box with a summary that states the configuration (on for one parent)", !!box && /on for one parent/.test(box.querySelector("summary").textContent));
+          const inp = box.querySelector("input");
+          ck("email: the input is prefilled with MY address and Mom's status names her as the only one who can add hers", inp.value === "dad@example.com" && /Only Mom can add it, on her own phone/.test(box.textContent));
+          Store.hosted = null; renderCalendar();
+          const box2 = $("calSlot").querySelector(".calemail");
+          ck("email: not hosted: the box has NO input and says 'not yet'", !!box2 && !box2.querySelector("input") && /not yet/.test(box2.querySelector("summary").textContent));
+        } finally { $("calSlot").innerHTML = keep; }
+      }
+      ck("email: the log row wording says 'not sent — no email on file' for a no_address row, and never claims delivery it did not get",
+         /not sent — no email on file for Mom/.test(mailLogRowText({at:1758600000, to_who:"mom", subject:"Two Homes: Dad asks to change Thu, Oct 2, 2026", ok:false, why:"no_address"})) &&
+         / · sent$/.test(mailLogRowText({at:1758600000, to_who:"mom", subject:"Two Homes: x", ok:true, why:"php_mail"})));
+    } finally {
+      Store.saveLocal = realSaveLocal; Store.push = realPush; State.me = wasMe; Store.hosted = wasHosted; State.calEmailOpen = wasOpen;
+      Store.profiles = JSON.parse(beforeP);
+    }
   })();
 
   ck("MIRROR_KEYS carries both new message kinds (mirrored to local storage and pushed the same as every other collection)",
