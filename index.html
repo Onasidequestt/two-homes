@@ -70,6 +70,17 @@
   --ease-out:cubic-bezier(.22,.61,.36,1);
   --ease-soft:cubic-bezier(.4,0,.2,1);
   --ease-loop:cubic-bezier(.45,0,.55,1);
+  /* SPRING (Simon 09-26: "a little livelier", on everything that moves).
+     A damped spring, zeta .7: 50% at 13% of the duration, a 4.6% overshoot at
+     ~40%, at rest by the end. The cubic here is the fallback for browsers
+     without linear(); the @supports block below swaps in the real curve.
+     Use it on TRAVEL (transform). Opacity clamps at 1 and a colour overshoot
+     extrapolates past its end hue, so fades and colour changes keep
+     --ease-settle / --ease-soft. */
+  --ease-spring:cubic-bezier(.3,1.3,.5,1);
+}
+@supports (animation-timing-function:linear(0, 1)){
+  :root{--ease-spring:linear(0, 0.061, 0.201, 0.373, 0.544, 0.694, 0.817, 0.909, 0.973, 1.014, 1.036, 1.045, 1.045, 1.04, 1.033, 1.025, 1.017, 1.011, 1.006, 1.003, 1, 0.999, 0.998, 0.998, 0.998, 0.998, 0.999, 0.999, 1)}
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -215,7 +226,7 @@ main{flex:1;padding:16px 16px 26px;display:flex;flex-direction:column;gap:22px}
    40ms into the fade lands on the real control. The Log tab's first child is
    the Start button and nothing may move it. */
 @keyframes viewIn{from{opacity:0}}
-.view.entering{animation:viewIn var(--t-view) var(--ease-out)}
+.view.entering{animation:viewIn var(--t-view) var(--ease-settle)}
 
 /* ---------- generic blocks ----------
    Borders removed wherever a tone change or plain spacing already separates
@@ -480,7 +491,7 @@ h2.sec{font-size:28px;font-weight:700;margin:0 0 4px;letter-spacing:-.028em;text
        font-size:13px;color:var(--ink-2);font-weight:600}
 .flash .tick{font-size:16px}
 @keyframes flashIn{from{opacity:0}}
-.flash{animation:flashIn var(--t-view) var(--ease-out)}
+.flash{animation:flashIn var(--t-view) var(--ease-settle)}
 
 textarea{width:100%;padding:11px;border:1px solid var(--line-strong);border-radius:8px;
          background:var(--surface);color:var(--ink);font:inherit;font-size:14px;resize:vertical;min-height:62px}
@@ -700,10 +711,14 @@ textarea{border-radius:10px}
 /* these take their value from an INLINE STYLE on a newborn node, which no
    transition can ever see — so they arrive as an animation whose `from` is the
    only declared stop, letting the inline value stay authoritative. Gated on
-   .entering so they grow when the tab opens, not on every store echo. */
-@keyframes fillGrow{from{width:0}}
+   .entering so they grow when the tab opens, not on every store echo.
+   Animating `transform: scaleX` instead of `width` keeps this off the layout
+   property (the inline width is still what actually reserves the space —
+   scaleX just paints the grow), and TRAVEL takes the spring per Simon's rule,
+   not the old --ease-out. */
+@keyframes fillGrow{from{transform:scaleX(0)}}
 .view.entering .lockbar i,
-.view.entering .bar .fill{animation:fillGrow var(--t-grow) var(--ease-out)}
+.view.entering .bar .fill{transform-origin:left;animation:fillGrow var(--t-grow) var(--ease-spring)}
 
 /* ---------- trends ---------- */
 .tcard{background:var(--surface);border-radius:var(--r);padding:15px 14px;box-shadow:var(--shadow)}
@@ -714,7 +729,7 @@ textarea{border-radius:10px}
 .series{display:flex;align-items:flex-end;gap:2px;height:104px;margin-top:14px;
         padding-bottom:2px;border-bottom:1px solid var(--line-strong)}
 .scol{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
-.scol i{display:block;width:100%;border-radius:3px 3px 0 0;min-height:3px}
+.scol i{display:block;width:100%;border-radius:3px 3px 0 0;min-height:3px;transform-origin:bottom}
 /* a day that was RECORDED with nothing to report is not the same as a day with
    no record at all, and the chart has to show the difference or the zeros lie */
 .scol.zero i{height:3px;background:var(--line-strong);border-radius:2px}
@@ -736,14 +751,18 @@ textarea{border-radius:10px}
        box-shadow:0 -8px 28px rgba(0,0,0,.28)}
 @keyframes scrimIn {from{opacity:0}}
 @keyframes scrimOut{to{opacity:0}}
-@keyframes sheetIn {from{opacity:0;transform:translateY(14px)}}
-@keyframes sheetOut{to{opacity:.4;transform:translateY(10px)}}
+/* motion-B: the sheet TRAVELS, it never dissolves — opaque the whole time so
+   its text never double-exposes over the page behind it. The scrim keeps its
+   own opacity fade on its own layer (above). Both directions end off-screen,
+   so an --ease-spring overshoot on the exit is invisible; spring on both. */
+@keyframes sheetIn {from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes sheetOut{from{transform:translateY(0)}to{transform:translateY(100%)}}
 .scrim.opening{animation:scrimIn var(--t-view) var(--ease-out)}
-.scrim.opening .sheet{animation:sheetIn var(--t-view) var(--ease-settle)}
+.scrim.opening .sheet{animation:sheetIn var(--t-view) var(--ease-spring)}
 /* pointer-events drops at once so the app is tappable the instant the close
    starts, not --t-exit later */
 .scrim.closing{animation:scrimOut var(--t-exit) var(--ease-soft) both;pointer-events:none}
-.scrim.closing .sheet{animation:sheetOut var(--t-exit) var(--ease-soft) both}
+.scrim.closing .sheet{animation:sheetOut var(--t-exit) var(--ease-spring) both}
 .sheet h3{margin:0 0 3px;font-size:16px;font-weight:700}
 .sheethd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
 .x{font-size:22px;color:var(--muted);line-height:1;padding:11px 14px;margin:-11px -10px 0 0;
@@ -1139,9 +1158,8 @@ body[data-tab="messages"]{--accent:#9B4F1F;--accent-soft:#F5E6D8}
 :root[data-theme="dark"] body[data-tab="messages"]{--accent:#E5A468;--accent-soft:#3A2717}
 .sec .ico{width:44px;height:44px;padding:9px;border-radius:14px;background:var(--accent-soft)}
 .moneybanner,.cal-sum{background:linear-gradient(180deg,var(--accent-soft),var(--surface) 150%)}
-.tab[aria-selected="true"]{position:relative}
-.tab[aria-selected="true"]::before{content:"";position:absolute;top:6px;left:50%;width:46px;height:30px;margin-left:-23px;
-                                   border-radius:999px;background:var(--accent-soft);z-index:-1}
+/* the per-tab ::before pill is gone: one .tabind element now draws it (see
+   the motion-A block above .dband, near line ~1279) */
 .tabs{isolation:isolate}
 /* INSIGHTS TYPE (panels 4 and 5, designer): chart labels were 10 to 11.5px, below the 12 floor of the
    scale above, and the first three cards touched. Labels join the scale; stacked cards get the one gap. */
@@ -1261,6 +1279,44 @@ body[data-tab="messages"]{--accent:#9B4F1F;--accent-soft:#F5E6D8}
   body.print-messages #msgThreadSlot{display:none !important}
 }
 
+/* ---------- motion 09-26: one block per build lane ---------- */
+/* TAB INDICATOR: one element instead of each selected tab drawing its own
+   ::before pill (that old rule is gone from ~1157). .tabs is a 5-column grid
+   of equal .tab buttons, so a column-wide box at left:0 sized calc(100%/5)
+   sits exactly under whichever tab JS points it at via --tabi (an index, set
+   in setTab); translateX(N * 100%) moves it by N of ITS OWN widths, which is
+   one column, so the math never depends on the container's pixel width —
+   correct on resize/orientation with no JS involved. The 46x30 pill inside
+   is drawn with ::after so the visible shape, colour and vertical position
+   match the old pill exactly. transform only (spring, --t-sel): colour comes
+   from --accent-soft, already themed for dark mode by the body[data-tab]
+   rules above, so no separate dark-mode rule is needed here. */
+.tabind{position:absolute;top:0;left:0;width:calc(100% / 5);height:100%;
+        transform:translateX(calc(var(--tabi,0) * 100%));
+        transition:transform var(--t-sel) var(--ease-spring);
+        pointer-events:none;z-index:-1}
+.tabind[hidden]{display:none}
+.tabind::after{content:"";position:absolute;top:6px;left:50%;width:46px;height:30px;
+               margin-left:-23px;border-radius:999px;background:var(--accent-soft)}
+/* motion-A css */
+/* motion-B css */
+/* PAINTED CUSTODY DAYS: calPaintBand patches an EXISTING band's class/text
+   rather than rebuilding it (see calPaintTap), so a transition on its colours
+   has a real before-state to animate from. Colour, not travel: --ease-settle,
+   never the spring (a hue overshoot would extrapolate past it). */
+.dband{transition:background-color var(--t-sel) var(--ease-settle), border-color var(--t-sel) var(--ease-settle)}
+/* SERIES SWITCH: the domains/groups toggle rebuilds "Behaviours over time"
+   from scratch, so its columns used to just pop to their new heights. They
+   grow from the bottom like the trend columns below, via motion() in
+   renderPatterns — this only supplies the pivot point WAAPI scales around. */
+.tmfill{transform-origin:bottom}
+/* TREND COLUMNS: same "from is the only declared stop" trick as fillGrow
+   above — height is set inline per column, so the keyframe only supplies the
+   scaleY(0) start, gated on .entering so it grows when the tab opens. */
+@keyframes scolGrow{from{transform:scaleY(0)}}
+.view.entering .scol i{animation:scolGrow var(--t-grow) var(--ease-spring)}
+/* motion-C css */
+
 /* ---------- reduced motion ----------
    MUST BE THE LAST RULE IN THIS SHEET: it re-enables one animation by coming
    later, not by !important. Tokens are redefined rather than durations
@@ -1280,6 +1336,14 @@ body[data-tab="messages"]{--accent:#9B4F1F;--accent-soft:#F5E6D8}
      Softened and slowed, not deleted. */
   @keyframes pulse-soft{0%,100%{opacity:1}50%{opacity:.55}}
   .livedot{animation:pulse-soft 2400ms var(--ease-loop) infinite}
+  /* motion-A reduce: no rule needed here. Every motion-A effect either goes
+     through motion()/smoothTo() (which already no-op once ms() reads <=1ms
+     from the redefinitions above) or is the .tabind CSS transition, whose
+     duration is transition:transform var(--t-sel)... — that token collapses
+     to 1ms right here too, so the indicator jumps instead of gliding. */
+  /* motion-B reduce */
+  .view.entering .scol i{animation:none !important}
+  /* motion-C reduce */
 }
 </style>
 
@@ -1448,6 +1512,7 @@ body[data-tab="messages"]{--accent:#9B4F1F;--accent-soft:#F5E6D8}
   </main>
 
   <nav class="tabs" role="tablist" aria-label="Views">
+    <div class="tabind" id="tabInd" aria-hidden="true"></div>
     <button class="tab" role="tab" id="t-log" aria-controls="v-log" aria-selected="true" tabindex="0"><span class="ico" data-ico="log"></span><span>Log</span><span class="cnt" id="cnt-log">—</span></button>
     <button class="tab" role="tab" id="t-calendar" aria-controls="v-calendar" aria-selected="false" tabindex="-1"><span class="ico" data-ico="calendar"></span><span>Calendar</span><span class="cnt" id="cnt-calendar">—</span><span class="ambertab" id="ambTabDot" hidden aria-hidden="true">?</span></button>
     <button class="tab" role="tab" id="t-money" aria-controls="v-money" aria-selected="false" tabindex="-1"><span class="ico" data-ico="money"></span><span>Money</span><span class="cnt" id="cnt-money">—</span></button>
@@ -2079,6 +2144,12 @@ function smallMultiples(rows, periods){
   box.appendChild(ax);
   return box;
 }
+/* the fill columns a small-multiples card just drew — kept apart from the
+   DOM query call site so the "which nodes will grow" decision is checkable
+   with a plain node (querySelectorAll works on the stub without an #id). */
+function tmFillNodes(node){
+  return node ? Array.from(node.querySelectorAll(".tmfill")) : [];
+}
 /* the OPTIONAL context his brief lists beside each behaviour — closed lists,
    one word each, so the Insights counts stay comparable between the two homes */
 const OUTCOMES = [["done","Did what was asked"],["settled","Settled"],["moved","Moved on"],["stopped","Stopped on its own"],["unresolved","Not resolved"]];
@@ -2266,6 +2337,15 @@ function balanceSentence(cents, anyRecords){
      the old sentence read as a scoreboard with a winner. Direction is unchanged: positive = Mom pays Dad. */
   return "To settle: " + centsToDollars(Math.abs(cents)) + ", " + (cents > 0 ? "Mom to Dad" : "Dad to Mom") + ".";
 }
+/* The balance sentence crossfades when its TEXT changes — never a count-up or
+   a rolling number (Simon's ruling: money amounts never animate a value, only
+   a visibility change). Kept as its own pure decision so it can be checked
+   without a DOM: given the previous text and the next text, does it change?
+   The render below is the only caller that also updates the remembered text. */
+function balanceTextChanged(prevText, nextText){
+  return prevText != null && prevText !== nextText;
+}
+let lastBalanceText = null;
 
 /* ---------- motion helpers ----------
    A CSS transition needs a BEFORE-change style. A node that was not in the
@@ -2288,6 +2368,84 @@ function ms(name){
   if(v.endsWith("ms")) return parseFloat(v) || 0;
   if(v.endsWith("s"))  return (parseFloat(v) || 0) * 1000;
   return 0;
+}
+
+/* ---------- motion layer (09-26) ----------
+   Every NEW motion goes through these four, so timing, easing and reduced
+   motion are decided in one place. Reduced motion needs no branch of its own:
+   the @media block collapses every duration token to 1ms, motion() sees that
+   and paints nothing, and smoothTo() jumps instead of gliding. */
+function ease(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "ease";
+}
+function motion(node, frames, durToken, easeToken, opts){
+  if(!node || typeof node.animate !== "function") return null;   /* the node stub; very old browsers */
+  const d = ms(durToken);
+  if(d <= 1) return null;          /* reduced motion: the end state is already on screen */
+  /* A second motion() of the SAME properties on the same node (a fast double tap)
+     replaces the first instead of stacking under it (after-panel C1). Different
+     properties still layer: a saved Record row runs ARRIVE and an accent wash at once. */
+  const key = motionKey(frames), running = motionOn.get(node) || {};
+  if(running[key]) running[key].cancel();
+  const a = node.animate(frames, Object.assign({duration:d, easing:ease(easeToken || "--ease-spring")}, opts || {}));
+  running[key] = a; motionOn.set(node, running);
+  return a;
+}
+const motionOn = new WeakMap();
+function motionKey(frames){ return Object.keys(frames[0] || {}).sort().join(","); }
+/* Rows are rebuilt on every render, so "new" can only mean: a data-key this
+   slot first showed less than --t-view ago. A slot's first render is not
+   news (opening a tab animates nothing). The WINDOW, not "absent last time",
+   is what matters: one save often renders a slot twice in the same tick
+   (Store.onChange -> renderAll, then the caller's own render), and the second
+   rebuild destroys the node the first one was animating. Measured 09-26:
+   a sent message never moved. A key still inside its window arrives again,
+   resumed at its elapsed time so the two renders read as one motion. */
+let seenKeys = new WeakMap();
+const bornAt = new WeakMap();
+function newKeyed(slot){
+  const now = Array.from(slot.querySelectorAll("[data-key]"));
+  const before = seenKeys.get(slot), t = Date.now(), win = ms("--t-view");
+  const next = new Map(), fresh = [];
+  now.forEach(n=>{
+    const k = n.getAttribute("data-key");
+    const born = before ? (before.has(k) ? before.get(k) : t) : -Infinity;
+    next.set(k, born);
+    if(t - born < win){ fresh.push(n); bornAt.set(n, born); }
+  });
+  seenKeys.set(slot, next);
+  /* A bulk arrival is not news: a first sync on a new phone, or a tab opened
+     after many rows landed while it was hidden, would otherwise rise and wash
+     every row on top of the view's own fade (after-panel r2 A3). A save or the
+     other parent's entry is one or two keys.
+     ponytail: ceiling = a fixed count of 2; upgrade path = rows the viewer has
+     not seen yet, if that ever needs to be exact. */
+  return fresh.length > BULK_KEYS ? [] : fresh;
+}
+const BULK_KEYS = 2;
+/* the self-check draws every slot with fixture rows; that memory must not make
+   the first real render of a slot look like news */
+function resetMotionMemory(){
+  seenKeys = new WeakMap(); lastBalanceText = null; calRendered = false; msgThreadEverDrawn = false;
+}
+const ARRIVE = [{opacity:0, transform:"translateY(10px)"}, {opacity:1, transform:"none"}];
+function animateNew(slot, frames){
+  const fresh = slot ? newKeyed(slot) : [];
+  fresh.forEach(n=>{
+    const a = motion(n, frames || ARRIVE, "--t-view", "--ease-spring");
+    if(a) a.currentTime = Math.max(0, Date.now() - bornAt.get(n));
+  });
+  return fresh;
+}
+/* A confirm step (Discard, Start fresh, Withdraw, Decline) arrives a beat
+   slower than ordinary content: it asks for a decision, so it should not
+   look like a routine update. */
+function revealConfirm(node){
+  return motion(node, [{opacity:0, transform:"translateY(-6px)"}, {opacity:1, transform:"none"}], "--t-amb", "--ease-spring");
+}
+function smoothTo(node, block){
+  if(!node || !node.scrollIntoView) return;
+  node.scrollIntoView({block: block || "center", behavior: ms("--t-view") <= 1 ? "auto" : "smooth"});
 }
 
 /* ---------- small helpers ---------- */
@@ -3442,6 +3600,14 @@ function shiftYm(ym, n){
   const dt = new Date(Date.UTC(y, mo-1+n, 1));
   return dt.getUTCFullYear() + "-" + pad(dt.getUTCMonth()+1);
 }
+/* MONTHS SLIDE IN THE DIRECTION OF TIME (motion 09-26): a pure decision, kept
+   apart from the DOM, so it can be asserted without a browser. "YYYY-MM"
+   compares lexicographically like a date, so a later month is simply the
+   greater string. 0 means "no travel" — same month (Today, already there). */
+function calMonthDir(oldYm, newYm){
+  if(oldYm === newYm) return 0;
+  return newYm > oldYm ? 1 : -1;
+}
 
 /* week-on/week-off and 2-2-3 are both just a repeating SEQUENCE indexed by
    offset from an anchor date — one resolver covers both instead of two
@@ -3669,17 +3835,27 @@ function bootIdentity(){
    returns to the plain pick with nothing touched. */
 function askConfirmMe(who){
   State.pickPending = who;
+  /* motion-A: the hidden flips below stay perfectly synchronous — the
+     browser-check's "#first" identity load and the selfcheck fixture at
+     ~11040 both read .hidden the instant this returns — so the crossfade
+     is layered on top, never gating them. The leaving pick fades (soft,
+     it is not a decision); the arriving confirm step reuses revealConfirm,
+     already built for exactly this box. */
+  motion($("gatePick"), [{opacity:1},{opacity:0}], "--t-exit", "--ease-soft");
   $("gatePick").hidden = true;
   $("gatePickFoot").hidden = true;
   const box = $("gateConfirm");
   $("gateConfirmText").textContent = "You are " + WHO_NAME[who] + " on this phone. This cannot be changed.";
   box.hidden = false;
+  revealConfirm(box);
 }
 function backFromConfirmMe(){
   State.pickPending = null;
+  motion($("gateConfirm"), [{opacity:1},{opacity:0}], "--t-exit", "--ease-soft");
   $("gateConfirm").hidden = true;
   $("gatePick").hidden = false;
   $("gatePickFoot").hidden = false;
+  revealConfirm($("gatePick"));
 }
 function confirmMe(){
   const who = State.pickPending; if(who !== "dad" && who !== "mom") return;
@@ -3698,17 +3874,20 @@ function confirmMe(){
    this never runs without bbl.me/bbl.meLocked already having been cleared
    (or, in shared mode, forgotten) by that flow first. */
 function openChooser(){
+  motion($("app"), [{opacity:1},{opacity:0}], "--t-exit", "--ease-soft");
   $("app").hidden = true;
   $("gateConfirm").hidden = true;
   $("gatePick").hidden = false;
   $("gatePickFoot").hidden = false;
   $("gate").hidden = false;
+  motion($("gate"), [{opacity:0, transform:"translateY(12px)"}, {opacity:1, transform:"none"}], "--t-view");
 }
 function showApp(){
   $("gate").hidden = true;
   $("app").hidden = false;
   $("meName").textContent = WHO_NAME[State.me];
   $("meDot").className = "dot " + State.me;
+  motion($("app"), [{opacity:0, transform:"translateY(12px)"}, {opacity:1, transform:"none"}], "--t-view");
   renderAll();
 }
 
@@ -3782,6 +3961,7 @@ function renderFresh(){
   };
   act.appendChild(no); act.appendChild(yes); box.appendChild(act);
   slot.appendChild(box);
+  revealConfirm(box);
 }
 /* ONE masthead for the three printed records (behaviour, money, custody), so a
    page found loose in a folder says which record it belongs to, whose it is and
@@ -3985,6 +4165,39 @@ function renderDaily(){
   slot.appendChild(box);
 }
 
+/* motion-A: the six "Saved…" banners (Log, the two Money forms, the two
+   Calendar forms) each ran their own hard-cut 6000ms timer — the banner just
+   vanished. One helper now: fade the flash node(s) out first, THEN clear the
+   state and re-render exactly as before. FLASH_MS is a dwell (how long the
+   banner stays up), not a motion duration, so it stays a literal — the
+   --t-* tokens are for the transitions this file plays, not for how long a
+   confirmation is meant to be read. Each call site keeps its own guard
+   (`if(!State.draft)` etc.) inside the `doClear` it hands in, unchanged. */
+const FLASH_MS = 6000;
+/* the three tab slots a flash banner ever renders into (Log/Money/Calendar).
+   Not document.querySelectorAll(".flash"): the node stub's `document` has no
+   querySelectorAll and its getElementById results are independently-rooted
+   stubs (no real containing tree), so a class query only ever sees the
+   subtree it is called on — exactly the "use classes... within a slot" shape
+   the rest of this file already follows (see newKeyed). */
+const FLASH_SLOTS = ["logSlot","moneySlot","calSlot"];
+/* split out so a check can drive the fade-then-clear decision directly,
+   without waiting FLASH_MS or faking a timer: in the node stub .flash nodes
+   have no .animate, motion() returns null for every one, and doClear runs
+   at once — in a real browser it waits for every fade to finish first. */
+function flashSettle(doClear){
+  const nodes = [];
+  FLASH_SLOTS.forEach(id=>{ const s = $(id); if(s && s.querySelectorAll) nodes.push(...s.querySelectorAll(".flash")); });
+  const anims = nodes.map(n=>motion(n, [{opacity:1},{opacity:0}], "--t-exit", "--ease-soft")).filter(Boolean);
+  if(!anims.length){ doClear(); return; }
+  let left = anims.length;
+  anims.forEach(a=>{ a.onfinish = a.oncancel = ()=>{ if(--left <= 0) doClear(); }; });
+}
+function clearFlashLater(prevTimer, doClear){
+  clearTimeout(prevTimer);
+  return setTimeout(()=>flashSettle(doClear), FLASH_MS);
+}
+
 /* ============================================================
    RENDER — the log tab
    ============================================================ */
@@ -4024,9 +4237,21 @@ function renderLog(){
 
     slot.appendChild(todayStrip());
     slot.appendChild(State.handoverDraft ? handoverForm() : handoverCard());
+    /* ...and the way back (Save, Discard) was the mirror cut: the form vanished and
+       the home was simply there (after-panel r3 A1). The home and its "✓ Saved"
+       banner rise back together, and the morning card with them. */
+    if(State.logFormShown){ motion(slot, ARRIVE, "--t-view"); motion($("dailySlot"), ARRIVE, "--t-view"); }
+    State.logFormShown = false;
     return;
   }
-  slot.appendChild(draftForm());
+  /* The home -> form swap (the big button, or starting the timer) was a one-frame
+     cut of ~43% of the screen (after-panel A1, 09-26). The form rises in on the
+     render that FIRST shows it; every later render of the same draft (each chip
+     pick re-renders) stays still. */
+  const form = draftForm();
+  slot.appendChild(form);
+  if(!State.logFormShown) motion(form, ARRIVE, "--t-view");
+  State.logFormShown = true;
 }
 
 /* ============================================================
@@ -4232,6 +4457,7 @@ function discardControl(isDirty, onDiscard){
     no.onclick = ()=>{ wrap.innerHTML = ""; wrap.appendChild(c); };
     act.appendChild(no); act.appendChild(yes); box.appendChild(act);
     wrap.appendChild(box);
+    revealConfirm(box);
   };
   wrap.appendChild(c);
   return wrap;
@@ -4255,10 +4481,35 @@ function stillNeededLine(n){
   e.setAttribute("role","alert");
   return e;
 }
-function fieldNeed(what){ return el("div","err fielderr","Still needed: " + what + "."); }
+function fieldNeed(what){
+  const n = el("div","err fielderr","Still needed: " + what + ".");
+  /* every renderer here rebuilds with innerHTML="", so this node is always
+     freshly built — a CSS transition could never fire on it (see the note by
+     press() near motion()). One-shot WAAPI instead. */
+  motion(n, [{opacity:0, transform:"translateY(-4px)"}, {opacity:1, transform:"none"}], "--t-sel");
+  return n;
+}
+/* motion-A: pure — which node the step-2 reveal scrolls to. Reads DOM only
+   (no State), so a self-check can build a bare .step2block and call it
+   without a real draft. Returns the container's first .field, i.e. the
+   Trigger question, never a step-1 node (those live outside .step2block). */
+function firstStep2Field(root){
+  const box = root && root.querySelector ? root.querySelector(".step2block") : null;
+  return box ? box.querySelector(".field") : null;
+}
 function showFirstMissing(root){
   const m = root && root.querySelector && root.querySelector(".field.missing");
-  if(m && m.scrollIntoView) m.scrollIntoView({block:"center"});
+  /* shared by every caller (Log and Money) — fixing it here, once, is the
+     point: a patched call site would leave its sibling on the old instant
+     jump. The .field itself is rebuilt fresh each render (see fieldNeed
+     above), so its border-colour flip cannot use a CSS transition; the
+     rise-in on its .fielderr line covers the motion for this state. */
+  smoothTo(m);
+  /* The scroll only helps a sighted parent; the role="alert" count says how many
+     but not which. Focus moves to the field's container (never its input, so no
+     keyboard pops up) and a screen reader reads its "Still needed: …" line
+     (after-panel B1, twice). preventScroll: smoothTo already owns the scroll. */
+  if(m){ m.setAttribute("tabindex", "-1"); if(m.focus) m.focus({preventScroll:true}); }
   return m || null;
 }
 /* BEHAVIOURS SEEN — an inline multi-pick over ~400 tags in 20 groups. Never a
@@ -4851,30 +5102,39 @@ function draftForm(){
      While the timer RUNS nothing is gated: that form has no Next button to
      tap, and a free thumb mid-episode should be able to answer anything. */
   const step2 = running || !!(d.stepOpen || d.trig || d.place || d.resp);
+  /* motion-A: step2 used to just appear below the fold with nothing but the
+     dock button's label changing (worst finding in the audit). It now rises
+     in and the form scrolls to it, but only the render that FIRST opens it —
+     d._step2Shown marks that it has already played, so a revisit (or a
+     self-check fixture that sets stepOpen straight to true) lands on the
+     full form with no animation, exactly as before. */
+  const step2Entering = !running && d.stepOpen && !d._step2Shown;
+  if(step2) d._step2Shown = true;
   if(step2){
-    if(!running) wrap.appendChild(el("div","stepno step2lab","Step 2 of 2"));
-    wrap.appendChild(chipRow("Trigger", true, optionsFor("trig"), d.trig,
+    const box = el("div","step2block");
+    if(!running) box.appendChild(el("div","stepno step2lab","Step 2 of 2"));
+    box.appendChild(chipRow("Trigger", true, optionsFor("trig"), d.trig,
       v=>{ d.trig=v; const h=$("respHint"); if(h) h.parentNode.replaceChild(respHint(v), h);
            if(d.missing) renderLog(); }, d.missing && !d.trig, false, "trig", renderLog));
-    wrap.appendChild(chipRow("Where", true, optionsFor("place"), d.place,
+    box.appendChild(chipRow("Where", true, optionsFor("place"), d.place,
       v=>{ d.place=v; if(d.missing) renderLog(); }, d.missing && !d.place, false, "place", renderLog));
-    wrap.appendChild(sf);
+    box.appendChild(sf);
+    if(!running){
+      /* the hint belongs to the question it informs, so it sits ABOVE those chips —
+         it used to float between the last chip and Save, where it read as a warning */
+      box.appendChild(respHint(d.trig));
+      box.appendChild(chipRow("What ended it", false, optionsFor("resp"), d.resp,
+        v=>{ d.resp = v; }, false, true, "resp", renderLog));
+    }
+    box.appendChild(contextFields(d, renderLog));
+    box.appendChild(behaviourPicker(d, renderLog));
+    wrap.appendChild(box);
+    if(step2Entering) motion(box, ARRIVE, "--t-view");
   } else {
     const nx = el("p","sub stepnote","Two quick questions after this — what set it off, and where.");
     wrap.appendChild(nx);
   }
 
-  if(!running && step2){
-    /* the hint belongs to the question it informs, so it sits ABOVE those chips —
-       it used to float between the last chip and Save, where it read as a warning */
-    wrap.appendChild(respHint(d.trig));
-    wrap.appendChild(chipRow("What ended it", false, optionsFor("resp"), d.resp,
-      v=>{ d.resp = v; }, false, true, "resp", renderLog));
-  }
-  if(step2){
-    wrap.appendChild(contextFields(d, renderLog));
-    wrap.appendChild(behaviourPicker(d, renderLog));
-  }
   const dock = el("div","savedock");
 
   /* the error goes BEFORE the button: it was appended after it, so the text
@@ -4905,12 +5165,15 @@ function draftForm(){
     b.onclick = ()=>{
       if(!String(d.note||"").trim()){ d.missing = ["what happened"]; renderLog(); showFirstMissing($("logSlot")); return; }
       d.stepOpen = true; d.missing = null; renderLog();
+      smoothTo(firstStep2Field($("logSlot")));
     };
     dock.appendChild(b);
   } else {
     const b = el("button","bigbtn");
-    b.appendChild(ico("check")); b.appendChild(el("span",null,"Save"));
+    b.appendChild(ico("check"));
+    const lab = el("span",null,"Save"); b.appendChild(lab);
     b.onclick = saveDraft;
+    if(step2Entering) motion(lab, [{opacity:0},{opacity:1}], "--t-sel", "--ease-settle");
     dock.appendChild(b);
   }
 
@@ -4957,8 +5220,7 @@ function saveDraft(){
      never a generic "done": this is a record, and the confirmation should be
      checkable against the row it created. */
   State.flash = "Saved · " + (dayOf(start) === dayOf(Date.now()) ? "" : friendlyDay(dayOf(start)) + " · ") + clockOf(start) + (entry.sev ? " · severity " + entry.sev : "") + " · " + durText(dur);
-  clearTimeout(flashT);
-  flashT = setTimeout(()=>{ State.flash = null; if(!State.draft) renderLog(); }, 6000);
+  flashT = clearFlashLater(flashT, ()=>{ State.flash = null; if(!State.draft) renderLog(); });
   renderAll();
 }
 
@@ -5053,6 +5315,15 @@ function renderHistory(){
 
   const foot = renameFootnote(all);
   if(foot) slot.appendChild(foot);
+
+  /* A saved or edited row shows where it went: ARRIVE plus a one-shot accent
+     wash on top (colour, so --ease-soft not the spring — a hue overshoot would
+     extrapolate past the accent). Opening the tab for the first time animates
+     nothing, because newKeyed's first call for this slot just records keys. */
+  const freshRows = animateNew(slot);
+  freshRows.forEach(n=>motion(n,
+    [{backgroundColor:"var(--accent-soft)"},{backgroundColor:"transparent"}],
+    "--t-amb", "--ease-soft"));
 }
 
 /* The PRINT EXHIBIT's footnote: a renamed option must carry its history on
@@ -5111,6 +5382,9 @@ function rowMeta(facts, who){
 function entryRow(e){
   const mine = e.who === State.me;
   const row = el(mine ? "button" : "div", "entry" + (mine ? " mine" : "") + (e.voided ? " voided" : ""));
+  /* a revision counts as new too, not just a first save: the key includes the
+     edit count so animateNew sees a fresh key on every save of this entry */
+  row.setAttribute("data-key", e.id + ":" + (e.editCount||0));
   const stripe = el("span","stripe b"+(e.sev||0), e.sev ? String(e.sev) : "–");
   stripe.setAttribute("aria-hidden","true");   /* the row's own label names the severity */
   row.appendChild(stripe);
@@ -5289,6 +5563,7 @@ function drawSheet(e){
     act.appendChild(no); act.appendChild(yes);
     box.appendChild(act);
     delWrap.appendChild(box);
+    revealConfirm(box);
     yes.focus();
   };
   delWrap.appendChild(del);
@@ -5337,8 +5612,7 @@ function commitRevision(e, isVoid){
   State.flash = isVoid
     ? "Removed · " + clockOf(e.start)
     : "Updated · " + clockOf(e.start) + " · " + Object.keys(patch).map(k=>PATCH_WORD[k]||k).join(", ");
-  clearTimeout(flashT);
-  flashT = setTimeout(()=>{ State.flash = null; renderAll(); }, 6000);
+  flashT = clearFlashLater(flashT, ()=>{ State.flash = null; renderAll(); });
   renderAll();
 }
 
@@ -5591,7 +5865,13 @@ function renderPatterns(){
         });
         return {k:s.k, name:s.name, color:"var(--s" + ((i % 6) + 1) + ")", vals};
       });
-      c.appendChild(smallMultiples(rows, periods));
+      const smNode = smallMultiples(rows, periods);
+      c.appendChild(smNode);
+      /* the domains/groups toggle rebuilds this whole card, so its columns
+         used to just pop to their new heights on every switch — not gated on
+         .view.entering like the trend columns (this isn't a tab opening),
+         so it grows explicitly here via motion() every time the switch redraws. */
+      tmFillNodes(smNode).forEach(f=>motion(f, [{transform:"scaleY(0)"}, {transform:"none"}], "--t-grow", "--ease-spring"));
       /* the sentence: the row whose latest period rose most against its first */
       const moved = rows.map(r=>({name:r.name, d:r.vals[r.vals.length-1].pct - r.vals[0].pct, last:r.vals[r.vals.length-1].pct})).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d))[0];
       c.takeaway = periods.keys.length + " " + periods.unit + "s of tagged entries. " +
@@ -5824,7 +6104,11 @@ function renderMoney(){
   }
 
   const banner = el("div","moneybanner");
-  banner.appendChild(paintNames(el("div","big"), balanceSentence(cents, anyRecord)));
+  const balText = balanceSentence(cents, anyRecord);
+  const balNode = paintNames(el("div","big"), balText);
+  banner.appendChild(balNode);
+  if(balanceTextChanged(lastBalanceText, balText)) motion(balNode, [{opacity:0},{opacity:1}], "--t-sel", "--ease-settle");
+  lastBalanceText = balText;
   if(anyRecord){
     const voidedCount = voidedClaims.length + voidedSettles.length;
     banner.appendChild(el("div","sub2",
@@ -5837,10 +6121,26 @@ function renderMoney(){
   /* A balance owed makes settling it the primary action; with nothing owed, logging
      a new claim stays primary as before. Ruling: money_few panel-6 CONFIRMED defect 1. */
   const owed = cents !== 0;
-  if(State.moneyDraft){ slot.appendChild(claimForm()); updateSplitPreview(); }
+  /* Claim/settle panels rise in (ARRIVE, spring) the moment they appear, but
+     only then: both forms re-render on every keystroke (live validation,
+     split preview, the big-amount checkpoint), and re-playing the arrival on
+     each one would look like a jitter, not a settle. beginClaim/beginSettle
+     set the flag; it is consumed (and cleared) the first time it is seen. */
+  const justOpened = State.moneyFormJustOpened;
+  State.moneyFormJustOpened = false;
+  if(State.moneyDraft){
+    const panel = claimForm();
+    slot.appendChild(panel);
+    updateSplitPreview();
+    if(justOpened) motion(panel, ARRIVE, "--t-view", "--ease-spring");
+  }
   else { const b = el("button","bigbtn" + (owed ? " ghost" : "")); b.textContent = "Log a claim"; b.onclick = beginClaim; slot.appendChild(b); }
 
-  if(State.settleDraft) slot.appendChild(settleForm());
+  if(State.settleDraft){
+    const panel = settleForm();
+    slot.appendChild(panel);
+    if(justOpened) motion(panel, ARRIVE, "--t-view", "--ease-spring");
+  }
   else { const b2 = el("button","bigbtn" + (owed ? "" : " ghost")); b2.textContent = "Record a settlement"; b2.onclick = beginSettle; slot.appendChild(b2); }
 
   const live = liveClaims.map(c=>Object.assign({kind:"expense"},c))
@@ -5883,6 +6183,10 @@ function renderMoney(){
     slot.appendChild(tog);
     slot.appendChild(box);
   }
+
+  /* Same "where did it go" arrival as History's rows; opening the tab for the
+     first time animates nothing (newKeyed's first call just records keys). */
+  animateNew(slot);
 }
 
 /* WHO IS WHO, IN COLOUR (Simon 09-18): Dad is blue and Mom is purple on the calendar and the
@@ -5912,6 +6216,8 @@ function splitSummary(e){
 function moneyRow(e){
   const mine = e.who === State.me;
   const row = el("div","entry" + (e.voided ? " voided" : ""));
+  /* same rule as entryRow: a revision counts as new too */
+  row.setAttribute("data-key", e.kind + ":" + e.id + ":" + (e.editCount||0));
   const body = el("div","ebody");
   const top = el("div","etop");
   top.appendChild(el("span","etime", new Date(e.date).toLocaleDateString(undefined,{month:"short",day:"numeric"})));
@@ -5963,6 +6269,7 @@ function moneyRow(e){
       act.appendChild(no); act.appendChild(yes);
       box.appendChild(act);
       wrap.appendChild(box);
+      revealConfirm(box);
       yes.focus();
     };
     wrap.appendChild(del);
@@ -5986,6 +6293,7 @@ function voidMoneyItem(kind, e){
 function beginClaim(){
   State.moneyDraft = {amount:"", dateStr:dayOf(Date.now()), cat:null, payer:State.me, desc:"",
     split:"50", splitPct:50, receipt:null, receiptError:null, missing:null};
+  State.moneyFormJustOpened = true;   /* the panel rises in once, not on every keystroke re-render */
   renderMoney();
 }
 function cancelClaim(){ State.moneyDraft = null; renderMoney(); }
@@ -6261,8 +6569,7 @@ function saveClaim(){
   Store.putExpense(State.me, claim);
   State.moneyDraft = null;
   State.moneyFlash = "Saved · " + centsToDollars(cents) + " · " + moneyCatLabel(claim.cat);
-  clearTimeout(moneyFlashT);
-  moneyFlashT = setTimeout(()=>{ State.moneyFlash = null; if(!State.moneyDraft) renderMoney(); }, 6000);
+  moneyFlashT = clearFlashLater(moneyFlashT, ()=>{ State.moneyFlash = null; if(!State.moneyDraft) renderMoney(); });
   renderAll();
 }
 
@@ -6277,6 +6584,7 @@ function settlePrefill(cents, me){
 function beginSettle(){
   const pre = settlePrefill(ledgerBalance(Store.allExpenses().filter(c=>!c.voided), Store.allSettlements().filter(s=>!s.voided)), State.me);
   State.settleDraft = {payer:pre.payer, amount:pre.amount, amount0:pre.amount, dateStr:dayOf(Date.now()), note:"", missing:null};
+  State.moneyFormJustOpened = true;   /* the panel rises in once, not on every keystroke re-render */
   renderMoney();
 }
 function cancelSettle(){ State.settleDraft = null; renderMoney(); }
@@ -6374,8 +6682,7 @@ function saveSettle(){
   Store.putSettlement(State.me, settle);
   State.settleDraft = null;
   State.moneyFlash = "Recorded · " + WHO_NAME[settle.payer] + " paid " + centsToDollars(cents);
-  clearTimeout(moneyFlashT);
-  moneyFlashT = setTimeout(()=>{ State.moneyFlash = null; if(!State.settleDraft) renderMoney(); }, 6000);
+  moneyFlashT = clearFlashLater(moneyFlashT, ()=>{ State.moneyFlash = null; if(!State.settleDraft) renderMoney(); });
   renderAll();
 }
 
@@ -6398,9 +6705,19 @@ const RENDER_TABS = TABS.concat(["insights"]);
    opened, so no tab is ever SHOWN stale, only left un-rebuilt while hidden. */
 RENDER_TABS.forEach(t=>{ if(t !== State.tab) State.staleTabs[t] = true; });
 let enterT = null;
+/* motion-A: pure — which column the tab indicator sits over. -1 for Insights
+   (no tablist button), which is how setTab knows to hide it rather than park
+   it under whatever button happened to be selected last. */
+function tabIndicatorIndex(name){ return TABS.indexOf(name); }
 function setTab(name, focusTab){
   State.tab = name;
   document.body.setAttribute("data-tab", name);   /* the section hue hangs off this */
+  const ind = $("tabInd");
+  if(ind){
+    const i = tabIndicatorIndex(name);
+    ind.hidden = i < 0;
+    if(i >= 0) ind.style.setProperty("--tabi", String(i));
+  }
   if(State.staleTabs[name]) renderTab(name);
   RENDER_TABS.forEach(t=>{
     const v = $("v-"+t);
@@ -6577,6 +6894,12 @@ function renderTrends(){
    in a sentence, on the cell's own aria-label. Tapping opens the day sheet,
    where all three are laid out as full rows with real labels — that is
    where this design asks to be read, not the grid. */
+/* MONTHS SLIDE IN THE DIRECTION OF TIME: the nav handlers record which way
+   before mutating State.calMonth and calling renderCalendar, so the render
+   itself never has to guess a direction from before/after state (which
+   would already be overwritten by the time it looked). calRendered gates
+   the very first paint of the tab, which is not travel. */
+let calSlideDir = 0, calRendered = false;
 function renderCalendar(){
   const slot = $("calSlot");
   slot.innerHTML = "";
@@ -6592,11 +6915,11 @@ function renderCalendar(){
   hd.appendChild(el("span","cal-mo", moDate.toLocaleDateString(undefined,{month:"long",year:"numeric",timeZone:"UTC"})));
   const nav = el("div","cal-nav");
   const prevB = el("button",null,"‹"); prevB.setAttribute("aria-label","Previous month");
-  prevB.onclick = ()=>{ State.calMonth = shiftYm(ym,-1); renderCalendar(); };
+  prevB.onclick = ()=>{ const n = shiftYm(ym,-1); calSlideDir = calMonthDir(ym, n); State.calMonth = n; renderCalendar(); };
   const todayB = el("button","cal-today","Today"); todayB.setAttribute("aria-label","Jump to this month");
-  todayB.onclick = ()=>{ State.calMonth = dayOf(Date.now()).slice(0,7); renderCalendar(); };
+  todayB.onclick = ()=>{ const t = dayOf(Date.now()).slice(0,7); calSlideDir = calMonthDir(ym, t); State.calMonth = t; renderCalendar(); };
   const nextB = el("button",null,"›"); nextB.setAttribute("aria-label","Next month");
-  nextB.onclick = ()=>{ State.calMonth = shiftYm(ym,1); renderCalendar(); };
+  nextB.onclick = ()=>{ const n = shiftYm(ym,1); calSlideDir = calMonthDir(ym, n); State.calMonth = n; renderCalendar(); };
   nav.appendChild(prevB); nav.appendChild(todayB); nav.appendChild(nextB);
   hd.appendChild(nav);
   /* NO SCHEDULE YET, or a PROPOSAL PENDING: the custody card goes ABOVE the grid
@@ -6686,6 +7009,18 @@ function renderCalendar(){
 
   if(!State.paint && !liftCustody) slot.appendChild(calCustodyPanel());
   slot.appendChild(calEmailBox());   /* option B: the alerts box, below the schedule, never above the month */
+
+  /* the grid arrives from the direction of travel — only the title and the
+     grid itself, never the banner/panels above or below them, and never on
+     the tab's first paint (opening the tab is not travel). */
+  if(calRendered && calSlideDir !== 0){
+    const dx = 24 * calSlideDir;
+    const frames = [{opacity:0, transform:"translateX(" + dx + "px)"}, {opacity:1, transform:"none"}];
+    motion(hd, frames, "--t-view", "--ease-spring");
+    motion(grid, frames, "--t-view", "--ease-spring");
+  }
+  calRendered = true;
+  calSlideDir = 0;
 
   if(State.calDay) calDrawDaySheet();
 }
@@ -6979,6 +7314,11 @@ function calPaintTap(btn, band, dstr){
   else P.days[dstr] = P.parent;
   P.confirming = false;
   calPaintBand(btn, band, dstr, custodyForDate(dstr));
+  /* calPaintBand patches THIS existing cell's classes rather than rebuilding
+     it, so the .dband colour transition below actually has a before-state to
+     animate from. A tiny scale settle on the tapped cell itself confirms the
+     tap landed. */
+  motion(btn, [{transform:"scale(1)"}, {transform:"scale(1.04)"}, {transform:"scale(1)"}], "--t-sel", "--ease-spring");
   calDrawPaintBar();
 }
 /* the writes a Save would make: pending days that differ from what already holds */
@@ -6992,8 +7332,7 @@ function commitPaint(){
   const nd = w.filter(x=>x.parent==="dad").length, nm = w.length - nd;
   State.paint = null;
   State.custodyFlash = w.length ? ("Assigned · " + [nd ? nd + " to Dad" : "", nm ? nm + " to Mom" : ""].filter(Boolean).join(", ")) : null;
-  clearTimeout(custodyFlashT);
-  custodyFlashT = setTimeout(()=>{ State.custodyFlash = null; if(!State.custodyDraft) renderCalendar(); }, 6000);
+  custodyFlashT = clearFlashLater(custodyFlashT, ()=>{ State.custodyFlash = null; if(!State.custodyDraft) renderCalendar(); });
   renderAll();
 }
 function calDrawPaintBar(){
@@ -7246,8 +7585,7 @@ function commitScheduleSave(){
   const governs = patternGoverns({id, v:2, by:State.me});
   State.custodyFlash = (governs ? "Schedule set" : "Schedule proposed — waiting for " + WHO_NAME[otherOf(State.me)]) +
     " · from " + friendlyExhibitDate(today);
-  clearTimeout(custodyFlashT);
-  custodyFlashT = setTimeout(()=>{ State.custodyFlash = null; if(!State.custodyDraft) renderCalendar(); }, 6000);
+  custodyFlashT = clearFlashLater(custodyFlashT, ()=>{ State.custodyFlash = null; if(!State.custodyDraft) renderCalendar(); });
   renderAll();
 }
 /* Read-only preview of a pattern's 14 cells, for the proposal banners below —
@@ -7491,6 +7829,12 @@ function calDrawDaySheet(){
      withdraw flow (putSwapRequest/respondToSwap), no second flow. At the TOP
      of the sheet per Simon's ruling 09-18 night, ahead of events. */
   s.appendChild(calSwapSection(dstr));
+  /* rows carry data-key (request id + status); animateNew arrives a row that
+     was not there at this SAME slot's previous draw — a newly sent request,
+     or a status change (respond/withdraw) redrawing this same day sheet —
+     rather than letting it pop in. calSheetEl is the persistent slot; the
+     rows inside it are rebuilt every draw. */
+  animateNew(s);
 
   if(State.calAdding){ s.appendChild(calEventForm(null)); return; }
   if(State.calEditingEvent){
@@ -7870,6 +8214,7 @@ function swapDeclineControl(r, act, direction){
   const back = el("button","linkbtn","Cancel");
   back.onclick = ()=>{ State.calDeclineOpen = null; calDrawDaySheet(); };
   box.appendChild(inp); box.appendChild(no); box.appendChild(back);
+  revealConfirm(box);
   return box;
 }
 
@@ -7888,13 +8233,20 @@ function swapWithdrawControl(r){
     no.onclick = ()=>{ wrap.innerHTML = ""; wrap.appendChild(c); };
     act.appendChild(no); act.appendChild(yes); box.appendChild(act);
     wrap.appendChild(box);
+    revealConfirm(box);
   };
   wrap.appendChild(c);
   return wrap;
 }
 
+/* the id plus the outcome so far: a status change (accept/decline/withdraw)
+   redrawing this same row counts as a new arrival, same as a brand-new
+   request — see animateNew(s) in calDrawDaySheet. Pure, so it is checkable
+   without building a row. */
+function swapRowKey(r){ return r.id + "|" + (r.response ? r.response.decision : "pending"); }
 function calSwapRow(r){
   const row = el("div","panel calswap");
+  row.setAttribute("data-key", swapRowKey(r));
   const top = el("div","etop");
   top.appendChild(el("span","badge "+r.by, WHO_NAME[r.by]));
   /* time portion through clockOf(), same as every other timestamp in the app —
@@ -8334,6 +8686,7 @@ function msgExhibitTimeText(at){ return friendlyExhibitDate(dayOf(at)) + " " + c
 function msgBubble(m, me){
   const mine = m.by === me;
   const b = el("div","msgbubble " + m.by + " " + (mine ? "mine" : "theirs"));
+  b.setAttribute("data-key", m.id);
   b.appendChild(el("span","msgwho " + m.by, WHO_NAME[m.by]));
   b.appendChild(el("p","msgtext", m.text));
   const seenAt = Store.seenAt(m.id);
@@ -8341,6 +8694,13 @@ function msgBubble(m, me){
   b.appendChild(el("p","msgmeta", meta));
   return b;
 }
+/* Pure so it can be checked without a browser: was the reader within ~80px
+   of the bottom BEFORE this render. Called before the slot is touched. */
+function msgWasNearBottom(slot){
+  if(!slot) return false;
+  return (slot.scrollHeight - slot.scrollTop - slot.clientHeight) <= 80;
+}
+let msgThreadEverDrawn = false;
 function renderMessages(){
   const slot = $("msgThreadSlot"); if(!slot) return;
   /* opening the tab marks the OTHER parent's messages seen — markSeen already
@@ -8351,6 +8711,11 @@ function renderMessages(){
      thread — every parent opening an unread message saw it doubled. So: mark
      first, clear and draw last. */
   if(State.me) Store.allMessages().filter(m=>m.by !== State.me).forEach(m=>Store.markSeen(State.me, m.id));
+  /* read scroll position BEFORE the slot is touched — clearing it changes
+     scrollHeight/scrollTop and there is no "before" left to ask about. The
+     first-ever draw has no prior position to preserve, so it always jumps. */
+  const firstDraw = !msgThreadEverDrawn;
+  const wasNear = firstDraw ? true : msgWasNearBottom(slot);
   slot.innerHTML = "";
   const device = Store.mode === "device";
   const dn = $("msgDeviceNote"); if(dn) dn.hidden = !device;
@@ -8363,7 +8728,18 @@ function renderMessages(){
     const thread = el("div","msgthread");
     all.forEach(m=>thread.appendChild(msgBubble(m, State.me)));
     slot.appendChild(thread);
-    slot.scrollTop = slot.scrollHeight;
+    if(firstDraw) slot.scrollTop = slot.scrollHeight;
+  }
+  /* a sent or incoming bubble rises in rather than popping — data-key is the
+     message id, so only bubbles that were not in this SAME slot at its last
+     draw animate. */
+  animateNew(slot);
+  msgThreadEverDrawn = true;
+  /* a reader already near the bottom follows new content down; a reader who
+     scrolled up to read history is left alone. First draw already jumped
+     above and is not "new content arriving", so it is excluded here. */
+  if(!firstDraw && all.length && wasNear){
+    slot.scrollTo({top: slot.scrollHeight, behavior: ms("--t-view") <= 1 ? "auto" : "smooth"});
   }
   updateTabCounts();
 }
@@ -8503,8 +8879,23 @@ $("pickDad").onclick = ()=>askConfirmMe("dad");
 $("pickMom").onclick = ()=>askConfirmMe("mom");
 $("gateConfirmBack").onclick = backFromConfirmMe;
 $("gateConfirmYes").onclick = confirmMe;
+/* motion-A: pure — is this click a no-op re-tap of the tab already open?
+   Kept separate from setTab (which other callers still need to run
+   unconditionally: paintTimerPill, tabKey, forced re-renders elsewhere). */
+function sameTabTap(current, tapped){ return current === tapped; }
 TABS.forEach(t=>{
-  $("t-"+t).onclick = ()=>setTab(t);
+  /* setTab() itself still runs unconditionally for every OTHER caller — it
+     has to, those need the entering class re-applied. Only a tap on the tab
+     that is ALREADY current is special: setTab would strip .entering, force
+     a reflow and replay ARRIVE from opacity 0, blinking a view that never
+     left. Guarded here, at the click, not inside setTab. */
+  $("t-"+t).onclick = ()=>{
+    if(sameTabTap(State.tab, t)){
+      window.scrollTo({top:0, left:0, behavior: ms("--t-view") <= 1 ? "auto" : "smooth"});
+      return;
+    }
+    setTab(t);
+  };
   $("t-"+t).onkeydown = tabKey;
 });
 $("printBtn").onclick = ()=>window.print();
@@ -8582,6 +8973,287 @@ Store.init();
   let ran = 0;
   const ck = (name, cond) => { ran++; if(!cond) fail.push(name); };
   const bootMe = State.me, bootTab = State.tab;   /* restored and ASSERTED at the very end */
+
+  // motion layer: only rows whose key is new since the slot's LAST render
+  // animate, and a slot's first render animates nothing (09-26)
+  {
+    const slot = el("div");
+    const fill = keys => { slot.innerHTML = ""; keys.forEach(k=>{ const r = el("div"); r.setAttribute("data-key", k); slot.appendChild(r); }); };
+    fill(["a","b"]); const first = newKeyed(slot).length;
+    fill(["a","b","c"]); const added = newKeyed(slot).map(n=>n.getAttribute("data-key")).join();
+    fill(["a","c"]); const again = newKeyed(slot).map(n=>n.getAttribute("data-key")).join();
+    fill(["a"]); const shrunk = newKeyed(slot).length;
+    ck("motion: a slot's first render is not news; only the added key is new; removal is not an arrival",
+       first === 0 && added === "c" && shrunk === 0);
+    ck("motion: a key re-rendered inside its --t-view window still arrives (a save renders twice)", again === "c");
+    seenKeys.get(slot).forEach((born, k, m)=>m.set(k, born - 1e9));
+    fill(["a","p","q","r"]); const bulk = newKeyed(slot).length;
+    seenKeys.get(slot).forEach((born, k, m)=>m.set(k, born - 1e9));
+    fill(["a","p","q","r","s"]); const one = newKeyed(slot).length;
+    ck("motion: more than " + BULK_KEYS + " new rows in one render is a bulk load, not news; the next single row still is",
+       bulk === 0 && one === 1);
+    const fake = {animate(){ return {cancelled:false, cancel(){ this.cancelled = true; }}; }};
+    const r1 = motion(fake, ARRIVE, "--t-view"), w = motion(fake, [{backgroundColor:"transparent"}], "--t-amb");
+    const r2 = motion(fake, ARRIVE, "--t-view");
+    ck("motion: a replay of the same properties replaces the running one; other properties layer",
+       !!r1 && r1.cancelled && !w.cancelled && !r2.cancelled);
+    // reduced motion collapses the tokens to 1ms; motion() must then leave the end state alone
+    let asked = 0; const counter = {animate(){ asked++; return {cancel(){}}; }};
+    const rs = document.documentElement.style; rs.setProperty("--t-view", "1ms");
+    let under; try { under = motion(counter, ARRIVE, "--t-view"); } finally { rs.removeProperty("--t-view"); }
+    ck("motion: under reduced motion (a 1ms token) motion() never calls .animate",
+       under === null && asked === 0 && !!motion(counter, ARRIVE, "--t-view") && asked === 1);
+    ck("motion: the spring ease token resolves", ease("--ease-spring").length > 4 && ease("--ease-spring") !== "ease");
+  }
+  {
+    // the Log form rises in on the render that first shows it, and never on a re-render of the same draft
+    const real = motion, bd = State.draft, bs = State.logFormShown, arrived = [];
+    motion = (n, f)=>{ if(f === ARRIVE && n) arrived.push(n);   /* the stub sets no parentNode */ return null; };
+    try {
+      State.logFormShown = false; State.draft = null; renderLog(); const idle = arrived.length;
+      beginRetro(); const opened = arrived.length - idle;
+      renderLog(); const again = arrived.length - idle - opened;
+      State.draft = null; renderLog(); const back = arrived.length - idle - opened - again;
+      renderLog(); const homeAgain = arrived.length - idle - opened - again - back;
+      beginLive(); const timed = arrived.length - idle - opened - again - back - homeAgain;
+      ck("motion: home to Log form rises in once (button and timer); a re-render stays still",
+         idle === 0 && opened === 1 && again === 0 && timed === 1);
+      ck("motion: leaving the form (Save, Discard), the home rises back once; a home re-render stays still",
+         back === 2 && homeAgain === 0);
+    } finally {
+      motion = real; if(State.tick){ clearInterval(State.tick); State.tick = null; }
+      State.draft = bd; State.logFormShown = bs; renderLog();
+    }
+  }
+  {
+    const root = el("div"), f = el("div","field missing"); root.appendChild(f);
+    let focused = null; f.focus = o=>{ focused = o || {}; };
+    showFirstMissing(root);
+    ck("validation: the first missing field takes focus (not its input) without a second scroll",
+       !!focused && focused.preventScroll === true && f.getAttribute("tabindex") === "-1");
+  }
+  /* motion-A checks */
+  // 1. STEP 2 REVEAL: firstStep2Field is pure DOM lookup — build a bare
+  // .step2block the way draftForm's box does, in the stub, and confirm it
+  // finds the first step-2 field (Trigger) and not null, not a step-1 node.
+  {
+    const root = el("div");
+    const step1 = el("div","field whatfield"); root.appendChild(step1);
+    const box = el("div","step2block");
+    const trig = el("div","field"); box.appendChild(trig);
+    const place = el("div","field"); box.appendChild(place);
+    root.appendChild(box);
+    ck("motion-A: firstStep2Field finds the step-2 question, not null, not the step-1 field",
+       firstStep2Field(root) === trig && firstStep2Field(root) !== step1);
+    ck("motion-A: firstStep2Field is honest when step 2 hasn't opened",
+       firstStep2Field(el("div")) === null);
+  }
+  // 2. VALIDATION: showFirstMissing is shared by Log and Money — fixed once,
+  // both benefit. Still returns the first .field.missing node.
+  {
+    const root = el("div");
+    root.appendChild(el("div","field"));
+    const miss = el("div","field missing"); root.appendChild(miss);
+    root.appendChild(el("div","field missing"));
+    ck("motion-A: showFirstMissing still returns the FIRST missing field",
+       showFirstMissing(root) === miss);
+    ck("motion-A: showFirstMissing is honest when nothing is missing",
+       showFirstMissing(el("div")) === null);
+  }
+  // 3. FIRST RUN crossfade: the hidden flips stay synchronous (asserted by the
+  // existing chooser checks further down, unchanged) — this only asserts the
+  // NEW motion actually fires, by intercepting revealConfirm the same way
+  // motion-B's block above does for its own confirm steps.
+  {
+    const realReveal = revealConfirm;
+    let seen = [];
+    revealConfirm = (node) => { seen.push(node); return realReveal(node); };
+    const savedPending = State.pickPending, savedMe = State.me;
+    try {
+      askConfirmMe("dad");
+      ck("motion-A: askConfirmMe reveals the confirm step via revealConfirm",
+         seen.length === 1 && seen[0] === $("gateConfirm"));
+      seen = [];
+      backFromConfirmMe();
+      ck("motion-A: backFromConfirmMe reveals the pick screen via revealConfirm",
+         seen.length === 1 && seen[0] === $("gatePick"));
+    } finally {
+      revealConfirm = realReveal;
+      State.pickPending = savedPending;
+      $("gateConfirm").hidden = true; $("gatePick").hidden = false; $("gatePickFoot").hidden = false;
+    }
+  }
+  // 4. RE-TAPPING THE CURRENT TAB: sameTabTap is the pure decision the click
+  // handler guards on — a tap of the tab already open must not replay
+  // setTab's .entering dance. Proven both ways so this can go red.
+  {
+    ck("motion-A: sameTabTap is true when the tapped tab is already current",
+       sameTabTap("money", "money") === true);
+    ck("motion-A: sameTabTap is false for a real switch",
+       sameTabTap("money", "log") === false);
+  }
+  // 5. TAB INDICATOR: one element moves via --tabi instead of each tab
+  // drawing its own pill. tabIndicatorIndex is the pure lookup; setTab is
+  // then asserted to actually apply it to #tabInd. Restored to the tab it
+  // found IMMEDIATELY (not left for the boot-tab setTab() at the very end of
+  // this self-check) — every test after this one in the file still expects
+  // State.tab to be whatever it already was.
+  {
+    ck("motion-A: tabIndicatorIndex('money') is money's column",
+       tabIndicatorIndex("money") === TABS.indexOf("money"));
+    ck("motion-A: tabIndicatorIndex hides for a view with no tab button",
+       tabIndicatorIndex("insights") === -1);
+    const wasTab = State.tab;
+    setTab("money");
+    ck("motion-A: setTab points #tabInd at money's column and shows it",
+       $("tabInd").style.getPropertyValue("--tabi").trim() === String(TABS.indexOf("money")) &&
+       $("tabInd").hidden === false);
+    setTab(wasTab);
+  }
+  // 6. FLASH TIMERS: clearFlashLater is the one place all six banners
+  // schedule through. flashSettle is the fade-then-clear decision its timer
+  // body defers to (extracted so a check can drive it without FLASH_MS's
+  // real 6000ms) — driven directly here.
+  {
+    let cleared = 0;
+    flashSettle(()=>{ cleared++; });
+    ck("motion-A: flashSettle clears when there is nothing to fade (stub has no .animate)",
+       cleared === 1);
+    ck("motion-A: FLASH_MS is the 6000ms dwell, not a motion token",
+       FLASH_MS === 6000);
+  }
+  // motion-B: entryRow's data-key folds in the revision count, so an edit to
+  // an existing entry is a NEW key to newKeyed, not a repeat of the old one.
+  // (09-26 opps_log_record: "saved/edited rows show where they went".)
+  {
+    const mk = (id, editCount) => entryRow({id, who:"dad", start:Date.now(), dur:60, measured:true,
+      sev:2, trig:"no", place:"home", resp:null, note:"", editCount:editCount, edited:editCount>0, revs:[]});
+    const slot = el("div");
+    slot.appendChild(mk("h1", 0));
+    const firstRender = newKeyed(slot).length;
+    slot.innerHTML = ""; slot.appendChild(mk("h1", 0)); slot.appendChild(mk("h2", 0));
+    const addedKeys = newKeyed(slot).map(n=>n.getAttribute("data-key"));
+    // age every key past its arrival window: the revision below lands later, not in the same tick
+    seenKeys.get(slot).forEach((born, k, m)=>m.set(k, born - 1e9));
+    slot.innerHTML = ""; slot.appendChild(mk("h1", 1)); slot.appendChild(mk("h2", 0));
+    const revisedKeys = newKeyed(slot).map(n=>n.getAttribute("data-key"));
+    ck("motion-B: a slot's first render is not news; a genuinely new entry is the only new key",
+       firstRender === 0 && addedKeys.length === 1 && addedKeys[0].indexOf("h2:") === 0);
+    ck("motion-B: revising an existing entry (editCount bump) counts as a new key too",
+       revisedKeys.length === 1 && revisedKeys[0].indexOf("h1:1") === 0);
+  }
+  // motion-B: moneyRow's data-key carries kind+id+editCount the same way, so
+  // claim/settlement rows arrive and a revision to one arrives again.
+  {
+    const mk = (kind, id, editCount) => moneyRow({kind:kind, id:id, who:"dad", payer:"dad",
+      date:Date.now(), amount:500, cat:"other", desc:"", editCount:editCount, edited:editCount>0, voided:false});
+    const k0 = mk("expense","c1",0).getAttribute("data-key");
+    const k1 = mk("expense","c1",1).getAttribute("data-key");
+    const kOther = mk("settlement","c1",0).getAttribute("data-key");
+    ck("motion-B: moneyRow's data-key changes on revision and distinguishes claim from settlement",
+       k0 !== k1 && k0 !== kOther && k0.indexOf("c1")>-1);
+  }
+  // motion-B: the balance sentence crossfades only when its TEXT changes — no
+  // count-up, no roll, per Simon's ruling. Pure decision, no DOM needed.
+  {
+    ck("motion-B: an unchanged balance sentence does not re-fade",
+       balanceTextChanged("To settle: $10.00, Mom to Dad.", "To settle: $10.00, Mom to Dad.") === false);
+    ck("motion-B: a changed balance sentence does fade",
+       balanceTextChanged("To settle: $10.00, Mom to Dad.", "To settle: $12.00, Mom to Dad.") === true);
+    ck("motion-B: the very first render (no previous text) never fades",
+       balanceTextChanged(null, "Settled — nothing outstanding.") === false);
+  }
+  // motion-B: revealConfirm is wired to every confirm step this lane owns
+  // (discardControl, renderFresh's Start-fresh confirm, and the Withdraw
+  // confirms in Record and Money). The node stub's motion() no-ops (no
+  // .animate), so this asserts the DECISION — revealConfirm was actually
+  // called with the confirm box that just appeared — not the paint itself.
+  {
+    const realReveal = revealConfirm;
+    let seen = [];
+    revealConfirm = (node) => { seen.push(node); return realReveal(node); };
+    try {
+      // discardControl: tapping Discard on a dirty draft reveals the confirm box
+      const wrap = discardControl(()=>true, ()=>{});
+      wrap.firstElementChild.onclick();
+      ck("motion-B: discardControl reveals its confirm box via revealConfirm",
+         seen.length === 1 && String(seen[0].className||"").indexOf("confirmbox") > -1);
+
+      // renderFresh: the confirm step appears once "Start fresh" is tapped
+      seen = [];
+      const savedAsk = State.freshAsk;
+      State.freshAsk = true;
+      renderFresh();
+      ck("motion-B: renderFresh's confirm step (Start fresh) calls revealConfirm",
+         seen.length === 1 && String(seen[0].className||"").indexOf("confirmbox") > -1);
+      State.freshAsk = savedAsk;
+      renderFresh();   /* leave $("freshSlot") as it was found */
+    } finally {
+      revealConfirm = realReveal;
+    }
+  }
+  /* motion-B checks */
+  // motion-C: MONTHS SLIDE IN THE DIRECTION OF TIME — the pure direction
+  // decision, apart from any render. next -> +1, previous -> -1, Today from
+  // a later month back to the real one -> -1, same month -> 0 (no travel).
+  {
+    ck("calMonthDir: shiftYm's next month is +1", calMonthDir("2026-03", "2026-04") === 1);
+    ck("calMonthDir: shiftYm's previous month is -1", calMonthDir("2026-03", "2026-02") === -1);
+    ck("calMonthDir: Today jumping BACK from a later month is -1", calMonthDir("2026-06", "2026-03") === -1);
+    ck("calMonthDir: the same month (no travel) is 0", calMonthDir("2026-03", "2026-03") === 0);
+  }
+  // motion-C: swap request rows key on id + outcome so far, so a status
+  // change (accept/decline/withdraw) redrawing the SAME slot counts as an
+  // arrival, not just a brand-new request id.
+  {
+    ck("swapRowKey: a pending request keys on its id and the word 'pending'",
+       swapRowKey({id:"r1", response:null}) === "r1|pending");
+    ck("swapRowKey: answering the SAME id changes its key (declining arrives as news)",
+       swapRowKey({id:"r1", response:{decision:"decline"}}) === "r1|decline" &&
+       swapRowKey({id:"r1", response:{decision:"decline"}}) !== swapRowKey({id:"r1", response:null}));
+  }
+  // motion-C: the decline and withdraw confirm boxes in the calendar reveal
+  // via revealConfirm, same as every other confirm step in the app. Spying
+  // on the (reassignable) function asserts the DECISION was made, since the
+  // node stub's motion() itself no-ops.
+  {
+    const realReveal = revealConfirm;
+    let seen = [];
+    revealConfirm = (node) => { seen.push(node); return realReveal(node); };
+    try {
+      State.calDeclineOpen = "r9";
+      const box = swapDeclineControl({id:"r9", by:"dad"}, el("div"), "responder");
+      ck("motion-C: the decline reason box reveals via revealConfirm",
+         seen.length === 1 && seen[0] === box && String(box.className||"").indexOf("declinebox") > -1);
+      State.calDeclineOpen = null;
+
+      seen = [];
+      const wwrap = swapWithdrawControl({id:"r9", by:"dad"});
+      wwrap.firstElementChild.onclick();
+      ck("motion-C: the withdraw-request confirm box reveals via revealConfirm",
+         seen.length === 1 && String(seen[0].className||"").indexOf("confirmbox") > -1);
+    } finally {
+      revealConfirm = realReveal;
+    }
+  }
+  // motion-C: messages — near-bottom is a pure read of scroll geometry, so
+  // it is checkable without a real scrollable element.
+  {
+    ck("msgWasNearBottom: exactly at the 80px threshold still counts as near",
+       msgWasNearBottom({scrollHeight:1000, scrollTop:840, clientHeight:80}) === true);
+    ck("msgWasNearBottom: one px past the threshold does not",
+       msgWasNearBottom({scrollHeight:1000, scrollTop:839, clientHeight:80}) === false);
+    ck("msgWasNearBottom: no slot is never near", msgWasNearBottom(null) === false);
+  }
+  // motion-C: bars — the series switch's fill columns are found so they can
+  // be grown; breaking the class name it looks for empties the result.
+  {
+    const holder = el("div");
+    const col = el("div","tmcol"); const fill = el("i","tmfill"); col.appendChild(fill); holder.appendChild(col);
+    ck("tmFillNodes: finds the fill columns a small-multiples card just drew", tmFillNodes(holder).length === 1 && tmFillNodes(holder)[0] === fill);
+    ck("tmFillNodes: a slot with none of them is empty, not an error", tmFillNodes(el("div")).length === 0 && tmFillNodes(null).length === 0);
+  }
+  /* motion-C checks */
 
   // resolve() must layer revisions without destroying the original
   const raw = {id:"x", who:"dad", start:0, sev:2, trig:"no", place:"home", note:"first", created:0,
@@ -11237,6 +11909,9 @@ Store.init();
         .forEach(id=>{ if($(id)) $(id).innerHTML = ""; });
       RENDER_TABS.forEach(t=>{ State.staleTabs[t] = true; });
     }
+    resetMotionMemory();
+    ck("motion: the self-check leaves no fixture rows in the motion memory",
+       !seenKeys.has($("histSlot")) && !seenKeys.has($("moneySlot")) && lastBalanceText === null);
     ck("the self-check leaves the identity it booted with", State.me === bootMe);
     /* the FIRST load on any phone has no identity: the chooser must still be the
        screen, and the app behind it must still be hidden. Only a run with no
