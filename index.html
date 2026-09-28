@@ -2698,6 +2698,7 @@ const Store = {
        two parents. Upgrade path = the Supabase swap described above. */
     let db = null;
     if(!window.claude){
+      this.resetOnce();   /* before any load: a tested phone opens blank, once */
       /* The family's own hosting. A key on this phone means "this copy shares":
          stay in sync mode even with the server unreachable (offline-first), so
          writes queue instead of being treated as a device-only trial. The
@@ -2793,10 +2794,30 @@ const Store = {
   startFresh(ls){
     if(this.mode !== "device") return false;
     ls = ls || localStorage;
-    try { ["bbl.mirror","bbl.outbox",this.CLEANUP_KEY,"bbl.me","bbl.meLocked"].forEach(k=>ls.removeItem(k)); } catch(e){ return false; }
+    try { this.recordKeys().forEach(k=>ls.removeItem(k)); } catch(e){ return false; }
     this.MIRROR_KEYS.forEach(k=>{ this[k] = {}; });
     this.emit();
     return true;
+  },
+  /* the localStorage keys that ARE this phone's record + identity. bbl.key (the
+     family hosting secret) and RESET_KEY are deliberately NOT in it. */
+  recordKeys(){ return ["bbl.mirror","bbl.outbox",this.CLEANUP_KEY,"bbl.me","bbl.meLocked"]; },
+  /* ONE-TIME RESET (Simon, 2026-09-27): every copy that held test data goes back to
+     blank on its next open, before Clark's partner starts, so no test entry, money,
+     chat or calendar item can reach a shared record later. Runs before loadLocal, so
+     memory is still empty; the marker makes every later open a no-op, and startFresh
+     never removes it (else a fresh start would re-wipe real data on the next reload).
+     ponytail: one fixed marker. Ceiling = one reset per phone, ever; upgrade path =
+     bump the marker name for a second family-wide reset. */
+  RESET_KEY: "bbl.resetV2",
+  resetOnce(ls){
+    ls = ls || localStorage;
+    try {
+      if(ls.getItem(this.RESET_KEY) === "1") return false;
+      this.recordKeys().forEach(k=>ls.removeItem(k));
+      ls.setItem(this.RESET_KEY, "1");
+      return true;
+    } catch(e){ return false; }
   },
   /* FORGET IDENTITY — the shared-mode counterpart to startFresh. The record lives on
      the server, so there is nothing honest to wipe locally; this only forgets which
@@ -10008,7 +10029,7 @@ Store.init();
     (function(){
       const mkLs = ()=>{ const d = {"bbl.mirror":"{}", "bbl.outbox":"[]", "bbl.cleanupV1":"1", "bbl.me":"mom"};
         return {d, removeItem(k){ delete d[k]; }}; };
-      const mkStore = mode=>{ const f = {mode, MIRROR_KEYS:Store.MIRROR_KEYS, CLEANUP_KEY:Store.CLEANUP_KEY, emitted:0, emit(){ this.emitted++; }};
+      const mkStore = mode=>{ const f = {mode, MIRROR_KEYS:Store.MIRROR_KEYS, CLEANUP_KEY:Store.CLEANUP_KEY, recordKeys:Store.recordKeys, emitted:0, emit(){ this.emitted++; }};
         Store.MIRROR_KEYS.forEach(k=>{ f[k] = {x:{items:{a:1}}}; }); return f; };
       const ls = mkLs(), f = mkStore("device");
       const ok = Store.startFresh.call(f, ls);
@@ -10020,6 +10041,25 @@ Store.init();
       ck("start fresh refuses in every mode where the record is or may be shared, and touches nothing there",
          ["sync","local","needkey","connecting"].every(m=>{ const l = mkLs(), g = mkStore(m);
            return Store.startFresh.call(g, l) === false && Object.keys(l.d).length === 4 && l.d["bbl.me"] === "mom" && Object.keys(g.entries).length === 1 && g.emitted === 0; }));
+      (function(){
+        const mk = ()=>{ const d = {"bbl.mirror":"{\"entries\":{\"a\":1}}", "bbl.outbox":"[1]", "bbl.cleanupV1":"1", "bbl.me":"dad", "bbl.meLocked":"1", "bbl.key":"fam"};
+          return {d, getItem(k){ return k in d ? d[k] : null; }, setItem(k,v){ d[k] = String(v); }, removeItem(k){ delete d[k]; }}; };
+        const l = mk();
+        const first = Store.resetOnce.call(Store, l);
+        ck("the one-time reset empties a tested phone's record + identity, keeps the family key, and marks the phone",
+           first === true && ["bbl.mirror","bbl.outbox","bbl.cleanupV1","bbl.me","bbl.meLocked"].every(k=>!(k in l.d)) &&
+           l.d["bbl.key"] === "fam" && l.d[Store.RESET_KEY] === "1");
+        l.d["bbl.mirror"] = "{\"entries\":{\"real\":1}}"; l.d["bbl.me"] = "mom";
+        ck("the one-time reset never runs twice: real data entered after it survives every later open",
+           Store.resetOnce.call(Store, l) === false && l.d["bbl.mirror"] === "{\"entries\":{\"real\":1}}" && l.d["bbl.me"] === "mom");
+        const f2 = {mode:"device", MIRROR_KEYS:Store.MIRROR_KEYS, CLEANUP_KEY:Store.CLEANUP_KEY, recordKeys:Store.recordKeys, emit(){}};
+        Store.startFresh.call(f2, l);
+        ck("start fresh keeps the reset mark, so a fresh start is not wiped again on the next reload",
+           l.d[Store.RESET_KEY] === "1");
+        ck("init runs the one-time reset before it loads anything",
+           /resetOnce\(\)[\s\S]*?takeFamilyKey\(\)[\s\S]*?loadLocal\(\)/.test(Store.init.toString()) &&
+           Store.init.toString().indexOf("resetOnce()") < Store.init.toString().indexOf("loadLocal()"));
+      })();
       ck("every collection saveLocal writes is one start fresh clears", (function(){
          const src = Store.saveLocal.toString() + Store.loadLocal.toString();
          return /MIRROR_KEYS/.test(Store.saveLocal.toString()) && /MIRROR_KEYS/.test(Store.loadLocal.toString()) && !/this\.entries\b/.test(src); })());
